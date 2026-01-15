@@ -1,0 +1,152 @@
+[gd_scene load_steps=6 format=3 uid="uid://ckkwsspou0y1c"]
+
+[ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
+[ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_du8ac"]
+[ext_resource type="Texture2D" uid="uid://da075esvsqt8f" path="res://assets/icons/compassrose.png" id="3_sdxh4"]
+[ext_resource type="Texture2D" uid="uid://c36lju7xnowrn" path="res://assets/icons/scale.png" id="5_5r5px"]
+
+[node name="MapGenerator" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_d6u0w")
+node_scene = ExtResource("2_sdxh4")
+ripple_base_spacing = 18.0
+ripple_spacing_growth = 1.035
+ripple_base_width = 1.0
+ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
+ripple_color_fade = 0.0
+
+[node name="ColorRect" type="ColorRect" parent="."]
+z_index = -1
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.715963, 0.66906, 0.437759, 1)
+
+[node name="MapDetails" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 302.0
+offset_bottom = 300.0
+theme_override_constants/separation = 0
+
+[node name="Label" type="Label" parent="MapDetails"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "N"
+
+[node name="TextureRect" type="TextureRect" parent="MapDetails"]
+modulate = Color(0.286275, 0.227451, 0.121569, 1)
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("3_sdxh4")
+expand_mode = 1
+
+[node name="Control" type="VBoxContainer" parent="MapDetails"]
+layout_mode = 2
+theme_override_constants/separation = -14
+
+[node name="Label2" type="Label" parent="MapDetails/Control"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "the Realm of"
+
+[node name="Label3" type="Label" parent="MapDetails/Control"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 26
+text = "World Name"
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MapDetails"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MapDetails/VBoxContainer2"]
+layout_mode = 2
+theme_override_constants/separation = -8
+
+[node name="Label4" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "kilometers"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MapDetails/VBoxContainer2/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Label5" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "50"
+horizontal_alignment = 1
+
+[node name="Label6" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "100"
+horizontal_alignment = 1
+
+[node name="Label7" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "150"
+horizontal_alignment = 1
+
+[node name="Label8" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(24, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme = ExtResource("3_du8ac")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 2
+theme_override_font_sizes/font_size = 10
+text = "200"
+horizontal_alignment = 1
+
+[node name="TextureRect2" type="TextureRect" parent="MapDetails/VBoxContainer2"]
+modulate = Color(0.286275, 0.227451, 0.121569, 1)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("5_5r5px")

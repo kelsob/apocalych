@@ -1,0 +1,140 @@
+[gd_scene load_steps=12 format=3 uid="uid://1tpqh8qb7k42"]
+
+[ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
+[ext_resource type="Shader" uid="uid://b4r6nxw850pm1" path="res://shaders/painterly_effect.gdshader" id="4_f0bfo"]
+[ext_resource type="Shader" uid="uid://cble155gkncbt" path="res://shaders/gaussian_blur.gdshader" id="5_2dj7u"]
+[ext_resource type="Shader" uid="uid://bvjyqap5w41co" path="res://shaders/edge_fade.gdshader" id="5_voiwj"]
+[ext_resource type="Shader" uid="uid://c5xfrccv38m8m" path="res://shaders/corner_radial_fade.gdshader" id="6_2dj7u"]
+[ext_resource type="Shader" uid="uid://dxnnrrvo4hvd1" path="res://shaders/painterly_v2_watercolor.gdshader" id="7_p3fih"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
+shader = ExtResource("4_f0bfo")
+shader_parameter/edge_distortion = 0.0
+shader_parameter/color_variation = 0.015
+shader_parameter/texture_overlay_strength = 0.013
+shader_parameter/texture_scale = 6.466
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_mifn2"]
+shader = ExtResource("7_p3fih")
+shader_parameter/bleed_amount = 2.0
+shader_parameter/edge_darken = 0.15
+shader_parameter/color_variation = 0.03
+shader_parameter/paper_texture = 0.05
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2dj7u"]
+shader = ExtResource("5_voiwj")
+shader_parameter/fade_distance = 24.0
+shader_parameter/edge_color = Color(0.612, 0.318, 0.153, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p3fih"]
+shader = ExtResource("6_2dj7u")
+shader_parameter/corner_fade_distance = 200.0
+shader_parameter/corner_color = Color(0.612, 0.318, 0.153, 1)
+shader_parameter/corner_intensity = 0.6
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kpsef"]
+shader = ExtResource("5_2dj7u")
+shader_parameter/blur_radius = 16
+shader_parameter/blur_strength = 10.0
+shader_parameter/blur_opacity = 0.25
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
+layout_mode = 1
+node_count = 148
+map_size = Vector2(1280, 720)
+poisson_min_distance = 30.0
+shape_noise_enabled = false
+line_width = 2.0
+line_color = Color(0.579682, 0.474741, 0.292498, 1)
+coast_line_color = Color(0.588235, 0.482353, 0.298039, 1)
+coast_line_width = 6.0
+horizontal_line_width_multiplier = 1.8
+landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
+landmass_gradient_distance = 50.0
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Button" type="Button" parent="UI"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = 344.5
+offset_right = 87.0
+offset_bottom = 375.5
+grow_vertical = 2
+text = "reset map"
+
+[node name="ViewportFX" type="Node" parent="."]
+
+[node name="PainterlyEffect" type="CanvasLayer" parent="ViewportFX"]
+
+[node name="ColorRect" type="ColorRect" parent="ViewportFX/PainterlyEffect"]
+z_index = 99
+material = SubResource("ShaderMaterial_voiwj")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PainterlyEffect2" type="CanvasLayer" parent="ViewportFX"]
+
+[node name="ColorRect" type="ColorRect" parent="ViewportFX/PainterlyEffect2"]
+z_index = 99
+material = SubResource("ShaderMaterial_mifn2")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="EdgeReddeningEffect" type="CanvasLayer" parent="ViewportFX"]
+
+[node name="ColorRect" type="ColorRect" parent="ViewportFX/EdgeReddeningEffect"]
+z_index = 99
+material = SubResource("ShaderMaterial_2dj7u")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="RadialReddeningEffect" type="CanvasLayer" parent="ViewportFX"]
+
+[node name="ColorRect" type="ColorRect" parent="ViewportFX/RadialReddeningEffect"]
+z_index = 99
+material = SubResource("ShaderMaterial_p3fih")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BlurEffect" type="CanvasLayer" parent="ViewportFX"]
+
+[node name="ColorRect" type="ColorRect" parent="ViewportFX/BlurEffect"]
+z_index = 99
+material = SubResource("ShaderMaterial_kpsef")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[connection signal="pressed" from="UI/Button" to="MapGenerator" method="regenerate_map"]
