@@ -60,6 +60,11 @@ var away_direction: float = 0.0  # Angle in radians for coast expansion directio
 # Visuals
 var node_color: Color = Color.WHITE
 
+@onready var sprite_base = $BaseSprite
+@onready var sprite_mountain = $MountainSprite
+@onready var sprite_party = $PartySprite
+
+
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# Center sprites in Control
@@ -107,6 +112,15 @@ func set_mountain_color():
 	node_color = Color(0.588, 0.482, 0.298)  # #967b4c - Node color
 	modulate = node_color
 
+func become_mountain():
+	# Called when this node is designated as a mountain
+	# Randomize the sprite frame based on available hframes
+	sprite_base.visible = false
+	sprite_mountain.visible = true
+	sprite_mountain.frame = randi() % sprite_mountain.hframes
+
+func set_party_present(present: bool):
+	sprite_party.visible = present
 
 func _on_button_pressed() -> void:
 	# Emit signal to notify MapGenerator2D

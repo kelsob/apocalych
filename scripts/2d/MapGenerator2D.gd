@@ -80,9 +80,20 @@ class_name MapGenerator2D
 @export_group("Mountains")
 @export var enable_mountains: bool = true
 
+@export_group("Error Handling")
+@export var auto_regenerate_on_error: bool = true
+
+# ============================================================================
+# SIGNALS
+# ============================================================================
+
+signal map_generation_complete
+
 # ============================================================================
 # INTERNAL VARIABLES
 # ============================================================================
+
+var _regeneration_requested: bool = false
 
 var map_nodes: Array[MapNode2D] = []
 var node_positions: Array[Vector2] = []
@@ -193,7 +204,20 @@ func generate_map():
 	print("Step 13: Visualizing map...")
 	visualize_map()
 	
+	# Check if regeneration was requested due to errors
+	if _regeneration_requested:
+		_regeneration_requested = false
+		print("=== Regenerating map due to detected errors ===")
+		regenerate_map()
+		return
+	
 	print("=== 2D Map Generation Complete ===")
+	
+	# Emit signal that generation is complete
+	map_generation_complete.emit()
+	
+	# Spawn party after map generation is fully complete
+	spawn_party()
 
 # ============================================================================
 # STEP 1: CLEAR EXISTING
@@ -833,7 +857,7 @@ func identify_coastal_nodes():
 				node_b_found = node
 		
 		if node_a_found == null or node_b_found == null:
-			push_error("  ERROR: Could not find nodes for boundary edge %s" % boundary.edge)
+			_handle_generation_error("  ERROR: Could not find nodes for boundary edge %s" % boundary.edge)
 			continue
 		
 		# Verify both nodes are marked (they should be, but double-check)
@@ -1276,7 +1300,7 @@ func calculate_away_directions_pass1():
 			
 			# There should be exactly 2 coastal neighbors with coastal edges
 			if coastal_neighbors_with_coastal_edges.size() != 2:
-				push_error("Node %d has %d coastal neighbors with coastal edges (expected 2)" % [node.node_index, coastal_neighbors_with_coastal_edges.size()])
+				_handle_generation_error("Node %d has %d coastal neighbors with coastal edges (expected 2)" % [node.node_index, coastal_neighbors_with_coastal_edges.size()])
 				print("      ERROR: Expected 2, got %d. Using fallback (first 2 coastal neighbors)" % coastal_neighbors_with_coastal_edges.size())
 				# Fallback: use first two coastal neighbors
 				coastal_neighbors_with_coastal_edges = [coastal_neighbors[0], coastal_neighbors[1]]
@@ -1370,7 +1394,7 @@ func calculate_away_directions_pass1():
 				print("      DECISION: Neighbors in ARC 2 → Use ARC 1 candidate = %.1f°" % rad_to_deg(away_angle))
 			else:
 				# ERROR: Neighbors in both arcs or neither - this should be impossible
-				push_error("Node %d: ERROR - Neighbors found in both arcs or neither! arc1=%s, arc2=%s" % [node.node_index, other_neighbors_in_arc1, other_neighbors_in_arc2])
+				_handle_generation_error("Node %d: ERROR - Neighbors found in both arcs or neither! arc1=%s, arc2=%s" % [node.node_index, other_neighbors_in_arc1, other_neighbors_in_arc2])
 				print("      ERROR: Cannot determine which arc neighbors are in!")
 				print("      Arc 1: %.1f° to %.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end)])
 				print("      Arc 2: %.1f° to %.1f° (wrapping)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU)])
@@ -1524,7 +1548,7 @@ func validate_all_coastal_nodes_processed():
 			unprocessed_nodes.append(node)
 	
 	if unprocessed_nodes.size() > 0:
-		push_error("ERROR: %d coastal nodes were not processed!" % unprocessed_nodes.size())
+		_handle_generation_error("ERROR: %d coastal nodes were not processed!" % unprocessed_nodes.size())
 		print("  Unprocessed coastal nodes:")
 		for node in unprocessed_nodes:
 			print("    Node %d: connections=%d" % [node.node_index, node.connections.size()])
@@ -1827,6 +1851,7 @@ func generate_mountains_at_borders():
 			for node in target_nodes:
 				node.is_mountain = true
 				node.set_mountain_color()
+				node.become_mountain()
 				nodes_made_mountains += 1
 		
 		elif roll == 2:
@@ -1838,6 +1863,7 @@ func generate_mountains_at_borders():
 			for i in range(1, target_nodes.size() - 1):
 				target_nodes[i].is_mountain = true
 				target_nodes[i].set_mountain_color()
+				target_nodes[i].become_mountain()
 				nodes_made_mountains += 1
 		
 		elif roll == 3:
@@ -1851,6 +1877,7 @@ func generate_mountains_at_borders():
 				if i != exclude_idx:
 					target_nodes[i].is_mountain = true
 					target_nodes[i].set_mountain_color()
+					target_nodes[i].become_mountain()
 					nodes_made_mountains += 1
 		
 		if nodes_made_mountains > 0:
@@ -2270,6 +2297,19 @@ func get_node_at_position(pos: Vector2, max_distance: float = 10.0) -> MapNode2D
 func regenerate_map() -> void:
 	clear_existing_nodes()
 	generate_map()
+
+func spawn_party():
+	# Spawn the party at a random node after map generation completes
+	# Note: PartyController must be added as an autoload singleton in project settings
+	# Access autoload directly by name (standard Godot pattern)
+	# If not configured, this will error - user needs to add it in Project Settings > Autoload
+	PartyController.spawn_party_at_random_node(self)
+
+func _handle_generation_error(message: String):
+	push_error(message)
+	if auto_regenerate_on_error:
+		print("  → Auto-regeneration enabled, will regenerate map after current generation completes")
+		_regeneration_requested = true
 
 # ============================================================================
 # DEBUG: NODE CLICK HANDLER
