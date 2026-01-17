@@ -44,6 +44,7 @@ class_name MapGenerator2D
 @export_group("Visuals")
 @export var line_width: float = 4.0
 @export var line_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Node connections
+@export var node_base_color: Color = Color(0.635, 0.518, 0.349)  # #a28459 - Node color
 @export var coast_line_color: Color = Color(0.600, 0.376, 0.192)  # #996031 - Coast lines
 @export var coast_expansion_distance: float = 20.0  # How far to expand coast outward from edges
 @export var coast_line_width: float = 3.0  # Width of the coast line
@@ -54,6 +55,15 @@ class_name MapGenerator2D
 @export var trail_line_width: float = 3.0  # Width of the trail line
 @export var trail_dot_length: float = 4.0  # Length of each dot segment
 @export var trail_dot_gap: float = 3.0  # Gap between dot segments
+@export var trail_dot_size_variation: float = 0.15  # ±15% size variation for dots
+@export var trail_dot_spacing_variation: float = 0.2  # ±20% spacing variation for gaps
+@export var trail_outline_width: float = 1.0  # Width of outline around dots
+@export var trail_outline_color: Color = Color(0.4, 0.0, 0.0, 1.0)  # Darker red for outline
+
+@export_group("Hover Preview")
+@export var preview_path_color: Color = Color(1.0, 0.9, 0.3, 0.6)  # Glowy yellow, low opacity
+@export var preview_path_dot_size: float = 5.0  # Bigger dots for preview
+@export var preview_path_dot_gap: float = 4.0  # Gap between preview dots
 @export var enable_pass1: bool = true  # Process all nodes with 3+ connections
 @export var enable_pass2: bool = true  # Process nodes with exactly 2 connections
 @export var use_curved_lines: bool = true  # Use smooth curves instead of straight lines
@@ -101,6 +111,12 @@ var map_state: MapState = MapState.IDLE
 
 # Party state
 var current_party_node: MapNode2D = null
+
+# Hover preview state
+var hovered_node: MapNode2D = null
+var hover_preview_path: PackedVector2Array = PackedVector2Array()
+var hover_alternative_paths: Array[Array] = []  # Array of Arrays of node indices (each path)
+var hover_current_path_index: int = 0  # Which alternative path we're currently showing
 
 # Party travel state (only valid when map_state == PARTY_MOVING)
 var travel_path_points: PackedVector2Array = PackedVector2Array()
@@ -463,6 +479,8 @@ func instantiate_nodes():
 		
 		# Connect node click signal for debugging (button press -> signal -> handler)
 		node_instance.node_clicked.connect(_on_node_clicked)
+		node_instance.node_hovered.connect(_on_node_hovered)
+		node_instance.node_hover_ended.connect(_on_node_hover_ended)
 		
 		# Defer positioning to ensure Control is in tree
 		call_deferred("defer_node_setup", node_instance, pos)
@@ -1695,9 +1713,7 @@ func create_regions():
 	print("  Created %d regions" % region_count)
 
 func colorize_regions(num_regions: int):
-	# All nodes get node color #a28459
-	var node_base_color = Color(0.635, 0.518, 0.349)  # #a28459 - Node color
-	
+	# All nodes get the configured node color (export property)
 	# Color ALL nodes (including coastal nodes that might not have region_id)
 	for node in map_nodes:
 		if not node.is_mountain:  # Mountains keep their color
@@ -2125,6 +2141,10 @@ func _draw():
 	if map_state == MapState.PARTY_MOVING and current_travel_path.size() > 1:
 		draw_dotted_path(current_travel_path, trail_color, trail_line_width)
 	
+	# Draw hover preview path
+	if hover_preview_path.size() > 1:
+		draw_preview_path(hover_preview_path)
+	
 	# Draw expanded coast lines LAST (so they appear on top)
 	for coast_line in expanded_coast_lines:
 		var pos_a = coast_line[0]
@@ -2400,36 +2420,141 @@ func draw_dotted_path(path_points: PackedVector2Array, color: Color, width: floa
 	if path_points.size() < 2:
 		return
 	
-	# Draw dots along each segment of the path
+	# Use fixed width for trail (no orientation adjustment) to ensure consistent dot appearance
+	var fixed_width = width
+	
+	# Calculate total path length and segment lengths
+	var total_path_length = 0.0
+	var segment_lengths: Array[float] = []
 	for i in range(path_points.size() - 1):
-		var start = path_points[i]
-		var end = path_points[i + 1]
-		var direction = (end - start).normalized()
-		var segment_length = start.distance_to(end)
-		var dot_pattern_length = trail_dot_length + trail_dot_gap
+		var segment_length = path_points[i].distance_to(path_points[i + 1])
+		segment_lengths.append(segment_length)
+		total_path_length += segment_length
+	
+	if total_path_length <= 0.0:
+		return
+	
+	# Apply consistent dot pattern along the entire path (not per segment)
+	# Pattern repeats: dot_length, gap, dot_length, gap...
+	# Add small variations for organic feel while maintaining base pattern
+	var base_dot_pattern_length = trail_dot_length + trail_dot_gap
+	var distance_along_path = 0.0
+	var dot_index = 0  # Track dot index for deterministic variation
+	
+	while distance_along_path < total_path_length:
+		# Use base pattern to determine position (keeps consistency)
+		var pattern_offset = fmod(distance_along_path, base_dot_pattern_length)
+		var in_dot = pattern_offset < trail_dot_length
 		
-		var current_pos = start
-		var distance_along_segment = 0.0
-		var drawing_dot = true
-		
-		while distance_along_segment < segment_length:
-			if drawing_dot:
-				# Draw a dot
-				var dot_end_distance = min(distance_along_segment + trail_dot_length, segment_length)
-				var dot_end_pos = start + direction * dot_end_distance
-				
-				if current_pos != dot_end_pos:
-					var adjusted_width = get_orientation_adjusted_width(width, current_pos, dot_end_pos)
-					draw_line(current_pos, dot_end_pos, color, adjusted_width)
-				
-				distance_along_segment += trail_dot_length
-			else:
-				# Skip gap
-				distance_along_segment += trail_dot_gap
+		if in_dot:
+			# We're drawing a dot (as a circle)
+			# Calculate center of dot
+			var dot_center_distance = distance_along_path + (trail_dot_length * 0.5)
+			dot_center_distance = clamp(dot_center_distance, 0.0, total_path_length)
 			
-			# Update current position and toggle dot/gap
-			current_pos = start + direction * min(distance_along_segment, segment_length)
-			drawing_dot = not drawing_dot
+			# Get center position of the dot
+			var dot_center_pos = _get_position_at_path_distance(path_points, segment_lengths, dot_center_distance)
+			
+			# Calculate local path direction for orientation adjustment
+			# Sample points before and after to get direction
+			var sample_offset = 2.0  # Small offset to sample direction
+			var pos_before = _get_position_at_path_distance(path_points, segment_lengths, max(0.0, dot_center_distance - sample_offset))
+			var pos_after = _get_position_at_path_distance(path_points, segment_lengths, min(total_path_length, dot_center_distance + sample_offset))
+			var local_direction = (pos_after - pos_before).normalized()
+			
+			# Calculate orientation adjustment (same logic as connection lines)
+			var angle = abs(atan2(local_direction.y, local_direction.x))
+			if angle > PI / 2.0:
+				angle = PI - angle
+			var horizontalness = cos(angle)  # 0.0 = vertical, 1.0 = horizontal
+			
+			# Apply orientation scaling: more horizontal = larger radius and spacing
+			# Use the same multiplier as connection lines for consistency
+			var orientation_scale = 1.0 + (horizontal_line_width_multiplier - 1.0) * horizontalness
+			
+			# Calculate deterministic variation for this dot
+			var variation_seed = hash(Vector2i(int(distance_along_path * 10.0), dot_index))
+			var size_variation = (float(variation_seed % 200) / 100.0 - 1.0) * trail_dot_size_variation  # -variation to +variation
+			
+			# Calculate dot radius with size variation AND orientation adjustment
+			var base_radius = fixed_width * 0.5
+			var dot_radius = base_radius * (1.0 + size_variation) * orientation_scale
+			
+			# Draw outline first (slightly larger, darker)
+			var outline_radius = dot_radius + trail_outline_width
+			draw_circle(dot_center_pos, outline_radius, trail_outline_color)
+			
+			# Draw main dot circle
+			draw_circle(dot_center_pos, dot_radius, color)
+			
+			# Advance past the dot (use base length, but will be adjusted by spacing variation)
+			distance_along_path += trail_dot_length
+			dot_index += 1
+		else:
+			# We're in a gap - apply spacing variation AND orientation adjustment
+			var gap_remaining = base_dot_pattern_length - pattern_offset
+			
+			# Get position at gap start to calculate orientation
+			var gap_start_distance = distance_along_path
+			var gap_start_pos = _get_position_at_path_distance(path_points, segment_lengths, gap_start_distance)
+			
+			# Calculate local path direction for orientation adjustment
+			var sample_offset = 2.0
+			var pos_before = _get_position_at_path_distance(path_points, segment_lengths, max(0.0, gap_start_distance - sample_offset))
+			var pos_after = _get_position_at_path_distance(path_points, segment_lengths, min(total_path_length, gap_start_distance + sample_offset))
+			var local_direction = (pos_after - pos_before).normalized()
+			
+			# Calculate orientation adjustment
+			var angle = abs(atan2(local_direction.y, local_direction.x))
+			if angle > PI / 2.0:
+				angle = PI - angle
+			var horizontalness = cos(angle)
+			var orientation_scale = 1.0 + (horizontal_line_width_multiplier - 1.0) * horizontalness
+			
+			# Add small spacing variation to this gap (deterministic)
+			var spacing_seed = hash(Vector2i(int(distance_along_path * 7.0), dot_index))
+			var spacing_variation = (float(spacing_seed % 200) / 100.0 - 1.0) * trail_dot_spacing_variation
+			
+			# Apply both spacing variation AND orientation adjustment
+			var adjusted_gap = gap_remaining * (1.0 + spacing_variation) * orientation_scale
+			
+			distance_along_path = min(distance_along_path + adjusted_gap, total_path_length)
+
+## Draw preview path by highlighting connection lines (hover preview)
+func draw_preview_path(path_points: PackedVector2Array):
+	if path_points.size() < 2:
+		return
+	
+	# Draw the path as a continuous line
+	# Path points are already curved from get_path_points(), so just draw them
+	for i in range(path_points.size() - 1):
+		var pos_a = path_points[i]
+		var pos_b = path_points[i + 1]
+		
+		# Apply orientation adjustment like connection lines
+		var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
+		var adjusted_color = get_orientation_adjusted_color(preview_path_color, pos_a, pos_b)
+		draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
+
+## Helper: Get position at a specific distance along the path
+func _get_position_at_path_distance(path_points: PackedVector2Array, segment_lengths: Array[float], target_distance: float) -> Vector2:
+	if path_points.size() < 2:
+		return path_points[0] if path_points.size() > 0 else Vector2.ZERO
+	
+	var accumulated_length = 0.0
+	for i in range(path_points.size() - 1):
+		var segment_length = segment_lengths[i]
+		
+		if accumulated_length + segment_length >= target_distance:
+			# Target is in this segment
+			var segment_remaining = target_distance - accumulated_length
+			var segment_progress = segment_remaining / segment_length
+			return path_points[i].lerp(path_points[i + 1], segment_progress)
+		
+		accumulated_length += segment_length
+	
+	# Past end of path
+	return path_points[path_points.size() - 1]
 
 # ============================================================================
 # UTILITY
@@ -2649,6 +2774,21 @@ func _process(delta: float):
 	if map_state == MapState.PARTY_MOVING:
 		_process_party_movement(delta)
 
+func _input(event: InputEvent):
+	# Handle mouse wheel for path cycling when hovering
+	if hovered_node and hover_alternative_paths.size() > 1:
+		if event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+				# Cycle to next path
+				hover_current_path_index = (hover_current_path_index + 1) % hover_alternative_paths.size()
+				_update_hover_preview_path()
+				queue_redraw()
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+				# Cycle to previous path
+				hover_current_path_index = (hover_current_path_index - 1 + hover_alternative_paths.size()) % hover_alternative_paths.size()
+				_update_hover_preview_path()
+				queue_redraw()
+
 ## Handle party movement along path
 func _process_party_movement(delta: float):
 	if travel_path_points.size() < 2:
@@ -2773,12 +2913,239 @@ func _handle_generation_error(message: String):
 # ============================================================================
 
 func _on_node_clicked(node: MapNode2D):
+	# Handle navigation
+	handle_node_navigation(node)
+	
 	# Debug output (can be disabled later if needed)
 	debug_node_away_directions(node)
 	debug_node_edges(node)
+
+func _on_node_hovered(node: MapNode2D):
+	hovered_node = node
+	hover_current_path_index = 0
+	_find_all_equal_length_paths()
+	_update_hover_preview_path()
+	queue_redraw()
+
+func _on_node_hover_ended(node: MapNode2D):
+	if hovered_node == node:
+		hovered_node = null
+		hover_preview_path.clear()
+		hover_alternative_paths.clear()
+		hover_current_path_index = 0
+		queue_redraw()
+
+func _find_all_equal_length_paths():
+	hover_alternative_paths.clear()
 	
-	# Handle gameplay navigation
-	handle_node_navigation(node)
+	if not hovered_node or not current_party_node or not astar:
+		return
+	
+	# Can't preview path to current node
+	if hovered_node == current_party_node:
+		return
+	
+	# Get shortest path length first
+	var shortest_path_packed = astar.get_id_path(current_party_node.node_index, hovered_node.node_index)
+	if shortest_path_packed.size() < 2:
+		return  # No valid path
+	
+	# Convert PackedInt64Array to Array
+	var shortest_path: Array = []
+	for id in shortest_path_packed:
+		shortest_path.append(id)
+	
+	var target_length = shortest_path.size() - 1  # Number of edges (path length in hops)
+	
+	# Performance optimization: For long paths, limit search or use simpler method
+	var max_search_hops = 8  # Only do full BFS search for paths up to 8 hops
+	var max_paths_to_find = 25  # Limit total paths found (increased for more options)
+	
+	if target_length > max_search_hops:
+		# For long paths, just use the shortest path and find a few alternatives
+		# by temporarily blocking edges from the shortest path
+		var all_paths: Array[Array] = [shortest_path]  # Always include shortest
+		
+		# Try to find alternative paths by blocking edges from the shortest path
+		# Block more edges for longer paths to find more alternatives
+		var edges_to_try = min(shortest_path.size() - 1, max(5, target_length / 2))  # Try blocking up to half the edges, or 5 minimum
+		for edge_idx in range(edges_to_try):
+			var blocked_node_a_id = shortest_path[edge_idx]
+			var blocked_node_b_id = shortest_path[edge_idx + 1]
+			
+			# Temporarily disconnect this edge in AStar
+			var was_connected = astar.are_points_connected(blocked_node_a_id, blocked_node_b_id)
+			if was_connected:
+				astar.disconnect_points(blocked_node_a_id, blocked_node_b_id)
+			
+			# Try to find alternative path
+			var alt_path_packed = astar.get_id_path(current_party_node.node_index, hovered_node.node_index)
+			if alt_path_packed.size() > 0 and alt_path_packed.size() - 1 == target_length:
+				# Convert PackedInt64Array to Array
+				var alt_path: Array = []
+				for id in alt_path_packed:
+					alt_path.append(id)
+				
+				# Check if it's different from paths we already have
+				var is_duplicate = false
+				for existing_path in all_paths:
+					if existing_path == alt_path:
+						is_duplicate = true
+						break
+				
+				if not is_duplicate and all_paths.size() < max_paths_to_find:
+					all_paths.append(alt_path)
+			
+			# Reconnect the edge
+			if was_connected:
+				astar.connect_points(blocked_node_a_id, blocked_node_b_id)
+			
+			if all_paths.size() >= max_paths_to_find:
+				break
+		
+		# Store paths (will be sorted by distance later)
+		hover_alternative_paths = all_paths
+		return
+	
+	# For shorter paths, use BFS but with better limits
+	var all_paths: Array[Array] = []
+	var queue: Array = []  # [current_node_index, path_so_far, visited_set]
+	var start_path: Array = [current_party_node.node_index]
+	var start_visited: Dictionary = {}
+	start_visited[current_party_node.node_index] = true
+	queue.append([current_party_node.node_index, start_path, start_visited])
+	
+	var max_queue_size = 2000  # Limit queue size to prevent explosion (increased for more thorough search)
+	var paths_found = 0
+	
+	while queue.size() > 0 and paths_found < max_paths_to_find and queue.size() < max_queue_size:
+		var current = queue.pop_front()
+		var current_node_id = current[0]
+		var path_so_far = current[1]
+		var visited = current[2]
+		
+		# Check if we've reached the target
+		if current_node_id == hovered_node.node_index:
+			if path_so_far.size() - 1 == target_length:  # Same number of hops
+				all_paths.append(path_so_far.duplicate())
+				paths_found += 1
+			continue
+		
+		# Don't continue if path is already too long
+		if path_so_far.size() - 1 >= target_length:
+			continue
+		
+		# Explore neighbors
+		var current_node: MapNode2D = null
+		for node in map_nodes:
+			if node.node_index == current_node_id:
+				current_node = node
+				break
+		
+		if not current_node:
+			continue
+		
+		for neighbor in current_node.connections:
+			if neighbor.is_mountain:
+				continue  # Skip mountains
+			
+			if visited.has(neighbor.node_index):
+				continue  # Already visited in this path
+			
+			# Create new path state
+			var new_path = path_so_far.duplicate()
+			new_path.append(neighbor.node_index)
+			var new_visited = visited.duplicate()
+			new_visited[neighbor.node_index] = true
+			
+			queue.append([neighbor.node_index, new_path, new_visited])
+	
+	# Calculate total distance for each path and sort by distance
+	var paths_with_distances: Array = []  # Array of [path, total_distance]
+	
+	for path in all_paths:
+		var total_distance = 0.0
+		# Calculate total distance by summing distances between consecutive nodes
+		for i in range(path.size() - 1):
+			var node_a_id = path[i]
+			var node_b_id = path[i + 1]
+			
+			# Find the actual nodes
+			var node_a: MapNode2D = null
+			var node_b: MapNode2D = null
+			for node in map_nodes:
+				if node.node_index == node_a_id:
+					node_a = node
+				if node.node_index == node_b_id:
+					node_b = node
+				if node_a and node_b:
+					break
+			
+			if node_a and node_b:
+				var pos_a = node_a.position + (node_a.size / 2.0)
+				var pos_b = node_b.position + (node_b.size / 2.0)
+				total_distance += pos_a.distance_to(pos_b)
+		
+		paths_with_distances.append([path, total_distance])
+	
+	# Sort by total distance (shortest first)
+	paths_with_distances.sort_custom(func(a, b): return a[1] < b[1])
+	
+	# Extract sorted paths
+	hover_alternative_paths.clear()
+	for item in paths_with_distances:
+		hover_alternative_paths.append(item[0])
+	
+	if hover_alternative_paths.size() == 0:
+		# Fallback: use the shortest path (already converted to Array)
+		hover_alternative_paths.append(shortest_path)
+	
+	# Reset to first path (which is now the shortest distance)
+	hover_current_path_index = 0
+
+func _update_hover_preview_path():
+	hover_preview_path.clear()
+	
+	if not hovered_node or not current_party_node or hover_alternative_paths.size() == 0:
+		return
+	
+	# Get the currently selected path
+	if hover_current_path_index < 0 or hover_current_path_index >= hover_alternative_paths.size():
+		hover_current_path_index = 0
+	
+	var path_ids = hover_alternative_paths[hover_current_path_index]
+	
+	if path_ids.size() < 2:
+		return  # No valid path
+	
+	# Convert path IDs to nodes
+	var path_nodes: Array[MapNode2D] = []
+	for id in path_ids:
+		for node in map_nodes:
+			if node.node_index == id:
+				path_nodes.append(node)
+				break
+	
+	if path_nodes.size() < 2:
+		return  # Invalid path
+	
+	# Convert path to visual points using curved paths between each pair
+	var all_path_points = PackedVector2Array()
+	
+	for i in range(path_nodes.size() - 1):
+		var node_a = path_nodes[i]
+		var node_b = path_nodes[i + 1]
+		var segment_points = get_path_points(node_a, node_b)
+		
+		# Add segment points (skip first point if not first segment to avoid duplicates)
+		if i == 0:
+			all_path_points.append_array(segment_points)
+		else:
+			# Skip first point to avoid duplicate
+			for j in range(1, segment_points.size()):
+				all_path_points.append(segment_points[j])
+	
+	hover_preview_path = all_path_points
 
 func debug_node_away_directions(node: MapNode2D):
 	print("\n=== DEBUG: Node %d Away Direction Analysis ===" % node.node_index)

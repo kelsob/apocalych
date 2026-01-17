@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=8 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://da075esvsqt8f" path="res://assets/icons/compassrose.png" id="3_sdxh4"]
 [ext_resource type="Texture2D" uid="uid://c36lju7xnowrn" path="res://assets/icons/scale.png" id="5_5r5px"]
 [ext_resource type="Texture2D" uid="uid://c56h3fp3ouegp" path="res://assets/icons/party_present.png" id="6_jerfe"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 
 [node name="MapGenerator" type="Control"]
 layout_mode = 3
@@ -16,6 +17,11 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
+trail_line_width = 2.0
+trail_dot_length = 3.0
+trail_dot_gap = 2.5
+trail_dot_spacing_variation = 0.0
+preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
 ripple_base_spacing = 18.0
 ripple_spacing_growth = 1.035
 ripple_base_width = 1.0
@@ -162,3 +168,13 @@ modulate = Color(0.710938, 0, 0, 1)
 z_index = 10
 texture = ExtResource("6_jerfe")
 offset = Vector2(0, 1)
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("7_et537")

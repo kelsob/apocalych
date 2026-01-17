@@ -121,3 +121,10 @@ func become_mountain():
 func _on_button_pressed() -> void:
 	# Emit signal to notify MapGenerator2D
 	node_clicked.emit(self)
+
+
+func _on_button_mouse_entered() -> void:
+	node_hovered.emit(self)
+
+func _on_button_mouse_exited() -> void:
+	node_hover_ended.emit(self)

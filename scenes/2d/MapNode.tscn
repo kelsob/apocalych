@@ -9,6 +9,8 @@ z_index = 10
 custom_minimum_size = Vector2(16, 16)
 layout_mode = 3
 anchors_preset = 0
+offset_right = 16.0
+offset_bottom = 16.0
 mouse_filter = 2
 script = ExtResource("1_r064c")
 
@@ -23,6 +25,7 @@ texture = ExtResource("3_0fbw0")
 hframes = 7
 
 [node name="Button" type="Button" parent="."]
+z_index = 4096
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -32,4 +35,6 @@ grow_vertical = 2
 focus_mode = 0
 flat = true
 
+[connection signal="mouse_entered" from="Button" to="." method="_on_button_mouse_entered"]
+[connection signal="mouse_exited" from="Button" to="." method="_on_button_mouse_exited"]
 [connection signal="pressed" from="Button" to="." method="_on_button_pressed"]
