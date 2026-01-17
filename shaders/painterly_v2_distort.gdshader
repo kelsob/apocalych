@@ -17,24 +17,24 @@ float noise(vec2 p) {
 	vec2 i = floor(p);
 	vec2 f = fract(p);
 	f = f * f * (3.0 - 2.0 * f);
-	
+
 	float a = hash(i);
 	float b = hash(i + vec2(1.0, 0.0));
 	float c = hash(i + vec2(0.0, 1.0));
 	float d = hash(i + vec2(1.0, 1.0));
-	
+
 	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
 	float t = TIME * time_speed;
-	
+
 	// Offset UV based on noise
 	float offset_x = noise(uv * distortion_scale + t) * 2.0 - 1.0;
 	float offset_y = noise(uv * distortion_scale + 100.0 + t) * 2.0 - 1.0;
-	
+
 	vec2 distorted_uv = uv + vec2(offset_x, offset_y) * distortion_strength;
-	
+
 	COLOR = texture(SCREEN_TEXTURE, distorted_uv);
 }

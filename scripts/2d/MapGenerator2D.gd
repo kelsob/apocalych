@@ -50,6 +50,10 @@ class_name MapGenerator2D
 @export var horizontal_line_width_multiplier: float = 1.5  # How much thicker horizontal lines are (1.0 = no change, 1.5 = 50% thicker)
 @export var horizontal_line_darken: float = 0.08  # How much darker horizontal lines are (0.0-1.0, subtle amount)
 @export var coastal_neighbor_weight_when_mixed: float = 0.5  # Weight for coastal neighbors when non-coastal neighbors also exist (0.0-1.0)
+@export var trail_color: Color = Color(0.709, 0.0, 0.0, 1.0)  # #b50000 - Player trail color
+@export var trail_line_width: float = 3.0  # Width of the trail line
+@export var trail_dot_length: float = 4.0  # Length of each dot segment
+@export var trail_dot_gap: float = 3.0  # Gap between dot segments
 @export var enable_pass1: bool = true  # Process all nodes with 3+ connections
 @export var enable_pass2: bool = true  # Process nodes with exactly 2 connections
 @export var use_curved_lines: bool = true  # Use smooth curves instead of straight lines
@@ -83,6 +87,37 @@ class_name MapGenerator2D
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
 
+@export_group("Party")
+@export var party_travel_speed: float = 200.0  # Pixels per second
+@export var party_wait_at_node: float = 0.3  # Seconds to wait at a node before accepting new input
+
+# Map state machine
+enum MapState {
+	IDLE,           # Default state - waiting for input
+	PARTY_MOVING    # Party is traveling along a path
+}
+
+var map_state: MapState = MapState.IDLE
+
+# Party state
+var current_party_node: MapNode2D = null
+
+# Party travel state (only valid when map_state == PARTY_MOVING)
+var travel_path_points: PackedVector2Array = PackedVector2Array()
+var travel_target_node: MapNode2D = null
+var travel_total_distance: float = 0.0
+var travel_elapsed_distance: float = 0.0
+var travel_wait_timer: float = 0.0
+var travel_start_node: MapNode2D = null  # Starting node for current travel
+var travel_current_path: PackedVector2Array = PackedVector2Array()  # Current path being drawn in real-time
+
+# Player trail tracking
+var visited_paths: Dictionary = {}  # "node1_node2" -> true (edges the player has completed)
+var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path currently being drawn (in progress)
+
+# Party indicator node (user will instantiate and assign via @onready)
+@onready var party_indicator: Sprite2D = $PartyIndicator
+@onready var mapnodes: Control = $MapNodes
 # ============================================================================
 # SIGNALS
 # ============================================================================
@@ -196,6 +231,10 @@ func generate_map():
 		print("Step 12.5: Generating mountains at region boundaries...")
 		generate_mountains_at_borders()
 		
+		# Step 12.55: Center mountain nodes at average position of connected nodes
+		print("Step 12.55: Centering mountain nodes...")
+		center_mountain_nodes()
+		
 		# Step 12.6: Disconnect mountain nodes (mountains act as barriers)
 		print("Step 12.6: Disconnecting mountain nodes...")
 		disconnect_mountain_nodes()
@@ -233,6 +272,8 @@ func clear_existing_nodes():
 	coastal_connections.clear()
 	expanded_coast_lines.clear()
 	delaunay_edges.clear()
+	visited_paths.clear()
+	current_travel_path.clear()
 	if is_inside_tree():
 		queue_redraw()  # Clear drawn lines
 
@@ -418,7 +459,7 @@ func instantiate_nodes():
 			return
 		
 		node_instance.node_index = i
-		add_child(node_instance)
+		mapnodes.add_child(node_instance)
 		
 		# Connect node click signal for debugging (button press -> signal -> handler)
 		node_instance.node_clicked.connect(_on_node_clicked)
@@ -1887,6 +1928,57 @@ func generate_mountains_at_borders():
 	print("  Total: Created %d mountain nodes from %d border nodes across %d border segments" % [mountains_created, border_nodes.size(), border_segments.size()])
 
 # ============================================================================
+# STEP 12.55: CENTER MOUNTAIN NODES
+# ============================================================================
+
+func center_mountain_nodes():
+	# Collect all mountain nodes
+	var mountain_nodes: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.is_mountain:
+			mountain_nodes.append(node)
+	
+	if mountain_nodes.size() == 0:
+		print("  No mountain nodes to center")
+		return
+	
+	# Iterate multiple times (3 passes)
+	var iterations = 3
+	
+	for iteration in range(iterations):
+		# Store new positions (apply all at once after calculation)
+		var new_positions: Dictionary = {}
+		
+		# Iterate over all mountain nodes
+		for mountain_node in mountain_nodes:
+			# Skip if no connections
+			if mountain_node.connections.size() == 0:
+				continue
+			
+			# Calculate average position of all connected nodes
+			var average_pos = Vector2.ZERO
+			var connected_count = 0
+			
+			for connected_node in mountain_node.connections:
+				var node_center = connected_node.position + (connected_node.size / 2.0)
+				average_pos += node_center
+				connected_count += 1
+			
+			if connected_count > 0:
+				average_pos /= connected_count
+				# Store new position (relative to node's current position)
+				new_positions[mountain_node] = average_pos - (mountain_node.size / 2.0)
+		
+		# Apply all new positions
+		for mountain_node in new_positions:
+			mountain_node.position = new_positions[mountain_node]
+		
+		if iteration < iterations - 1:
+			print("  Centering pass %d/%d complete" % [iteration + 1, iterations])
+	
+	print("  Centered %d mountain nodes (%d iterations)" % [mountain_nodes.size(), iterations])
+
+# ============================================================================
 # STEP 12.6: DISCONNECT MOUNTAIN NODES
 # ============================================================================
 
@@ -2022,6 +2114,13 @@ func _draw():
 	# Draw coastal ripples FIRST (behind main coast line)
 	if enable_coast_ripples and ripple_count > 0:
 		draw_coast_ripples()
+	
+	# Draw player trail (completed paths)
+	draw_player_trail()
+	
+	# Draw current travel path (in progress)
+	if map_state == MapState.PARTY_MOVING and current_travel_path.size() > 1:
+		draw_dotted_path(current_travel_path, trail_color, trail_line_width)
 	
 	# Draw expanded coast lines LAST (so they appear on top)
 	for coast_line in expanded_coast_lines:
@@ -2278,6 +2377,79 @@ func get_orientation_adjusted_color(base_color: Color, pos_a: Vector2, pos_b: Ve
 	return adjusted_color
 
 # ============================================================================
+# PLAYER TRAIL DRAWING
+# ============================================================================
+
+## Get edge key for visited paths dictionary
+func _get_edge_key(node_a: MapNode2D, node_b: MapNode2D) -> String:
+	return str(min(node_a.node_index, node_b.node_index)) + "_" + str(max(node_a.node_index, node_b.node_index))
+
+## Draw all completed player trail paths
+func draw_player_trail():
+	# Draw dotted lines for all visited paths
+	for edge_key in visited_paths:
+		var parts = edge_key.split("_")
+		if parts.size() != 2:
+			continue
+		
+		var node_a_idx = int(parts[0])
+		var node_b_idx = int(parts[1])
+		
+		# Find the nodes
+		var node_a: MapNode2D = null
+		var node_b: MapNode2D = null
+		
+		for node in map_nodes:
+			if node.node_index == node_a_idx:
+				node_a = node
+			elif node.node_index == node_b_idx:
+				node_b = node
+		
+		if node_a == null or node_b == null:
+			continue
+		
+		# Get path points (same curve logic as connections)
+		var path_points = get_path_points(node_a, node_b)
+		if path_points.size() > 1:
+			draw_dotted_path(path_points, trail_color, trail_line_width)
+
+## Draw a dotted line along a path
+func draw_dotted_path(path_points: PackedVector2Array, color: Color, width: float):
+	if path_points.size() < 2:
+		return
+	
+	# Draw dots along each segment of the path
+	for i in range(path_points.size() - 1):
+		var start = path_points[i]
+		var end = path_points[i + 1]
+		var direction = (end - start).normalized()
+		var segment_length = start.distance_to(end)
+		var dot_pattern_length = trail_dot_length + trail_dot_gap
+		
+		var current_pos = start
+		var distance_along_segment = 0.0
+		var drawing_dot = true
+		
+		while distance_along_segment < segment_length:
+			if drawing_dot:
+				# Draw a dot
+				var dot_end_distance = min(distance_along_segment + trail_dot_length, segment_length)
+				var dot_end_pos = start + direction * dot_end_distance
+				
+				if current_pos != dot_end_pos:
+					var adjusted_width = get_orientation_adjusted_width(width, current_pos, dot_end_pos)
+					draw_line(current_pos, dot_end_pos, color, adjusted_width)
+				
+				distance_along_segment += trail_dot_length
+			else:
+				# Skip gap
+				distance_along_segment += trail_dot_gap
+			
+			# Update current position and toggle dot/gap
+			current_pos = start + direction * min(distance_along_segment, segment_length)
+			drawing_dot = not drawing_dot
+
+# ============================================================================
 # UTILITY
 # ============================================================================
 
@@ -2300,10 +2472,295 @@ func regenerate_map() -> void:
 
 func spawn_party():
 	# Spawn the party at a random node after map generation completes
-	# Note: PartyController must be added as an autoload singleton in project settings
-	# Access autoload directly by name (standard Godot pattern)
-	# If not configured, this will error - user needs to add it in Project Settings > Autoload
-	PartyController.spawn_party_at_random_node(self)
+	if not party_indicator:
+		push_warning("MapGenerator2D: party_indicator not assigned. Party will not spawn.")
+		return
+	
+	if map_nodes.size() == 0:
+		push_error("MapGenerator2D: Cannot spawn party - no map nodes available")
+		return
+	
+	# Filter out mountain nodes (party can't spawn on mountains)
+	var valid_nodes: Array[MapNode2D] = []
+	for node in map_nodes:
+		if not node.is_mountain:
+			valid_nodes.append(node)
+	
+	if valid_nodes.size() == 0:
+		push_error("MapGenerator2D: No valid nodes to spawn party (all are mountains?)")
+		return
+	
+	# Pick a random valid node
+	var spawn_node = valid_nodes[randi() % valid_nodes.size()]
+	set_party_position(spawn_node)
+	
+	print("Party spawned at node %d" % spawn_node.node_index)
+
+# ============================================================================
+# PARTY MANAGEMENT
+# ============================================================================
+
+## Set party position immediately (no animation)
+func set_party_position(node: MapNode2D):
+	if not party_indicator or not node:
+		return
+	
+	current_party_node = node
+	var node_center = node.position + (node.size / 2.0)
+	party_indicator.global_position = node_center
+
+## Check if party can move to a node (must be connected to current node)
+func can_party_move_to(node: MapNode2D) -> bool:
+	if not current_party_node:
+		return false
+	
+	if not node:
+		return false
+	
+	# Can't move to mountains
+	if node.is_mountain:
+		return false
+	
+	# Can't move while already traveling
+	if map_state == MapState.PARTY_MOVING:
+		return false
+	
+	# Must be connected to current node
+	return current_party_node.is_connected_to(node)
+
+## Get all nodes the party can move to from current position
+func get_party_available_moves() -> Array[MapNode2D]:
+	if not current_party_node:
+		return []
+	
+	var available: Array[MapNode2D] = []
+	for neighbor in current_party_node.connections:
+		if not neighbor.is_mountain:
+			available.append(neighbor)
+	
+	return available
+
+## Calculate path points along a curve between two nodes
+func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array:
+	var pos_a = node_a.position + (node_a.size / 2.0)
+	var pos_b = node_b.position + (node_b.size / 2.0)
+	var direction = (pos_b - pos_a).normalized()
+	var distance = pos_a.distance_to(pos_b)
+	
+	# Determine curve direction (consistent with draw_curved_line)
+	var direction_hash = hash(Vector2i(int(pos_a.x), int(pos_a.y)) + Vector2i(int(pos_b.x), int(pos_b.y)))
+	var curve_dir = 1.0 if direction_hash % 2 == 0 else -1.0
+	
+	# Check if we should use S-curve (same logic as drawing)
+	var use_s_curve = distance > s_curve_threshold and randf() < s_curve_probability
+	
+	var perpendicular = Vector2(-direction.y, direction.x) * curve_dir
+	# Use deterministic curve strength based on nodes (not random, for consistency)
+	var min_strength = curve_strength * 0.2
+	var max_strength = curve_strength * 0.5
+	var node_hash = hash(str(node_a.node_index) + "_" + str(node_b.node_index))
+	var random_strength = min_strength + (max_strength - min_strength) * (float(node_hash % 100) / 100.0)
+	var base_offset = distance * random_strength
+	
+	var points = PackedVector2Array()
+	
+	if use_s_curve and use_curved_lines:
+		# S-curve: cubic Bezier
+		var control1 = pos_a + direction * (distance * 0.33) + perpendicular * base_offset
+		var control2 = pos_a + direction * (distance * 0.67) - perpendicular * base_offset
+		
+		var segments = max(12, int(distance / 4.0))
+		
+		for i in range(segments + 1):
+			var t = float(i) / float(segments)
+			var t2 = t * t
+			var t3 = t2 * t
+			var mt = 1.0 - t
+			var mt2 = mt * mt
+			var mt3 = mt2 * mt
+			
+			# Cubic Bezier: (1-t)³P₀ + 3(1-t)²tP₁ + 3(1-t)t²P₂ + t³P₃
+			var point = mt3 * pos_a + 3.0 * mt2 * t * control1 + 3.0 * mt * t2 * control2 + t3 * pos_b
+			points.append(point)
+	elif use_curved_lines:
+		# Single curve: quadratic Bezier
+		var control_offset = perpendicular * base_offset
+		var control = pos_a + direction * (distance * 0.5) + control_offset
+		
+		var segments = max(8, int(distance / 4.0))
+		
+		for i in range(segments + 1):
+			var t = float(i) / float(segments)
+			var mt = 1.0 - t
+			
+			# Quadratic Bezier: (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+			var point = mt * mt * pos_a + 2.0 * mt * t * control + t * t * pos_b
+			points.append(point)
+	else:
+		# Straight line
+		points.append(pos_a)
+		points.append(pos_b)
+	
+	return points
+
+## Navigate party to a neighboring node along the curved path
+## Sets up travel state - _process() handles the actual movement
+func navigate_party_to_node(target_node: MapNode2D):
+	if not can_party_move_to(target_node):
+		push_warning("MapGenerator2D: Cannot navigate party to node %d" % target_node.node_index)
+		return
+	
+	if not party_indicator:
+		push_error("MapGenerator2D: party_indicator not assigned")
+		return
+	
+	var from_node = current_party_node
+	var path_points = get_path_points(from_node, target_node)
+	
+	if path_points.size() < 2:
+		# Fallback: just jump to target
+		set_party_position(target_node)
+		return
+	
+	# Calculate total distance along path
+	var total_distance = 0.0
+	for i in range(path_points.size() - 1):
+		total_distance += path_points[i].distance_to(path_points[i + 1])
+	
+	# Set up travel state
+	map_state = MapState.PARTY_MOVING
+	travel_path_points = path_points
+	travel_target_node = target_node
+	travel_start_node = from_node
+	travel_total_distance = total_distance
+	travel_elapsed_distance = 0.0
+	travel_wait_timer = 0.0
+	
+	# Initialize current travel path with starting point
+	current_travel_path.clear()
+	current_travel_path.append(travel_path_points[0])
+	
+	# Request redraw to show trail
+	queue_redraw()
+	
+	print("Party started traveling to node %d" % target_node.node_index)
+
+## Process party movement when in PARTY_MOVING state
+func _process(delta: float):
+	if map_state == MapState.PARTY_MOVING:
+		_process_party_movement(delta)
+
+## Handle party movement along path
+func _process_party_movement(delta: float):
+	if travel_path_points.size() < 2:
+		# Invalid path, jump to target
+		_finish_party_travel()
+		return
+	
+	# Check if we're in wait phase (arrived at destination)
+	if travel_wait_timer > 0.0:
+		travel_wait_timer -= delta
+		if travel_wait_timer <= 0.0:
+			# Wait complete, return to idle
+			_finish_party_travel()
+		return
+	
+	# Move along path
+	var distance_this_frame = party_travel_speed * delta
+	travel_elapsed_distance += distance_this_frame
+	
+	if travel_elapsed_distance >= travel_total_distance:
+		# Reached destination
+		set_party_position(travel_target_node)
+		travel_wait_timer = party_wait_at_node
+		return
+	
+	# Calculate current position along path
+	var target_distance = travel_elapsed_distance
+	var accumulated_distance = 0.0
+	var current_pos = travel_path_points[0]
+	
+	for i in range(travel_path_points.size() - 1):
+		var segment_distance = travel_path_points[i].distance_to(travel_path_points[i + 1])
+		if accumulated_distance + segment_distance >= target_distance:
+			# We're in this segment
+			var segment_progress = (target_distance - accumulated_distance) / segment_distance
+			current_pos = travel_path_points[i].lerp(travel_path_points[i + 1], segment_progress)
+			break
+		accumulated_distance += segment_distance
+		current_pos = travel_path_points[i + 1]
+	
+	# Update party indicator position
+	party_indicator.global_position = current_pos
+	
+	# Update current travel path - add current position to the path being drawn
+	# Build path from start to current position
+	current_travel_path.clear()
+	current_travel_path.append(travel_path_points[0])  # Start position
+	
+	# Reuse accumulated_distance variable, reset for path building
+	accumulated_distance = 0.0
+	for i in range(travel_path_points.size() - 1):
+		var segment_distance = travel_path_points[i].distance_to(travel_path_points[i + 1])
+		if accumulated_distance + segment_distance <= travel_elapsed_distance:
+			# Include full segment
+			current_travel_path.append(travel_path_points[i + 1])
+			accumulated_distance += segment_distance
+		else:
+			# Include partial segment up to current position
+			var remaining = travel_elapsed_distance - accumulated_distance
+			var segment_progress = remaining / segment_distance
+			var partial_point = travel_path_points[i].lerp(travel_path_points[i + 1], segment_progress)
+			current_travel_path.append(partial_point)
+			break
+	
+	# Request redraw to update trail
+	queue_redraw()
+
+## Finish party travel and return to idle state
+func _finish_party_travel():
+	# Ensure we're exactly at the target
+	if travel_target_node and travel_start_node:
+		set_party_position(travel_target_node)
+		
+		# Lock in completed path - mark this edge as visited
+		var edge_key = _get_edge_key(travel_start_node, travel_target_node)
+		visited_paths[edge_key] = true
+		
+		# Clear current travel path
+		current_travel_path.clear()
+		
+		print("Party moved to node %d" % travel_target_node.node_index)
+	
+	# Clear travel state
+	travel_path_points.clear()
+	travel_target_node = null
+	travel_start_node = null
+	travel_total_distance = 0.0
+	travel_elapsed_distance = 0.0
+	travel_wait_timer = 0.0
+	
+	# Request redraw
+	queue_redraw()
+	
+	# Return to idle state
+	map_state = MapState.IDLE
+
+## Handle node click for navigation during gameplay
+func handle_node_navigation(clicked_node: MapNode2D):
+	if map_state == MapState.PARTY_MOVING:
+		print("Party is already traveling, ignoring click")
+		return
+	
+	if not current_party_node:
+		print("Party not spawned yet, ignoring click")
+		return
+	
+	# Check if this is a valid move
+	if can_party_move_to(clicked_node):
+		navigate_party_to_node(clicked_node)
+	else:
+		print("Cannot move to node %d (not connected or invalid)" % clicked_node.node_index)
 
 func _handle_generation_error(message: String):
 	push_error(message)
@@ -2316,8 +2773,12 @@ func _handle_generation_error(message: String):
 # ============================================================================
 
 func _on_node_clicked(node: MapNode2D):
+	# Debug output (can be disabled later if needed)
 	debug_node_away_directions(node)
 	debug_node_edges(node)
+	
+	# Handle gameplay navigation
+	handle_node_navigation(node)
 
 func debug_node_away_directions(node: MapNode2D):
 	print("\n=== DEBUG: Node %d Away Direction Analysis ===" % node.node_index)

@@ -62,7 +62,6 @@ var node_color: Color = Color.WHITE
 
 @onready var sprite_base = $BaseSprite
 @onready var sprite_mountain = $MountainSprite
-@onready var sprite_party = $PartySprite
 
 
 func _ready():
@@ -118,9 +117,6 @@ func become_mountain():
 	sprite_base.visible = false
 	sprite_mountain.visible = true
 	sprite_mountain.frame = randi() % sprite_mountain.hframes
-
-func set_party_present(present: bool):
-	sprite_party.visible = present
 
 func _on_button_pressed() -> void:
 	# Emit signal to notify MapGenerator2D

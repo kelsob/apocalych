@@ -1,6 +1,7 @@
-[gd_scene load_steps=12 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=13 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
+[ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
 [ext_resource type="Shader" uid="uid://b4r6nxw850pm1" path="res://shaders/painterly_effect.gdshader" id="4_f0bfo"]
 [ext_resource type="Shader" uid="uid://cble155gkncbt" path="res://shaders/gaussian_blur.gdshader" id="5_2dj7u"]
 [ext_resource type="Shader" uid="uid://bvjyqap5w41co" path="res://shaders/edge_fade.gdshader" id="5_voiwj"]
@@ -16,8 +17,8 @@ shader_parameter/texture_scale = 6.466
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_mifn2"]
 shader = ExtResource("7_p3fih")
-shader_parameter/bleed_amount = 2.0
-shader_parameter/edge_darken = 0.15
+shader_parameter/bleed_amount = 0.5
+shader_parameter/edge_darken = 0.05
 shader_parameter/color_variation = 0.03
 shader_parameter/paper_texture = 0.05
 
@@ -45,6 +46,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_main")
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 layout_mode = 1
@@ -59,6 +61,7 @@ coast_line_width = 6.0
 horizontal_line_width_multiplier = 1.8
 landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
 landmass_gradient_distance = 50.0
+party_travel_speed = 50.0
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 3
@@ -114,6 +117,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="RadialReddeningEffect" type="CanvasLayer" parent="ViewportFX"]
+visible = false
 
 [node name="ColorRect" type="ColorRect" parent="ViewportFX/RadialReddeningEffect"]
 z_index = 99
@@ -126,6 +130,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="BlurEffect" type="CanvasLayer" parent="ViewportFX"]
+visible = false
 
 [node name="ColorRect" type="ColorRect" parent="ViewportFX/BlurEffect"]
 z_index = 99
