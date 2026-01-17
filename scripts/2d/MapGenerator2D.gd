@@ -112,7 +112,7 @@ var travel_start_node: MapNode2D = null  # Starting node for current travel
 var travel_current_path: PackedVector2Array = PackedVector2Array()  # Current path being drawn in real-time
 
 # Player trail tracking
-var visited_paths: Dictionary = {}  # "node1_node2" -> true (edges the player has completed)
+var visited_paths: Dictionary = {}  # "node1_node2" -> PackedVector2Array (completed path points)
 var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path currently being drawn (in progress)
 
 # Party indicator node (user will instantiate and assign via @onready)
@@ -2019,13 +2019,16 @@ func draw_curved_line(pos_a: Vector2, pos_b: Vector2, color: Color, width: float
 	var curve_dir = 1.0 if direction_hash % 2 == 0 else -1.0
 	
 	# For longer paths, add S-curve (double curve) with probability
-	var use_s_curve = distance > s_curve_threshold and randf() < s_curve_probability
+	# Use deterministic hash based on nodes for consistency
+	var node_hash = hash(str(node_a.node_index) + "_" + str(node_b.node_index))
+	var use_s_curve = distance > s_curve_threshold and (float(node_hash % 100) / 100.0) < s_curve_probability
 	
 	var perpendicular = Vector2(-direction.y, direction.x) * curve_dir
-	# Randomize curve strength: 20% to 50% of base curve_strength (reduced to minimize crossings)
+	# Use deterministic curve strength based on nodes (not random, for consistency)
 	var min_strength = curve_strength * 0.2
 	var max_strength = curve_strength * 0.5
-	var random_strength = randf_range(min_strength, max_strength)
+	var strength_hash = hash(str(node_b.node_index) + "_" + str(node_a.node_index))  # Different hash for variation
+	var random_strength = min_strength + (max_strength - min_strength) * (float(strength_hash % 100) / 100.0)
 	var base_offset = distance * random_strength
 	
 	if use_s_curve:
@@ -2388,29 +2391,8 @@ func _get_edge_key(node_a: MapNode2D, node_b: MapNode2D) -> String:
 func draw_player_trail():
 	# Draw dotted lines for all visited paths
 	for edge_key in visited_paths:
-		var parts = edge_key.split("_")
-		if parts.size() != 2:
-			continue
-		
-		var node_a_idx = int(parts[0])
-		var node_b_idx = int(parts[1])
-		
-		# Find the nodes
-		var node_a: MapNode2D = null
-		var node_b: MapNode2D = null
-		
-		for node in map_nodes:
-			if node.node_index == node_a_idx:
-				node_a = node
-			elif node.node_index == node_b_idx:
-				node_b = node
-		
-		if node_a == null or node_b == null:
-			continue
-		
-		# Get path points (same curve logic as connections)
-		var path_points = get_path_points(node_a, node_b)
-		if path_points.size() > 1:
+		var path_points = visited_paths[edge_key]
+		if path_points is PackedVector2Array and path_points.size() > 1:
 			draw_dotted_path(path_points, trail_color, trail_line_width)
 
 ## Draw a dotted line along a path
@@ -2542,8 +2524,14 @@ func get_party_available_moves() -> Array[MapNode2D]:
 
 ## Calculate path points along a curve between two nodes
 func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array:
-	var pos_a = node_a.position + (node_a.size / 2.0)
-	var pos_b = node_b.position + (node_b.size / 2.0)
+	# CRITICAL: Normalize node order to match connection drawing order
+	# Connection drawing uses processed_edges which normalizes by min/max node_index
+	# So we need to always use the same order (lower index first) to match the drawn curve
+	var first_node = node_a if node_a.node_index < node_b.node_index else node_b
+	var second_node = node_b if node_a.node_index < node_b.node_index else node_a
+	
+	var pos_a = first_node.position + (first_node.size / 2.0)
+	var pos_b = second_node.position + (second_node.size / 2.0)
 	var direction = (pos_b - pos_a).normalized()
 	var distance = pos_a.distance_to(pos_b)
 	
@@ -2552,14 +2540,16 @@ func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array
 	var curve_dir = 1.0 if direction_hash % 2 == 0 else -1.0
 	
 	# Check if we should use S-curve (same logic as drawing)
-	var use_s_curve = distance > s_curve_threshold and randf() < s_curve_probability
+	# Use deterministic hash based on nodes for consistency (same as draw_curved_line)
+	var node_hash = hash(str(first_node.node_index) + "_" + str(second_node.node_index))
+	var use_s_curve = distance > s_curve_threshold and (float(node_hash % 100) / 100.0) < s_curve_probability
 	
 	var perpendicular = Vector2(-direction.y, direction.x) * curve_dir
 	# Use deterministic curve strength based on nodes (not random, for consistency)
 	var min_strength = curve_strength * 0.2
 	var max_strength = curve_strength * 0.5
-	var node_hash = hash(str(node_a.node_index) + "_" + str(node_b.node_index))
-	var random_strength = min_strength + (max_strength - min_strength) * (float(node_hash % 100) / 100.0)
+	var strength_hash = hash(str(second_node.node_index) + "_" + str(first_node.node_index))  # Different hash for variation
+	var random_strength = min_strength + (max_strength - min_strength) * (float(strength_hash % 100) / 100.0)
 	var base_offset = distance * random_strength
 	
 	var points = PackedVector2Array()
@@ -2585,9 +2575,9 @@ func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array
 	elif use_curved_lines:
 		# Single curve: quadratic Bezier
 		var control_offset = perpendicular * base_offset
-		var control = pos_a + direction * (distance * 0.5) + control_offset
+		var control = (pos_a + pos_b) / 2.0 + control_offset
 		
-		var segments = max(8, int(distance / 4.0))
+		var segments = max(8, int(distance / 5.0))
 		
 		for i in range(segments + 1):
 			var t = float(i) / float(segments)
@@ -2600,6 +2590,15 @@ func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array
 		# Straight line
 		points.append(pos_a)
 		points.append(pos_b)
+	
+	# If actual travel direction is opposite to normalized order, reverse the path
+	# (We normalized to lower-index first for curve calculation, but travel might be in reverse)
+	if node_a.node_index > node_b.node_index:
+		# Reverse the points array
+		var reversed_points = PackedVector2Array()
+		for i in range(points.size() - 1, -1, -1):
+			reversed_points.append(points[i])
+		return reversed_points
 	
 	return points
 
@@ -2723,9 +2722,10 @@ func _finish_party_travel():
 	if travel_target_node and travel_start_node:
 		set_party_position(travel_target_node)
 		
-		# Lock in completed path - mark this edge as visited
+		# Lock in completed path - store the actual path points that were used
 		var edge_key = _get_edge_key(travel_start_node, travel_target_node)
-		visited_paths[edge_key] = true
+		# Store the full path points (not recalculated, use what was actually traveled)
+		visited_paths[edge_key] = travel_path_points.duplicate()
 		
 		# Clear current travel path
 		current_travel_path.clear()
