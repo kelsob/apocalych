@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://catvnuiej3j0w"]
+
+[ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+race_name = "Human"
+description = "Versatile and adaptable, humans excel in many pursuits through determination and ambition."
+base_stats = {
+"charisma": 10,
+"constitution": 10,
+"dexterity": 10,
+"intelligence": 10,
+"perception": 10,
+"strength": 10,
+"wisdom": 10
+}

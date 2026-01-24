@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://csdst5qxc50u8"]
+
+[ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+race_name = "Dwarf"
+description = "Sturdy and resilient, dwarves are known for their toughness and craftsmanship."
+base_stats = {
+"charisma": 9,
+"constitution": 13,
+"dexterity": 8,
+"intelligence": 10,
+"perception": 10,
+"strength": 12,
+"wisdom": 11
+}

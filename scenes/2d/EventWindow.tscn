@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3 uid="uid://73neomc4wcah"]
+
+[ext_resource type="Script" uid="uid://cf5i6qv4agy5f" path="res://scripts/2d/EventWindow.gd" id="1_y5x2w"]
+[ext_resource type="PackedScene" uid="uid://cown0aiowmduv" path="res://scenes/2d/EventChoiceButton.tscn" id="2_l1jw2"]
+
+[node name="EventWindow" type="Control"]
+custom_minimum_size = Vector2(512, 480)
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -256.0
+offset_right = 256.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_y5x2w")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.827451, 0.501961, 0.356863, 0.309804)
+
+[node name="ContentContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="ContentContainer"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="TextLabel" type="Label" parent="ContentContainer"]
+layout_mode = 2
+autowrap_mode = 2
+
+[node name="ChoicesContainer" type="VBoxContainer" parent="ContentContainer"]
+layout_mode = 2
+
+[node name="EventChoiceButton" parent="ContentContainer/ChoicesContainer" instance=ExtResource("2_l1jw2")]
+layout_mode = 2

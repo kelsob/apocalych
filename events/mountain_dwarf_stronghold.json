@@ -1,0 +1,57 @@
+[
+	{
+		"id": "mountain_dwarf_stronghold_01",
+		"title": "Dwarven Outpost",
+		"biomes": ["mountain", "hills"],
+		"weight": 15,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "A sturdy dwarven outpost guards the mountain pass. Guards eye {{party.leader_name}} warily.",
+		"choices": [
+			{
+				"id": "approach_friendly",
+				"text": "Approach with open hands",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": ["all_orc"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": 5 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "dwarf_greeting",
+				"text": "Greet them in Dwarvish",
+				"condition": {
+					"requires_tags": ["dwarf"],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": 15 },
+					{ "type": "give_item", "item_id": "dwarven_ale", "count": 2 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "demand_passage",
+				"text": "Demand passage",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": -10 },
+					{ "type": "start_combat", "encounter_id": "dwarf_guards" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

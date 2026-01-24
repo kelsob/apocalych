@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=17 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -7,6 +7,10 @@
 [ext_resource type="Shader" uid="uid://bvjyqap5w41co" path="res://shaders/edge_fade.gdshader" id="5_voiwj"]
 [ext_resource type="Shader" uid="uid://c5xfrccv38m8m" path="res://shaders/corner_radial_fade.gdshader" id="6_2dj7u"]
 [ext_resource type="Shader" uid="uid://dxnnrrvo4hvd1" path="res://shaders/painterly_v2_watercolor.gdshader" id="7_p3fih"]
+[ext_resource type="PackedScene" uid="uid://b6w065e18g03u" path="res://scenes/2d/MainMenu.tscn" id="8_kpsef"]
+[ext_resource type="PackedScene" uid="uid://bjjpm0xn570qo" path="res://scenes/2d/PartySelectMenu.tscn" id="9_mifn2"]
+[ext_resource type="Script" uid="uid://coclurbvq0203" path="res://scripts/2d/UIController.gd" id="10_uicontroller"]
+[ext_resource type="PackedScene" uid="uid://73neomc4wcah" path="res://scenes/2d/EventWindow.tscn" id="11_niih8"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
 shader = ExtResource("4_f0bfo")
@@ -50,7 +54,7 @@ script = ExtResource("1_main")
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 layout_mode = 1
-node_count = 148
+node_count = 256
 map_size = Vector2(1280, 720)
 poisson_min_distance = 30.0
 shape_noise_enabled = false
@@ -65,7 +69,17 @@ landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
 landmass_gradient_distance = 50.0
 party_travel_speed = 50.0
 
-[node name="UI" type="Control" parent="."]
+[node name="GameUI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("10_uicontroller")
+
+[node name="InGameControls" type="Control" parent="GameUI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -74,23 +88,30 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Button" type="Button" parent="UI"]
+[node name="ResetMapButton" type="Button" parent="GameUI/InGameControls"]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = -74.0
-offset_right = 152.0
-offset_bottom = -32.0
+offset_left = 48.0
+offset_top = -90.0
+offset_right = 168.0
+offset_bottom = -48.0
 grow_vertical = 0
 text = "reset map"
 
-[node name="ViewportFX" type="Node" parent="."]
+[node name="ViewportFX" type="Control" parent="GameUI"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="PainterlyEffect" type="CanvasLayer" parent="ViewportFX"]
+[node name="PainterlyEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
 
-[node name="ColorRect" type="ColorRect" parent="ViewportFX/PainterlyEffect"]
+[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/PainterlyEffect"]
 z_index = 99
 material = SubResource("ShaderMaterial_voiwj")
 anchors_preset = 15
@@ -100,9 +121,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PainterlyEffect2" type="CanvasLayer" parent="ViewportFX"]
+[node name="PainterlyEffect2" type="CanvasLayer" parent="GameUI/ViewportFX"]
 
-[node name="ColorRect" type="ColorRect" parent="ViewportFX/PainterlyEffect2"]
+[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/PainterlyEffect2"]
 z_index = 99
 material = SubResource("ShaderMaterial_mifn2")
 anchors_preset = 15
@@ -112,9 +133,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="EdgeReddeningEffect" type="CanvasLayer" parent="ViewportFX"]
+[node name="EdgeReddeningEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
 
-[node name="ColorRect" type="ColorRect" parent="ViewportFX/EdgeReddeningEffect"]
+[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/EdgeReddeningEffect"]
 z_index = 99
 material = SubResource("ShaderMaterial_2dj7u")
 anchors_preset = 15
@@ -124,10 +145,9 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="RadialReddeningEffect" type="CanvasLayer" parent="ViewportFX"]
-visible = false
+[node name="RadialReddeningEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
 
-[node name="ColorRect" type="ColorRect" parent="ViewportFX/RadialReddeningEffect"]
+[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/RadialReddeningEffect"]
 z_index = 99
 material = SubResource("ShaderMaterial_p3fih")
 anchors_preset = 15
@@ -137,10 +157,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="BlurEffect" type="CanvasLayer" parent="ViewportFX"]
+[node name="BlurEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
 visible = false
 
-[node name="ColorRect" type="ColorRect" parent="ViewportFX/BlurEffect"]
+[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/BlurEffect"]
 z_index = 99
 material = SubResource("ShaderMaterial_kpsef")
 anchors_preset = 15
@@ -150,4 +170,17 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[connection signal="pressed" from="UI/Button" to="MapGenerator" method="regenerate_map"]
+[node name="MainMenu" parent="." instance=ExtResource("8_kpsef")]
+visible = false
+layout_mode = 1
+
+[node name="PartySelectMenu" parent="." instance=ExtResource("9_mifn2")]
+visible = false
+layout_mode = 1
+
+[node name="EventWindow" parent="." instance=ExtResource("11_niih8")]
+visible = false
+z_index = 1000
+layout_mode = 1
+
+[connection signal="pressed" from="GameUI/InGameControls/ResetMapButton" to="MapGenerator" method="regenerate_map"]

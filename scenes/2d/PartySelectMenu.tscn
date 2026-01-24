@@ -1,0 +1,114 @@
+[gd_scene load_steps=3 format=3 uid="uid://bjjpm0xn570qo"]
+
+[ext_resource type="Script" uid="uid://bc411cojl27fc" path="res://scripts/menus/PartySelectMenu.gd" id="1_t1rdc"]
+[ext_resource type="PackedScene" uid="uid://blih3sad2222n" path="res://scenes/2d/CharacterSelect.tscn" id="2_0a6me"]
+
+[node name="PartySelectMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_t1rdc")
+
+[node name="StartGameButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -71.0
+offset_top = -158.0
+offset_right = 71.0
+offset_bottom = -116.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Start Game"
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -71.0
+offset_top = -100.0
+offset_right = 71.0
+offset_bottom = -58.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Back"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -388.0
+offset_top = -180.0
+offset_right = 388.0
+offset_bottom = 180.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 64
+
+[node name="CharacterSelect1" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+layout_mode = 2
+
+[node name="CharacterSelect2" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+layout_mode = 2
+
+[node name="CharacterSelect3" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+layout_mode = 2
+
+[node name="RaceDescriptionLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(312, 128)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 160.0
+offset_top = -168.0
+offset_right = 472.0
+offset_bottom = -40.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="ClassDescriptionLabel" type="Label" parent="."]
+custom_minimum_size = Vector2(312, 128)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 800.0
+offset_top = -168.0
+offset_right = 1112.0
+offset_bottom = -40.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -73.5
+offset_top = 40.0
+offset_right = 73.5
+offset_bottom = 82.0
+grow_horizontal = 2
+
+[node name="WorldNameInput" type="LineEdit" parent="HBoxContainer2"]
+layout_mode = 2
+alignment = 1
+expand_to_text_length = true
+
+[node name="RandomizeWorldNameButton" type="Button" parent="HBoxContainer2"]
+layout_mode = 2

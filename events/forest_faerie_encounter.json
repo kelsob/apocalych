@@ -1,0 +1,58 @@
+[
+	{
+		"id": "forest_faerie_encounter_01",
+		"title": "Faerie Clearing",
+		"biomes": ["forest"],
+		"weight": 10,
+		"one_shot": true,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": ["all_dwarves"]
+		},
+		"text": "You find a moonlit clearing. {{party.leader_name}} hears tinkling laughter. A small faerie offers you a glowing cup.",
+		"choices": [
+			{
+				"id": "accept_cup",
+				"text": "Drink from the faerie cup",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "add_tag", "tag": "blessed" },
+					{ "type": "give_item", "item_id": "faerie_tea", "count": 1 },
+					{ "type": "change_reputation", "faction": "fae", "amount": 10 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "decline_cup",
+				"text": "Politely decline",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "fae", "amount": -5 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "attack_faerie",
+				"text": "Attack the faerie",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": ["all_cleric"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "fae", "amount": -50 },
+					{ "type": "start_combat", "encounter_id": "faerie_guardian" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

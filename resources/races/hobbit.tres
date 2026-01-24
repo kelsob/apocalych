@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://cy6s8tjfa6p6p"]
+
+[ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+race_name = "Hobbit"
+description = "Small but nimble, hobbits are quick-witted and surprisingly resilient despite their size."
+base_stats = {
+"charisma": 10,
+"constitution": 11,
+"dexterity": 13,
+"intelligence": 10,
+"perception": 11,
+"strength": 7,
+"wisdom": 12
+}

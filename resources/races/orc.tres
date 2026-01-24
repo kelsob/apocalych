@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://bdls2nxmycdxp"]
+
+[ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+race_name = "Orc"
+description = "Powerful and hardy, orcs are fierce warriors with great physical strength and endurance."
+base_stats = {
+"charisma": 8,
+"constitution": 12,
+"dexterity": 9,
+"intelligence": 8,
+"perception": 10,
+"strength": 13,
+"wisdom": 9
+}

@@ -108,6 +108,7 @@ enum MapState {
 }
 
 var map_state: MapState = MapState.IDLE
+var events_paused: bool = false  # True when event window is open, prevents all map interaction
 
 # Party state
 var current_party_node: MapNode2D = null
@@ -134,6 +135,8 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 # Party indicator node (user will instantiate and assign via @onready)
 @onready var party_indicator: Sprite2D = $PartyIndicator
 @onready var mapnodes: Control = $MapNodes
+@onready var world_name_label: Label = $MapDetails/Control/WorldNameLabel
+@onready var game_camera: Camera2D = $GameCamera
 # ============================================================================
 # SIGNALS
 # ============================================================================
@@ -162,7 +165,6 @@ var current_small_scale_weight: float = 0.0
 
 # Delaunay triangulation
 var delaunay_edges: Array = []  # Array of [Vector2, Vector2] edges
-
 # ============================================================================
 # CORE GENERATION
 # ============================================================================
@@ -172,7 +174,13 @@ func _ready():
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# Ensure we draw on top of backgrounds
 	z_index = 1
-	generate_map()
+	# Map generation will be triggered manually when game starts
+
+## Set the world name and update the label
+func set_world_name(name: String):
+	if world_name_label:
+		world_name_label.text = name
+
 
 func generate_map():
 	print("=== Starting 2D Map Generation ===")
@@ -267,6 +275,17 @@ func generate_map():
 		return
 	
 	print("=== 2D Map Generation Complete ===")
+	
+	# Enable camera when game starts and set its limits based on control size
+	if game_camera:
+		print("camera: MapGenerator Control size=%s, global_position=%s" % [size, global_position])
+		game_camera.enabled = true
+		# Wait a frame for Control size to be properly set, then set camera limits
+		await get_tree().process_frame
+		print("camera: After frame wait, MapGenerator Control size=%s" % size)
+		game_camera.set_map_limits(size)
+	else:
+		print("camera: ERROR - game_camera is null!")
 	
 	# Emit signal that generation is complete
 	map_generation_complete.emit()
@@ -2751,6 +2770,9 @@ func navigate_party_to_node(target_node: MapNode2D):
 	for i in range(path_points.size() - 1):
 		total_distance += path_points[i].distance_to(path_points[i + 1])
 	
+	# Clear hover preview when starting travel
+	_clear_hover_preview()
+	
 	# Set up travel state
 	map_state = MapState.PARTY_MOVING
 	travel_path_points = path_points
@@ -2776,18 +2798,25 @@ func _process(delta: float):
 
 func _input(event: InputEvent):
 	# Handle mouse wheel for path cycling when hovering
-	if hovered_node and hover_alternative_paths.size() > 1:
+	# This takes priority over zoom when a node is hovered
+	if hovered_node:
 		if event is InputEventMouseButton:
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-				# Cycle to next path
-				hover_current_path_index = (hover_current_path_index + 1) % hover_alternative_paths.size()
-				_update_hover_preview_path()
-				queue_redraw()
+				# Cycle to next path (only if multiple paths exist)
+				if hover_alternative_paths.size() > 1:
+					hover_current_path_index = (hover_current_path_index + 1) % hover_alternative_paths.size()
+					_update_hover_preview_path()
+					queue_redraw()
+				# Mark event as handled to prevent zoom
+				get_viewport().set_input_as_handled()
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-				# Cycle to previous path
-				hover_current_path_index = (hover_current_path_index - 1 + hover_alternative_paths.size()) % hover_alternative_paths.size()
-				_update_hover_preview_path()
-				queue_redraw()
+				# Cycle to previous path (only if multiple paths exist)
+				if hover_alternative_paths.size() > 1:
+					hover_current_path_index = (hover_current_path_index - 1 + hover_alternative_paths.size()) % hover_alternative_paths.size()
+					_update_hover_preview_path()
+					queue_redraw()
+				# Mark event as handled to prevent zoom
+				get_viewport().set_input_as_handled()
 
 ## Handle party movement along path
 func _process_party_movement(delta: float):
@@ -2913,6 +2942,10 @@ func _handle_generation_error(message: String):
 # ============================================================================
 
 func _on_node_clicked(node: MapNode2D):
+	# Ignore clicks when events are paused
+	if events_paused:
+		return
+	
 	# Handle navigation
 	handle_node_navigation(node)
 	
@@ -2921,6 +2954,14 @@ func _on_node_clicked(node: MapNode2D):
 	debug_node_edges(node)
 
 func _on_node_hovered(node: MapNode2D):
+	# Ignore hover when events are paused
+	if events_paused:
+		return
+	
+	# Only show hover preview when party is idle (preparing to travel)
+	if map_state != MapState.IDLE:
+		return
+	
 	hovered_node = node
 	hover_current_path_index = 0
 	_find_all_equal_length_paths()
@@ -2929,11 +2970,15 @@ func _on_node_hovered(node: MapNode2D):
 
 func _on_node_hover_ended(node: MapNode2D):
 	if hovered_node == node:
-		hovered_node = null
-		hover_preview_path.clear()
-		hover_alternative_paths.clear()
-		hover_current_path_index = 0
-		queue_redraw()
+		_clear_hover_preview()
+
+## Clear hover preview (called when travel starts or hover ends)
+func _clear_hover_preview():
+	hovered_node = null
+	hover_preview_path.clear()
+	hover_alternative_paths.clear()
+	hover_current_path_index = 0
+	queue_redraw()
 
 func _find_all_equal_length_paths():
 	hover_alternative_paths.clear()

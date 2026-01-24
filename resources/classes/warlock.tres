@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://bt183iowd3wsf"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Warlock"
+description = "A practitioner of dark magic, wielding forbidden power through pacts and curses."
+stat_modifiers = {
+"charisma": 3,
+"constitution": 0,
+"dexterity": 0,
+"intelligence": 2,
+"perception": 1,
+"strength": 0,
+"wisdom": 0
+}

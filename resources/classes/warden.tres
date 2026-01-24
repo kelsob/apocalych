@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://bgvxni6f32uop"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Warden"
+description = "A stalwart protector, combining defensive prowess with tactical awareness."
+stat_modifiers = {
+"charisma": 0,
+"constitution": 3,
+"dexterity": 0,
+"intelligence": 0,
+"perception": 1,
+"strength": 1,
+"wisdom": 2
+}

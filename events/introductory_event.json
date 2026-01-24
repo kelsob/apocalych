@@ -1,0 +1,27 @@
+[
+	{
+		"id": "introductory_event_01",
+		"title": "The Journey Begins",
+		"biomes": ["forest", "plains", "coast", "mountain", "hills"],
+		"weight": 1,
+		"one_shot": true,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "Your party stands at the edge of the map, ready to begin your adventure. {{party.member1_name}}, {{party.member2_name}}, and {{party.member3_name}} look out across the land, taking in the sights and sounds of this new world. The path ahead is uncertain, but your resolve is strong.",
+		"choices": [
+			{
+				"id": "continue",
+				"text": "Continue",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

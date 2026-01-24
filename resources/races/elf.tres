@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://bmsm3t77u8s6p"]
+
+[ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+race_name = "Elf"
+description = "Graceful and long-lived, elves possess keen senses and natural affinity for magic."
+base_stats = {
+"charisma": 11,
+"constitution": 9,
+"dexterity": 13,
+"intelligence": 12,
+"perception": 12,
+"strength": 9,
+"wisdom": 11
+}

@@ -1,0 +1,55 @@
+[
+	{
+		"id": "coastal_merchant_01",
+		"title": "Wandering Merchant",
+		"biomes": ["coast", "plains"],
+		"weight": 20,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "A colorful merchant's wagon sits by the roadside. {{party.leader_name}} recognizes the sigil of the Merchant's Guild.",
+		"choices": [
+			{
+				"id": "browse_goods",
+				"text": "Browse the merchant's wares",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "script_hook", "hook_name": "open_merchant_ui" }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "ignore_merchant",
+				"text": "Continue on your way",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "rob_merchant",
+				"text": "Attempt to rob the merchant",
+				"condition": {
+					"requires_tags": ["rogue"],
+					"forbids_tags": ["all_cleric", "all_warden"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "merchants", "amount": -30 },
+					{ "type": "give_item", "item_id": "stolen_goods", "count": 1 },
+					{ "type": "start_combat", "encounter_id": "merchant_guards" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

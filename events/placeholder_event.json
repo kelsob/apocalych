@@ -1,0 +1,40 @@
+[
+	{
+		"id": "placeholder_event_01",
+		"title": "A Mysterious Encounter",
+		"biomes": ["forest", "plains", "coast", "mountain", "hills"],
+		"weight": 100,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "You come across something unexpected. {{party.leader_name}} pauses to investigate.",
+		"choices": [
+			{
+				"id": "investigate",
+				"text": "Investigate further",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "add_tag", "tag": "curious" }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "continue",
+				"text": "Continue on your way",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

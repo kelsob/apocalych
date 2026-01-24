@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://cypun2vxr3yw6"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Champion"
+description = "A master of melee combat, excelling in strength and martial prowess."
+stat_modifiers = {
+"charisma": 1,
+"constitution": 2,
+"dexterity": 0,
+"intelligence": 0,
+"perception": 0,
+"strength": 3,
+"wisdom": 0
+}

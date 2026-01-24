@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://cqaljqmw1hk2a"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Wizard"
+description = "A master of arcane magic, studying ancient tomes to unlock the secrets of reality."
+stat_modifiers = {
+"charisma": 0,
+"constitution": 0,
+"dexterity": 0,
+"intelligence": 4,
+"perception": 1,
+"strength": -1,
+"wisdom": 1
+}

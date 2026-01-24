@@ -181,8 +181,15 @@ mouse_filter = 2
 texture = ExtResource("7_et537")
 
 [node name="GameCamera" type="Camera2D" parent="."]
-position = Vector2(640, 360)
+anchor_mode = 0
 enabled = false
 script = ExtResource("8_n8x2r")
+zoom_speed = null
 zoom_min = 1.0
 zoom_max = 2.0
+pan_speed = null
+edge_scroll_speed = null
+edge_scroll_margin = null
+enable_mouse_pan = null
+enable_mouse_zoom = null
+enable_edge_scroll = null

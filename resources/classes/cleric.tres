@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://ch3xq313hycom"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Cleric"
+description = "A divine healer and support, channeling holy power to aid allies."
+stat_modifiers = {
+"charisma": 2,
+"constitution": 1,
+"dexterity": 0,
+"intelligence": 0,
+"perception": 0,
+"strength": 0,
+"wisdom": 3
+}

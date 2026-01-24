@@ -18,6 +18,8 @@ config/icon="res://assets/icons/icon.svg"
 [autoload]
 
 PartyController="*res://scripts/autoloads/PartyController.gd"
+TagManager="*res://scripts/autoloads/TagManager.gd"
+EventManager="*res://scripts/events/EventManager.gd"
 
 [display]
 

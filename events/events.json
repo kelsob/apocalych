@@ -1,0 +1,166 @@
+[
+	{
+		"id": "forest_faerie_encounter_01",
+		"title": "Faerie Clearing",
+		"biomes": ["forest"],
+		"weight": 10,
+		"one_shot": true,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": ["all_dwarves"]
+		},
+		"text": "You find a moonlit clearing. {{party.leader_name}} hears tinkling laughter. A small faerie offers you a glowing cup.",
+		"choices": [
+			{
+				"id": "accept_cup",
+				"text": "Drink from the faerie cup",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "add_tag", "tag": "blessed" },
+					{ "type": "give_item", "item_id": "faerie_tea", "count": 1 },
+					{ "type": "change_reputation", "faction": "fae", "amount": 10 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "decline_cup",
+				"text": "Politely decline",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "fae", "amount": -5 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "attack_faerie",
+				"text": "Attack the faerie",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": ["all_cleric"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "fae", "amount": -50 },
+					{ "type": "start_combat", "encounter_id": "faerie_guardian" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	},
+	{
+		"id": "mountain_dwarf_stronghold_01",
+		"title": "Dwarven Outpost",
+		"biomes": ["mountain", "hills"],
+		"weight": 15,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "A sturdy dwarven outpost guards the mountain pass. Guards eye {{party.leader_name}} warily.",
+		"choices": [
+			{
+				"id": "approach_friendly",
+				"text": "Approach with open hands",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": ["all_orc"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": 5 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "dwarf_greeting",
+				"text": "Greet them in Dwarvish",
+				"condition": {
+					"requires_tags": ["dwarf"],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": 15 },
+					{ "type": "give_item", "item_id": "dwarven_ale", "count": 2 }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "demand_passage",
+				"text": "Demand passage",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "dwarves", "amount": -10 },
+					{ "type": "start_combat", "encounter_id": "dwarf_guards" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	},
+	{
+		"id": "coastal_merchant_01",
+		"title": "Wandering Merchant",
+		"biomes": ["coast", "plains"],
+		"weight": 20,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "A colorful merchant's wagon sits by the roadside. {{party.leader_name}} recognizes the sigil of the Merchant's Guild.",
+		"choices": [
+			{
+				"id": "browse_goods",
+				"text": "Browse the merchant's wares",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "script_hook", "hook_name": "open_merchant_ui" }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "ignore_merchant",
+				"text": "Continue on your way",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "rob_merchant",
+				"text": "Attempt to rob the merchant",
+				"condition": {
+					"requires_tags": ["rogue"],
+					"forbids_tags": ["all_cleric", "all_warden"]
+				},
+				"effects": [
+					{ "type": "change_reputation", "faction": "merchants", "amount": -30 },
+					{ "type": "give_item", "item_id": "stolen_goods", "count": 1 },
+					{ "type": "start_combat", "encounter_id": "merchant_guards" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://dgg4w3ytos4wh"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Hunter"
+description = "A skilled tracker and ranged combatant, adept at survival and precision strikes."
+stat_modifiers = {
+"charisma": 0,
+"constitution": 0,
+"dexterity": 3,
+"intelligence": 0,
+"perception": 2,
+"strength": 0,
+"wisdom": 1
+}

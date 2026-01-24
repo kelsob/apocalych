@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://cofsirsp7smst"]
+
+[ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+
+[resource]
+script = ExtResource("1_class")
+name = "Philosopher"
+description = "A deep thinker and scholar, using knowledge and reason to understand the world."
+stat_modifiers = {
+"charisma": 1,
+"constitution": 0,
+"dexterity": 0,
+"intelligence": 3,
+"perception": 1,
+"strength": -1,
+"wisdom": 2
+}
