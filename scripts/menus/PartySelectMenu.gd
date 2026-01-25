@@ -17,12 +17,17 @@ signal back_to_main_menu_pressed
 @onready var world_name_input: LineEdit = $HBoxContainer2/WorldNameInput
 @onready var randomize_world_name_button: Button = $HBoxContainer2/RandomizeWorldNameButton
 
-@onready var race_description_label : Label = $RaceDescriptionLabel
-@onready var class_description_label : Label = $ClassDescriptionLabel
+@onready var race_name_label : Label = $RaceDetailsContainer/RaceNameLabel
+@onready var race_description_label : Label = $RaceDetailsContainer/RaceDescriptionLabel
+@onready var class_name_label : Label = $ClassDetailsContainer/ClassNameLabel
+@onready var class_description_label : Label = $ClassDetailsContainer/ClassDescriptionLabel
 
 # World name generator
 var world_name_generator: WorldNameGenerator = WorldNameGenerator.new()
 var world_name: String = ""
+
+# Track most recently changed character select (for description updates)
+var most_recently_changed_select: CharacterSelect = null
 
 func _ready():
 	# Connect character select signals
@@ -44,6 +49,9 @@ func _ready():
 	randomize_all_characters()
 	randomize_world_name()
 	
+	# Set first character as default for initial description display
+	most_recently_changed_select = character_select_1
+	
 	# Update description labels after initial randomization
 	call_deferred("_update_description_labels")
 
@@ -52,10 +60,14 @@ func _connect_character_selects():
 	var character_selects = [character_select_1, character_select_2, character_select_3]
 	for char_select in character_selects:
 		if char_select:
+			# Connect signal (signal now passes the CharacterSelect instance)
 			char_select.character_data_changed.connect(_on_character_data_changed)
 
 ## Called when any character data changes - update start button state and descriptions
-func _on_character_data_changed():
+func _on_character_data_changed(changed_select: CharacterSelect):
+	# Track which character select was most recently changed
+	most_recently_changed_select = changed_select
+	
 	_update_start_button_state()
 	_update_description_labels()
 
@@ -119,21 +131,25 @@ func randomize_world_name():
 	if world_name_input:
 		world_name_input.text = world_name
 
-## Update description labels with current race/class from first character
+## Update description labels with current race/class from most recently changed character
+## Falls back to first character on initial configuration
 func _update_description_labels():
-	if not character_select_1:
+	# Use most recently changed select, or default to first character on initial load
+	var target_select = most_recently_changed_select if most_recently_changed_select else character_select_1
+	
+	if not target_select:
 		return
 	
 	# Update race description
-	if race_description_label:
-		if character_select_1.selected_race:
-			race_description_label.text = character_select_1.selected_race.description
-		else:
-			race_description_label.text = ""
+	if target_select.selected_race:
+		race_description_label.text = target_select.selected_race.description
+		race_name_label.text = target_select.selected_race.race_name
+	else:
+		race_description_label.text = ""
 	
 	# Update class description
-	if class_description_label:
-		if character_select_1.selected_class:
-			class_description_label.text = character_select_1.selected_class.description
-		else:
-			class_description_label.text = ""
+	if target_select.selected_class:
+		class_description_label.text = target_select.selected_class.description
+		class_name_label.text = target_select.selected_class.name
+	else:
+		class_description_label.text = ""

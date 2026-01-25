@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://73neomc4wcah"]
+[gd_scene load_steps=4 format=3 uid="uid://73neomc4wcah"]
 
 [ext_resource type="Script" uid="uid://cf5i6qv4agy5f" path="res://scripts/2d/EventWindow.gd" id="1_y5x2w"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_h74rw"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="2_l1jw2"]
 
 [node name="EventWindow" type="Control"]
 custom_minimum_size = Vector2(512, 480)
@@ -11,43 +13,73 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -256.0
+offset_top = -240.0
 offset_right = 256.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_y5x2w")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.839844, 0.65945, 0.579033, 1)
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 
-[node name="ContentContainer" type="VBoxContainer" parent="."]
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+color = Color(0.767578, 0.677628, 0.548698, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="ContentContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/MarginContainer/ContentContainer"]
+layout_mode = 2
+theme = ExtResource("2_h74rw")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 1
+autowrap_mode = 2
+
+[node name="TextLabel" type="Label" parent="MarginContainer/MarginContainer/ContentContainer"]
+layout_mode = 2
+theme = ExtResource("2_h74rw")
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 1
+autowrap_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/MarginContainer/ContentContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+
+[node name="ChoicesContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer/ContentContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="TextureRect" type="NinePatchRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="TitleLabel" type="Label" parent="ContentContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.376471, 0.192157, 1)
-theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
-theme_override_constants/shadow_outline_size = 1
-autowrap_mode = 2
-
-[node name="TextLabel" type="Label" parent="ContentContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.376471, 0.192157, 1)
-theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
-theme_override_constants/shadow_outline_size = 1
-autowrap_mode = 2
-
-[node name="ChoicesContainer" type="VBoxContainer" parent="ContentContainer"]
-layout_mode = 2
+texture = ExtResource("2_l1jw2")
+draw_center = false
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16

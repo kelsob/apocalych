@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Biome" load_steps=2 format=3 uid="uid://b1om34sh006"]
+
+[ext_resource type="Script" path="res://scripts/resources/Biome.gd" id="1_biome"]
+
+[resource]
+script = ExtResource("1_biome")
+biome_name = "ash_plains"
+display_name = "Ash Plains"
+description = "Desolate wasteland blanketed in gray ash, where the sky is perpetually overcast and the ground crunches underfoot like brittle bones."
+color = Color(0.4, 0.4, 0.4, 1)
+icon_name = "ash_plains"

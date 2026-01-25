@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Biome" load_steps=2 format=3 uid="uid://b1om3m0un004"]
+
+[ext_resource type="Script" path="res://scripts/resources/Biome.gd" id="1_biome"]
+
+[resource]
+script = ExtResource("1_biome")
+biome_name = "mountain"
+display_name = "Mountain"
+description = "Towering peaks and rocky crags where the air grows thin, and ancient stone holds secrets of ages past."
+color = Color(0.5, 0.5, 0.5, 1)
+icon_name = "mountain"

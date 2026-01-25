@@ -49,10 +49,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -388.0
-offset_top = -180.0
-offset_right = 388.0
-offset_bottom = 180.0
+offset_left = -448.0
+offset_top = -244.0
+offset_right = 448.0
+offset_bottom = 116.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 64
@@ -65,34 +65,6 @@ layout_mode = 2
 
 [node name="CharacterSelect3" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
 layout_mode = 2
-
-[node name="RaceDescriptionLabel" type="Label" parent="."]
-custom_minimum_size = Vector2(312, 128)
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 160.0
-offset_top = -168.0
-offset_right = 472.0
-offset_bottom = -40.0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 12
-autowrap_mode = 2
-
-[node name="ClassDescriptionLabel" type="Label" parent="."]
-custom_minimum_size = Vector2(312, 128)
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 800.0
-offset_top = -168.0
-offset_right = 1112.0
-offset_bottom = -40.0
-grow_vertical = 0
-theme_override_font_sizes/font_size = 12
-autowrap_mode = 2
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -112,3 +84,49 @@ expand_to_text_length = true
 
 [node name="RandomizeWorldNameButton" type="Button" parent="HBoxContainer2"]
 layout_mode = 2
+
+[node name="RaceDetailsContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 168.0
+offset_top = -206.0
+offset_right = 480.0
+offset_bottom = -40.0
+grow_vertical = 0
+
+[node name="RaceNameLabel" type="Label" parent="RaceDetailsContainer"]
+layout_mode = 2
+
+[node name="RaceDescriptionLabel" type="Label" parent="RaceDetailsContainer"]
+custom_minimum_size = Vector2(312, 128)
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 3
+autowrap_mode = 2
+
+[node name="ClassDetailsContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -472.0
+offset_top = -176.0
+offset_right = -160.0
+offset_bottom = -48.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="ClassNameLabel" type="Label" parent="ClassDetailsContainer"]
+layout_mode = 2
+
+[node name="ClassDescriptionLabel" type="Label" parent="ClassDetailsContainer"]
+custom_minimum_size = Vector2(312, 128)
+layout_mode = 2
+size_flags_vertical = 6
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 3
+autowrap_mode = 2

@@ -29,12 +29,12 @@ shader_parameter/paper_texture = 0.05
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_2dj7u"]
 shader = ExtResource("5_voiwj")
 shader_parameter/fade_distance = 24.0
-shader_parameter/edge_color = Color(0.612, 0.318, 0.153, 1)
+shader_parameter/edge_color = Color(0.611765, 0.317647, 0.152941, 0.619608)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p3fih"]
 shader = ExtResource("6_2dj7u")
 shader_parameter/corner_fade_distance = 200.0
-shader_parameter/corner_color = Color(0.612, 0.318, 0.153, 1)
+shader_parameter/corner_color = Color(0.611765, 0.317647, 0.152941, 0.584314)
 shader_parameter/corner_intensity = 0.6
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_kpsef"]

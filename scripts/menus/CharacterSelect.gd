@@ -3,7 +3,7 @@ class_name CharacterSelect
 
 ## Character Select - handles individual character creation (name, race, class)
 
-signal character_data_changed
+signal character_data_changed(changed_select: CharacterSelect)
 
 # Character data
 var character_name: String = ""
@@ -136,21 +136,21 @@ func _connect_ui_signals():
 ## UI signal handlers
 func _on_name_changed(new_text: String):
 	character_name = new_text
-	character_data_changed.emit()
+	character_data_changed.emit(self)
 
 func _on_race_selected(index: int):
 	if index > 0 and index - 1 < available_races.size():
 		selected_race = available_races[index - 1]
 	else:
 		selected_race = null
-	character_data_changed.emit()
+	character_data_changed.emit(self)
 
 func _on_class_selected(index: int):
 	if index > 0 and index - 1 < available_classes.size():
 		selected_class = available_classes[index - 1]
 	else:
 		selected_class = null
-	character_data_changed.emit()
+	character_data_changed.emit(self)
 
 ## Create a PartyMember resource from this character's data
 func create_party_member() -> PartyMember:
@@ -191,4 +191,4 @@ func randomize_character():
 			if name_input:
 				name_input.text = character_name
 	
-	character_data_changed.emit()
+	character_data_changed.emit(self)

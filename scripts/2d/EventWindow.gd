@@ -5,9 +5,9 @@ class_name EventWindow
 ## Handles event display, choice presentation, and effect application
 
 # References to UI elements (assumes EventWindow.tscn structure)
-@onready var title_label: Label = $ContentContainer/TitleLabel
-@onready var text_label: Label = $ContentContainer/TextLabel
-@onready var choices_container: VBoxContainer = $ContentContainer/ChoicesContainer
+@onready var title_label: Label = $MarginContainer/MarginContainer/ContentContainer/TitleLabel
+@onready var text_label: Label = $MarginContainer/MarginContainer/ContentContainer/TextLabel
+@onready var choices_container: VBoxContainer = $MarginContainer/MarginContainer/ContentContainer/MarginContainer/ChoicesContainer
 
 # Reference to EventChoiceButton scene (set in editor or load at runtime)
 var choice_button_scene: PackedScene = null

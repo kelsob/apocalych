@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Biome" load_steps=2 format=3 uid="uid://cpi1urc86rvnl"]
+
+[ext_resource type="Script" path="res://scripts/resources/Biome.gd" id="1_biome"]
+
+[resource]
+script = ExtResource("1_biome")
+biome_name = "plains"
+display_name = "Plains"
+description = "Rolling grasslands stretching to the horizon, where the wind whispers through tall grass and the open sky offers little shelter."
+color = Color(0.6, 0.7, 0.4, 1)
+icon_name = "plains"

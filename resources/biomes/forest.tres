@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Biome" load_steps=2 format=3 uid="uid://cpi1k50ccsvnk"]
+
+[ext_resource type="Script" path="res://scripts/resources/Biome.gd" id="1_biome"]
+
+[resource]
+script = ExtResource("1_biome")
+biome_name = "forest"
+display_name = "Forest"
+description = "Dense woodlands teeming with life, where ancient trees tower overhead and the undergrowth hides both wonder and danger."
+color = Color(0.2, 0.5, 0.2, 1)
+icon_name = "forest"
