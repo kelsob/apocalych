@@ -10,6 +10,9 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.6, 0.376471, 0.192157, 1)
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 1
 script = ExtResource("1_sju4f")
 
 [node name="Button" type="Button" parent="."]

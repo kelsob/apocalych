@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://73neomc4wcah"]
+[gd_scene load_steps=2 format=3 uid="uid://73neomc4wcah"]
 
 [ext_resource type="Script" uid="uid://cf5i6qv4agy5f" path="res://scripts/2d/EventWindow.gd" id="1_y5x2w"]
-[ext_resource type="PackedScene" uid="uid://cown0aiowmduv" path="res://scenes/2d/EventChoiceButton.tscn" id="2_l1jw2"]
 
 [node name="EventWindow" type="Control"]
 custom_minimum_size = Vector2(512, 480)
@@ -26,7 +25,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.827451, 0.501961, 0.356863, 0.309804)
+color = Color(0.839844, 0.65945, 0.579033, 1)
 
 [node name="ContentContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -38,14 +37,17 @@ grow_vertical = 2
 
 [node name="TitleLabel" type="Label" parent="ContentContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.376471, 0.192157, 1)
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 1
 autowrap_mode = 2
 
 [node name="TextLabel" type="Label" parent="ContentContainer"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.376471, 0.192157, 1)
+theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/shadow_outline_size = 1
 autowrap_mode = 2
 
 [node name="ChoicesContainer" type="VBoxContainer" parent="ContentContainer"]
-layout_mode = 2
-
-[node name="EventChoiceButton" parent="ContentContainer/ChoicesContainer" instance=ExtResource("2_l1jw2")]
 layout_mode = 2
