@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=10 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://c56h3fp3ouegp" path="res://assets/icons/party_present.png" id="6_jerfe"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 [ext_resource type="Script" uid="uid://dpiclq4dhx7e8" path="res://scripts/2d/CameraController2D.gd" id="8_n8x2r"]
+[ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
 
 [node name="MapGenerator" type="Control"]
 layout_mode = 3
@@ -18,10 +19,6 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
-trail_line_width = 2.0
-trail_dot_length = 3.0
-trail_dot_gap = 2.5
-trail_dot_spacing_variation = 0.0
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
 coastal_water_radius = 300.0
 coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.0392157)
@@ -40,7 +37,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.715963, 0.66906, 0.437759, 1)
+color = Color(0.717647, 0.670588, 0.439216, 0.635294)
 
 [node name="MapNodes" type="Control" parent="."]
 anchors_preset = 0
@@ -189,3 +186,13 @@ enabled = false
 script = ExtResource("8_n8x2r")
 zoom_min = 1.0
 zoom_max = 2.0
+
+[node name="StaticMapViewport" type="SubViewport" parent="."]
+transparent_bg = true
+
+[node name="StaticMapRenderer" type="Node2D" parent="StaticMapViewport"]
+script = ExtResource("9_bvoid")
+
+[node name="StaticMapSprite" type="Sprite2D" parent="."]
+z_index = 4096
+centered = false

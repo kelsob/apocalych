@@ -112,6 +112,9 @@ class_name MapGenerator2D
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
 
+@export_group("Performance")
+@export var use_static_rendering: bool = true  # Bake static elements to texture (TEST: connection lines only for now)
+
 @export_group("Party")
 @export var party_travel_speed: float = 200.0  # Pixels per second
 @export var party_wait_at_node: float = 0.3  # Seconds to wait at a node before accepting new input
@@ -152,6 +155,11 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var mapnodes: Control = $MapNodes
 @onready var world_name_label: Label = $MapDetails/Control/WorldNameLabel
 @onready var game_camera: Camera2D = $GameCamera
+
+# Static map rendering (performance optimization)
+@onready var static_map_viewport: SubViewport = $StaticMapViewport
+@onready var static_map_renderer: StaticMapRenderer = $StaticMapViewport/StaticMapRenderer
+@onready var static_map_sprite: Sprite2D = $StaticMapSprite
 # ============================================================================
 # SIGNALS
 # ============================================================================
@@ -296,6 +304,11 @@ func generate_map():
 	# Step 13: Visualize
 	print("Step 13: Visualizing map...")
 	visualize_map()
+	
+	# Step 13.5: Bake static elements (if enabled)
+	if use_static_rendering:
+		print("Step 13.5: Baking static map elements...")
+		await bake_static_map()
 	
 	# Check if regeneration was requested due to errors
 	if _regeneration_requested:
@@ -2137,6 +2150,114 @@ func assign_biomes():
 func visualize_map():
 	queue_redraw()
 
+# ============================================================================
+# STATIC MAP BAKING (Performance Optimization)
+# ============================================================================
+
+## Bake static map elements to SubViewport texture
+## Call this after map generation is complete
+func bake_static_map():
+	if not static_map_renderer or not static_map_viewport or not static_map_sprite:
+		push_warning("Static map rendering nodes not found, skipping baking")
+		return
+	
+	print("Baking static map elements...")
+	
+	# Clear previous data
+	static_map_renderer.clear_data()
+	
+	# Set viewport size to match map size
+	static_map_viewport.size = Vector2i(size)
+	
+	# Pass configuration to renderer
+	var config = {
+		"line_width": line_width,
+		"line_color": line_color,
+		"use_curved_lines": use_curved_lines
+	}
+	static_map_renderer.set_config(config)
+	
+	# Pass connection lines data
+	var processed_edges = {}
+	for node in map_nodes:
+		for neighbor in node.connections:
+			# Avoid processing same edge twice
+			var key = str(min(node.node_index, neighbor.node_index)) + "_" + str(max(node.node_index, neighbor.node_index))
+			if processed_edges.has(key):
+				continue
+			processed_edges[key] = true
+			
+			# Get positions (center of nodes)
+			var pos_a = node.position + (node.size / 2.0)
+			var pos_b = neighbor.position + (neighbor.size / 2.0)
+			
+			# Adjust for orientation
+			var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
+			var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
+			
+			# Build line data
+			var line_data = {
+				"pos_a": pos_a,
+				"pos_b": pos_b,
+				"color": adjusted_color,
+				"width": adjusted_width
+			}
+			
+			# Add curve data if using curved lines
+			if use_curved_lines:
+				line_data["curve_data"] = _get_curve_data_for_line(pos_a, pos_b, node, neighbor)
+			
+			static_map_renderer.add_connection_line(line_data)
+	
+	# Trigger render
+	static_map_renderer.queue_redraw()
+	
+	# Wait for render to complete
+	await RenderingServer.frame_post_draw
+	
+	# Capture texture and display
+	static_map_sprite.texture = static_map_viewport.get_texture()
+	static_map_sprite.visible = true
+	
+	print("Static map baked successfully with %d connection lines" % processed_edges.size())
+
+## Helper to extract curve data for a connection line (matches draw_curved_line logic)
+func _get_curve_data_for_line(pos_a: Vector2, pos_b: Vector2, node_a: MapNode2D, node_b: MapNode2D) -> Dictionary:
+	var direction = (pos_b - pos_a).normalized()
+	var distance = pos_a.distance_to(pos_b)
+	
+	# Use EXACT same logic as draw_curved_line and get_path_points
+	var direction_hash = hash(Vector2i(int(pos_a.x), int(pos_a.y)) + Vector2i(int(pos_b.x), int(pos_b.y)))
+	var curve_dir = 1.0 if direction_hash % 2 == 0 else -1.0
+	
+	var node_hash = hash(str(node_a.node_index) + "_" + str(node_b.node_index))
+	var use_s_curve = distance > s_curve_threshold and (float(node_hash % 100) / 100.0) < s_curve_probability
+	
+	var perpendicular = Vector2(-direction.y, direction.x) * curve_dir
+	var min_strength = curve_strength * 0.2
+	var max_strength = curve_strength * 0.5
+	var strength_hash = hash(str(node_b.node_index) + "_" + str(node_a.node_index))
+	var random_strength = min_strength + (max_strength - min_strength) * (float(strength_hash % 100) / 100.0)
+	var base_offset = distance * random_strength
+	
+	if use_s_curve:
+		# S-curve with two control points
+		var control1 = pos_a + direction * (distance * 0.33) + perpendicular * base_offset
+		var control2 = pos_a + direction * (distance * 0.67) - perpendicular * base_offset
+		return {
+			"is_s_curve": true,
+			"control1": control1,
+			"control2": control2
+		}
+	else:
+		# Single curve with one control point
+		var control_offset = perpendicular * base_offset
+		var control_point = (pos_a + pos_b) / 2.0 + control_offset
+		return {
+			"is_s_curve": false,
+			"control_point": control_point
+		}
+
 # Draws a smooth Bezier curve between two points with variation
 func draw_curved_line(pos_a: Vector2, pos_b: Vector2, color: Color, width: float, node_a: MapNode2D, node_b: MapNode2D):
 	var direction = (pos_b - pos_a).normalized()
@@ -2224,33 +2345,34 @@ func _draw():
 	if enable_biome_blobs:
 		draw_biome_blobs()
 	
-	# Draw connection lines directly from node connections (don't use stored edge positions)
+	# Draw connection lines (skip if using static rendering - they're baked into texture)
 	var edges_drawn = 0
-	var processed_edges = {}
-	
-	for node in map_nodes:
-		for neighbor in node.connections:
-			# Avoid drawing same edge twice
-			var key = str(min(node.node_index, neighbor.node_index)) + "_" + str(max(node.node_index, neighbor.node_index))
-			if processed_edges.has(key):
-				continue
-			processed_edges[key] = true
-			
-			# Control nodes position from top-left, so add half size for center
-			var pos_a = node.position + (node.size / 2.0)
-			var pos_b = neighbor.position + (neighbor.size / 2.0)
-			
-			# All connections use the same color (no special coastal coloring)
-			# Adjust line width and color based on orientation
-			var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
-			var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
-			
-			if use_curved_lines:
-				# Draw smooth Bezier curve with variation
-				draw_curved_line(pos_a, pos_b, adjusted_color, adjusted_width, node, neighbor)
-			else:
-				# Draw straight line
-				draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
+	if not use_static_rendering:
+		var processed_edges = {}
+		
+		for node in map_nodes:
+			for neighbor in node.connections:
+				# Avoid drawing same edge twice
+				var key = str(min(node.node_index, neighbor.node_index)) + "_" + str(max(node.node_index, neighbor.node_index))
+				if processed_edges.has(key):
+					continue
+				processed_edges[key] = true
+				
+				# Control nodes position from top-left, so add half size for center
+				var pos_a = node.position + (node.size / 2.0)
+				var pos_b = neighbor.position + (neighbor.size / 2.0)
+				
+				# All connections use the same color (no special coastal coloring)
+				# Adjust line width and color based on orientation
+				var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
+				var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
+				
+				if use_curved_lines:
+					# Draw smooth Bezier curve with variation
+					draw_curved_line(pos_a, pos_b, adjusted_color, adjusted_width, node, neighbor)
+				else:
+					# Draw straight line
+					draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
 	
 	# Draw coastal ripples FIRST (behind main coast line)
 	if enable_coast_ripples and ripple_count > 0:
