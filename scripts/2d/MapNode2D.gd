@@ -39,6 +39,7 @@ var is_pivot_node: bool = false
 var coastal_loop_id: int = -1
 var boundary_edge_count: int = 0
 var is_mountain: bool = false
+var biome: Biome = null
 
 # Distance metrics
 var distance_to_coast: float = 0.0

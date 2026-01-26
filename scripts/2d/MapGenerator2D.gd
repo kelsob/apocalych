@@ -77,6 +77,15 @@ class_name MapGenerator2D
 @export var s_curve_threshold: float = 50.0  # Distance above which S-curves become more likely
 @export var s_curve_probability: float = 0.6  # Probability of S-curve for long paths
 
+# Coastal water blobs (blue circles under landmass, radiate outward from coast)
+@export_group("Coastal Water Blobs")
+@export var enable_coastal_water_blobs: bool = true
+@export var coastal_water_expansion: float = 35.0
+@export var coastal_water_radius: float = 145.0
+@export var coastal_water_circles: int = 8
+@export var coastal_water_color: Color = Color(0.25, 0.45, 0.7, 1.0)
+@export var coastal_water_alpha_max: float = 0.45
+
 # Coastal ripples (concentric lines expanding from coast)
 @export var enable_coast_ripples: bool = true
 @export var ripple_count: int = 3  # Number of ripple lines
@@ -93,6 +102,12 @@ class_name MapGenerator2D
 
 @export_group("Mountains")
 @export var enable_mountains: bool = true
+
+@export_group("Biome Blobs")
+@export var enable_biome_blobs: bool = true
+@export var biome_blob_radius: float = 55.0
+@export var biome_blob_circles: int = 6
+@export var biome_blob_alpha_max: float = 0.175
 
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
@@ -165,6 +180,15 @@ var current_small_scale_weight: float = 0.0
 
 # Delaunay triangulation
 var delaunay_edges: Array = []  # Array of [Vector2, Vector2] edges
+
+# Biome resources
+var biome_forest: Biome = null
+var biome_plains: Biome = null
+var biome_swamp: Biome = null
+var biome_mountain: Biome = null
+var biome_badlands: Biome = null
+var biome_ash_plains: Biome = null
+
 # ============================================================================
 # CORE GENERATION
 # ============================================================================
@@ -174,6 +198,8 @@ func _ready():
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	# Ensure we draw on top of backgrounds
 	z_index = 1
+	# Load biome resources
+	_load_biome_resources()
 	# Map generation will be triggered manually when game starts
 
 ## Set the world name and update the label
@@ -262,6 +288,10 @@ func generate_map():
 		# Step 12.6: Disconnect mountain nodes (mountains act as barriers)
 		print("Step 12.6: Disconnecting mountain nodes...")
 		disconnect_mountain_nodes()
+	
+	# Step 12.7: Assign biomes to all nodes
+	print("Step 12.7: Assigning biomes to nodes...")
+	assign_biomes()
 	
 	# Step 13: Visualize
 	print("Step 13: Visualizing map...")
@@ -1928,6 +1958,8 @@ func generate_mountains_at_borders():
 				node.is_mountain = true
 				node.set_mountain_color()
 				node.become_mountain()
+				# Assign mountain biome
+				node.biome = biome_mountain
 				nodes_made_mountains += 1
 		
 		elif roll == 2:
@@ -2036,6 +2068,69 @@ func disconnect_mountain_nodes():
 		build_astar_graph()
 
 # ============================================================================
+# STEP 12.7: ASSIGN BIOMES
+# ============================================================================
+
+## Load all biome resources
+func _load_biome_resources():
+	biome_forest = preload("res://resources/biomes/forest.tres")
+	biome_plains = preload("res://resources/biomes/plains.tres")
+	biome_swamp = preload("res://resources/biomes/swamp.tres")
+	biome_mountain = preload("res://resources/biomes/mountain.tres")
+	biome_badlands = preload("res://resources/biomes/badlands.tres")
+	biome_ash_plains = preload("res://resources/biomes/ash_plains.tres")
+	
+	print("  Loaded %d biome resources" % 6)
+
+## Assign biomes to all nodes based on their properties
+func assign_biomes():
+	if map_nodes.size() == 0:
+		return
+	
+	var biome_counts: Dictionary = {}
+	
+	for node in map_nodes:
+		# Mountains already have biome assigned during generation
+		if node.is_mountain and node.biome == biome_mountain:
+			biome_counts["mountain"] = biome_counts.get("mountain", 0) + 1
+			continue
+		
+		# Coastal and interior nodes: assign based on region (same logic)
+		# For now, use a simple region-based assignment with some variation
+		# This can be made more sophisticated later
+		var assigned_biome: Biome = null
+		
+		# Use region_id to create some biome clustering
+		if node.region_id >= 0:
+			# Use deterministic hash based on region_id for consistency
+			var region_hash = hash(str(node.region_id) + str(node.node_index))
+			var biome_roll = region_hash % 100
+			
+			# Distribution: forest (30%), plains (25%), swamp (15%), badlands (15%), ash_plains (15%)
+			if biome_roll < 30:
+				assigned_biome = biome_forest
+			elif biome_roll < 55:
+				assigned_biome = biome_plains
+			elif biome_roll < 70:
+				assigned_biome = biome_swamp
+			elif biome_roll < 85:
+				assigned_biome = biome_badlands
+			else:
+				assigned_biome = biome_ash_plains
+		else:
+			# No region assigned, default to plains
+			assigned_biome = biome_plains
+		
+		node.biome = assigned_biome
+		var biome_name = assigned_biome.biome_name if assigned_biome else "unknown"
+		biome_counts[biome_name] = biome_counts.get(biome_name, 0) + 1
+	
+	# Print summary
+	print("  Biome assignment complete:")
+	for biome_name in biome_counts:
+		print("    %s: %d nodes" % [biome_name, biome_counts[biome_name]])
+
+# ============================================================================
 # STEP 13: VISUALIZATION
 # ============================================================================
 
@@ -2117,9 +2212,17 @@ func _draw():
 	if not is_instance_valid(self):
 		return
 	
-	# Draw landmass fill FIRST (so it appears behind everything)
+	# Draw coastal water blobs FIRST (under landmass; blue circles radiating outward)
+	if enable_coastal_water_blobs:
+		draw_coastal_water_blobs()
+	
+	# Draw landmass fill (so it appears behind connections but above water blobs)
 	if enable_landmass_shading and expanded_coast_lines.size() > 0:
 		draw_landmass_fill()
+	
+	# Draw biome blobs (soft circles per node, biome color)
+	if enable_biome_blobs:
+		draw_biome_blobs()
 	
 	# Draw connection lines directly from node connections (don't use stored edge positions)
 	var edges_drawn = 0
@@ -2182,6 +2285,27 @@ func _draw():
 		
 		edges_drawn += 1
 	
+
+# ============================================================================
+# COASTAL WATER BLOBS (under landmass)
+# ============================================================================
+
+func draw_coastal_water_blobs():
+	if coastal_nodes.size() == 0 or coastal_water_circles < 1:
+		return
+	for node in coastal_nodes:
+		var node_center = node.position + (node.size / 2.0)
+		var away = Vector2(cos(node.away_direction), sin(node.away_direction))
+		var center = node_center + away * coastal_water_expansion
+		var base = coastal_water_color
+		# Concentric circles: gradient from center (strong) to edge (fade)
+		# Alpha = color.a * alpha_max * gradient (so exported color is fully respected)
+		for i in range(coastal_water_circles):
+			var t = float(i) / float(coastal_water_circles)
+			var r = coastal_water_radius * (1.0 - t)
+			var a = base.a * coastal_water_alpha_max * (0.1 + 0.9 * t)
+			var col = Color(base.r, base.g, base.b, a)
+			draw_circle(center, r, col)
 
 # ============================================================================
 # COASTAL RIPPLES
@@ -2362,6 +2486,26 @@ func build_coast_polygon() -> PackedVector2Array:
 			polygon.append(polygon[0])
 	
 	return polygon
+
+# ============================================================================
+# BIOME BLOBS (Stage 1: soft circles per node, no masking)
+# ============================================================================
+
+func draw_biome_blobs():
+	if map_nodes.size() == 0 or biome_blob_circles < 1:
+		return
+	for node in map_nodes:
+		if node.is_mountain or node.biome == null:
+			continue
+		var center = node.position + (node.size / 2.0)
+		var base = node.biome.color
+		# Concentric filled circles, outer → inner. Faint at edge, stronger at center.
+		for i in range(biome_blob_circles):
+			var t = float(i) / float(biome_blob_circles)
+			var r = biome_blob_radius * (1.0 - t)
+			var a = biome_blob_alpha_max * (0.1 + 0.9 * t)
+			var col = Color(base.r, base.g, base.b, a)
+			draw_circle(center, r, col)
 
 func point_to_line_distance(point: Vector2, line_start: Vector2, line_end: Vector2) -> float:
 	# Calculate shortest distance from point to line segment

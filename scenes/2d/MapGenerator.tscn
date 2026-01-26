@@ -23,11 +23,14 @@ trail_dot_length = 3.0
 trail_dot_gap = 2.5
 trail_dot_spacing_variation = 0.0
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
+coastal_water_radius = 300.0
+coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.0392157)
 ripple_base_spacing = 18.0
 ripple_spacing_growth = 1.035
 ripple_base_width = 1.0
 ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
 ripple_color_fade = 0.0
+biome_blob_alpha_max = 0.1
 
 [node name="ColorRect" type="ColorRect" parent="."]
 z_index = -1
