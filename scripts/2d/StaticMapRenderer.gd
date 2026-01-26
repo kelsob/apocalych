@@ -11,10 +11,16 @@ class_name StaticMapRenderer
 var map_generator: Control = null  # Reference to parent MapGenerator2D
 
 # ============================================================================
-# CONNECTION LINES DATA (Test element)
+# STATIC ELEMENT DATA
 # ============================================================================
 
 var connection_lines_data: Array = []  # Array of dictionaries with line data
+var coastal_water_blobs_data: Array = []  # Array of dictionaries with blob data
+var landmass_polygon: PackedVector2Array = PackedVector2Array()  # Landmass polygon points
+var landmass_color: Color = Color.WHITE  # Landmass fill color
+var biome_blobs_data: Array = []  # Array of biome blob dictionaries
+var coast_ripple_lines_data: Array = []  # Array of ripple line dictionaries
+var expanded_coast_lines_data: Array = []  # Array of expanded coast line dictionaries
 
 # ============================================================================
 # CONFIGURATION (inherited from MapGenerator2D)
@@ -23,6 +29,18 @@ var connection_lines_data: Array = []  # Array of dictionaries with line data
 var line_width: float = 2.0
 var line_color: Color = Color.WHITE
 var use_curved_lines: bool = false
+
+# Coastal water blob configuration
+var coastal_water_expansion: float = 35.0
+var coastal_water_radius: float = 145.0
+var coastal_water_circles: int = 8
+var coastal_water_color: Color = Color(0.25, 0.45, 0.7, 1.0)
+var coastal_water_alpha_max: float = 0.45
+
+# Biome blob configuration
+var biome_blob_radius: float = 55.0
+var biome_blob_circles: int = 6
+var biome_blob_alpha_max: float = 0.175
 
 # ============================================================================
 # SETUP
@@ -37,6 +55,11 @@ func _ready():
 ## Clear all stored data (call before regenerating map)
 func clear_data():
 	connection_lines_data.clear()
+	coastal_water_blobs_data.clear()
+	landmass_polygon.clear()
+	biome_blobs_data.clear()
+	coast_ripple_lines_data.clear()
+	expanded_coast_lines_data.clear()
 
 # ============================================================================
 # DATA RECEPTION - MapGenerator2D calls these to pass data
@@ -47,6 +70,31 @@ func clear_data():
 func add_connection_line(line_data: Dictionary):
 	connection_lines_data.append(line_data)
 
+## Add a coastal water blob to be drawn
+## blob_data should contain: { center: Vector2, node_center: Vector2, away_direction: float }
+func add_coastal_water_blob(blob_data: Dictionary):
+	coastal_water_blobs_data.append(blob_data)
+
+## Set the landmass polygon to be drawn
+func set_landmass_polygon(polygon: PackedVector2Array, color: Color):
+	landmass_polygon = polygon
+	landmass_color = color
+
+## Add a biome blob to be drawn
+## blob_data should contain: { center: Vector2, biome_color: Color }
+func add_biome_blob(blob_data: Dictionary):
+	biome_blobs_data.append(blob_data)
+
+## Add a coast ripple line to be drawn
+## ripple_data should contain: { pos_a: Vector2, pos_b: Vector2, color: Color, width: float }
+func add_coast_ripple_line(ripple_data: Dictionary):
+	coast_ripple_lines_data.append(ripple_data)
+
+## Add an expanded coast line to be drawn
+## coast_line_data should contain: { pos_a: Vector2, pos_b: Vector2, color: Color, width: float }
+func add_expanded_coast_line(coast_line_data: Dictionary):
+	expanded_coast_lines_data.append(coast_line_data)
+
 ## Set configuration from MapGenerator2D
 func set_config(config: Dictionary):
 	if config.has("line_width"):
@@ -55,14 +103,77 @@ func set_config(config: Dictionary):
 		line_color = config["line_color"]
 	if config.has("use_curved_lines"):
 		use_curved_lines = config["use_curved_lines"]
+	
+	# Coastal water blob configuration
+	if config.has("coastal_water_expansion"):
+		coastal_water_expansion = config["coastal_water_expansion"]
+	if config.has("coastal_water_radius"):
+		coastal_water_radius = config["coastal_water_radius"]
+	if config.has("coastal_water_circles"):
+		coastal_water_circles = config["coastal_water_circles"]
+	if config.has("coastal_water_color"):
+		coastal_water_color = config["coastal_water_color"]
+	if config.has("coastal_water_alpha_max"):
+		coastal_water_alpha_max = config["coastal_water_alpha_max"]
+	
+	# Biome blob configuration
+	if config.has("biome_blob_radius"):
+		biome_blob_radius = config["biome_blob_radius"]
+	if config.has("biome_blob_circles"):
+		biome_blob_circles = config["biome_blob_circles"]
+	if config.has("biome_blob_alpha_max"):
+		biome_blob_alpha_max = config["biome_blob_alpha_max"]
 
 # ============================================================================
 # RENDERING
 # ============================================================================
 
 func _draw():
-	# TEST: Only draw connection lines for now
-	_draw_connection_lines()
+	# Draw in order from bottom to top
+	_draw_coastal_water_blobs()  # Bottom layer
+	_draw_landmass_fill()  # Above water blobs, behind connections
+	_draw_biome_blobs()  # Above landmass, behind connections
+	_draw_connection_lines()  # Above biome blobs
+	_draw_coast_ripples()  # Above connection lines
+	_draw_expanded_coast_lines()  # Top static layer (above everything except dynamic trails/paths)
+
+## Draw all coastal water blobs that were added
+func _draw_coastal_water_blobs():
+	for blob_data in coastal_water_blobs_data:
+		var node_center: Vector2 = blob_data.get("node_center", Vector2.ZERO)
+		var away_direction: float = blob_data.get("away_direction", 0.0)
+		
+		# Calculate center position (same logic as MapGenerator2D)
+		var away = Vector2(cos(away_direction), sin(away_direction))
+		var center = node_center + away * coastal_water_expansion
+		var base = coastal_water_color
+		
+		# Draw concentric circles with gradient from center to edge
+		for i in range(coastal_water_circles):
+			var t = float(i) / float(coastal_water_circles)
+			var r = coastal_water_radius * (1.0 - t)
+			var a = base.a * coastal_water_alpha_max * (0.1 + 0.9 * t)
+			var col = Color(base.r, base.g, base.b, a)
+			draw_circle(center, r, col)
+
+## Draw the landmass fill polygon
+func _draw_landmass_fill():
+	if landmass_polygon.size() >= 3:
+		draw_colored_polygon(landmass_polygon, landmass_color)
+
+## Draw all biome blobs that were added
+func _draw_biome_blobs():
+	for blob_data in biome_blobs_data:
+		var center: Vector2 = blob_data.get("center", Vector2.ZERO)
+		var base: Color = blob_data.get("biome_color", Color.WHITE)
+		
+		# Draw concentric circles with gradient from edge to center (same logic as MapGenerator2D)
+		for i in range(biome_blob_circles):
+			var t = float(i) / float(biome_blob_circles)
+			var r = biome_blob_radius * (1.0 - t)
+			var a = biome_blob_alpha_max * (0.1 + 0.9 * t)
+			var col = Color(base.r, base.g, base.b, a)
+			draw_circle(center, r, col)
 
 ## Draw all connection lines that were added
 func _draw_connection_lines():
@@ -79,6 +190,38 @@ func _draw_connection_lines():
 		else:
 			# Draw straight line
 			draw_line(pos_a, pos_b, color, width)
+
+## Draw all coast ripple lines that were added
+func _draw_coast_ripples():
+	for ripple_data in coast_ripple_lines_data:
+		var pos_a: Vector2 = ripple_data.get("pos_a", Vector2.ZERO)
+		var pos_b: Vector2 = ripple_data.get("pos_b", Vector2.ZERO)
+		var color: Color = ripple_data.get("color", Color.WHITE)
+		var width: float = ripple_data.get("width", 2.0)
+		
+		# Draw line
+		draw_line(pos_a, pos_b, color, width)
+		
+		# Draw rounded caps
+		var cap_radius = width / 2.0
+		draw_circle(pos_a, cap_radius, color)
+		draw_circle(pos_b, cap_radius, color)
+
+## Draw all expanded coast lines that were added
+func _draw_expanded_coast_lines():
+	for coast_line_data in expanded_coast_lines_data:
+		var pos_a: Vector2 = coast_line_data.get("pos_a", Vector2.ZERO)
+		var pos_b: Vector2 = coast_line_data.get("pos_b", Vector2.ZERO)
+		var color: Color = coast_line_data.get("color", Color.WHITE)
+		var width: float = coast_line_data.get("width", 3.0)
+		
+		# Draw line
+		draw_line(pos_a, pos_b, color, width)
+		
+		# Draw rounded caps
+		var cap_radius = width / 2.0
+		draw_circle(pos_a, cap_radius, color)
+		draw_circle(pos_b, cap_radius, color)
 
 ## Draw Bezier curve (matches MapGenerator2D curve rendering)
 func _draw_bezier_curve(pos_a: Vector2, pos_b: Vector2, curve_data: Dictionary, color: Color, width: float):

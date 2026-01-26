@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=18 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://bjjpm0xn570qo" path="res://scenes/2d/PartySelectMenu.tscn" id="9_mifn2"]
 [ext_resource type="Script" uid="uid://coclurbvq0203" path="res://scripts/2d/UIController.gd" id="10_uicontroller"]
 [ext_resource type="PackedScene" uid="uid://73neomc4wcah" path="res://scenes/2d/EventWindow.tscn" id="11_niih8"]
+[ext_resource type="PackedScene" uid="uid://bdgphw4taxtfq" path="res://scenes/2d/RestController.tscn" id="12_7iead"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
 shader = ExtResource("4_f0bfo")
@@ -100,6 +101,21 @@ offset_bottom = -48.0
 grow_vertical = 0
 text = "reset map"
 
+[node name="RestButton" type="Button" parent="GameUI/InGameControls"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -30.0
+offset_top = -90.0
+offset_right = 30.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Rest"
+
 [node name="ViewportFX" type="Control" parent="GameUI"]
 layout_mode = 1
 anchors_preset = 15
@@ -182,5 +198,10 @@ layout_mode = 1
 visible = false
 z_index = 1000
 layout_mode = 1
+
+[node name="RestController" parent="." instance=ExtResource("12_7iead")]
+visible = false
+layout_mode = 1
+mouse_filter = 2
 
 [connection signal="pressed" from="GameUI/InGameControls/ResetMapButton" to="MapGenerator" method="regenerate_map"]

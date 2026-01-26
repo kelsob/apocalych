@@ -264,6 +264,9 @@ func apply_effects(effects: Array[Dictionary], party: Dictionary, node_state: Di
 			"script_hook":
 				_apply_script_hook(effect, party, node_state)
 			
+			"set_rest_state":
+				_apply_set_rest_state(effect, node_state)
+			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
 
@@ -423,3 +426,20 @@ func _apply_script_hook(effect: Dictionary, party: Dictionary, node_state: Dicti
 	# TODO: Connect to named hook system
 	# This allows external systems to register named hooks
 	print("EventManager: Would call script hook '%s'" % effect.hook_name)
+
+func _apply_set_rest_state(effect: Dictionary, node_state: Dictionary):
+	if not effect.has("allow_rest"):
+		push_warning("EventManager: set_rest_state effect missing 'allow_rest' field")
+		return
+	
+	# Get the current node from node_state
+	var current_node = node_state.get("current_node", null)
+	if current_node == null:
+		push_warning("EventManager: set_rest_state effect requires 'current_node' in node_state")
+		return
+	
+	# Set the rest state on the node
+	var allow_rest = effect.allow_rest
+	current_node.can_rest_here = allow_rest
+	
+	print("EventManager: Set rest state to %s at node %d" % [allow_rest, current_node.node_index])

@@ -4,6 +4,9 @@ class_name UIController
 ## UI Controller - Manages visibility of UI elements based on game state
 ## Attach this script to the GameUI node
 
+# Signals
+signal rest_requested()  # Emitted when player clicks the rest button
+
 # References to UI elements (set these in the editor or via @onready)
 @onready var in_game_controls: Control = $InGameControls
 @onready var viewport_fx: Node = $ViewportFX
@@ -14,6 +17,8 @@ class_name UIController
 @onready var edge_reddening_effect: CanvasLayer = $ViewportFX/EdgeReddeningEffect
 @onready var radial_reddening_effect: CanvasLayer = $ViewportFX/RadialReddeningEffect
 @onready var blur_effect: CanvasLayer = $ViewportFX/BlurEffect
+
+@onready var rest_button : Button = $InGameControls/RestButton
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0
@@ -59,3 +64,18 @@ func _set_in_game_ui_visible(visible: bool):
 func _ready():
 	# Start with UI hidden (will be shown when game starts)
 	update_ui_visibility(MAIN_MENU)
+	
+	# Connect rest button
+	if rest_button:
+		rest_button.pressed.connect(_on_rest_button_pressed)
+		rest_button.visible = false  # Hidden by default, shown when party can rest
+
+## Called when rest button is pressed
+func _on_rest_button_pressed():
+	rest_requested.emit()
+
+## Update rest button visibility based on whether party can rest at current node
+## can_rest: bool - Whether the party can rest at the current location
+func update_rest_button_visibility(can_rest: bool):
+	if rest_button:
+		rest_button.visible = can_rest

@@ -15,6 +15,7 @@ var choice_button_scene: PackedScene = null
 # Current event data
 var current_event: Dictionary = {}
 var current_party: Dictionary = {}
+var current_node = null  # Reference to the MapNode2D where event occurred
 
 # Signals
 signal choice_made(choice_id: String, effects: Array)
@@ -32,13 +33,15 @@ func _ready():
 ## Display an event to the player
 ## event: Dictionary - The event data (should be pre-processed by EventManager.present_event)
 ## party: Dictionary - Party state dictionary
-func display_event(event: Dictionary, party: Dictionary):
+## node: MapNode2D (optional) - The node where the event is occurring (for rest state effects)
+func display_event(event: Dictionary, party: Dictionary, node = null):
 	if event.is_empty():
 		push_error("EventWindow: Cannot display empty event")
 		return
 	
 	current_event = event
 	current_party = party
+	current_node = node
 	
 	# Set title
 	if title_label and event.has("title"):
@@ -103,7 +106,11 @@ func _on_choice_button_pressed(choice: Dictionary):
 	
 	# Apply effects via EventManager
 	if EventManager and effects.size() > 0:
-		EventManager.apply_effects(effects, current_party, {})
+		# Build node_state with current_node for effect application
+		var node_state = {}
+		if current_node:
+			node_state["current_node"] = current_node
+		EventManager.apply_effects(effects, current_party, node_state)
 	
 	# Close event window
 	close()

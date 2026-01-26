@@ -8,6 +8,7 @@ extends Control
 @onready var party_select_menu: PartySelectMenu = $PartySelectMenu
 @onready var ui_controller: UIController = $GameUI
 @onready var event_window: Control = $EventWindow
+@onready var rest_controller: RestController = $RestController  # You'll create this node
 
 # Game state
 enum GameState {
@@ -32,6 +33,16 @@ func _ready():
 	if map_generator:
 		map_generator.visible = false
 		map_generator.map_generation_complete.connect(_on_map_generation_complete)
+		map_generator.party_moved_to_node.connect(_on_party_moved_to_node)
+	
+	# Hide and connect rest controller
+	if rest_controller:
+		rest_controller.visible = false
+		rest_controller.rest_complete.connect(_on_rest_complete)
+	
+	# Connect UI controller rest button signal
+	if ui_controller:
+		ui_controller.rest_requested.connect(_on_rest_requested)
 
 ## Automatically connect all menu signals
 func _connect_menu_signals():
@@ -143,8 +154,9 @@ func _show_introductory_event():
 	# Present the event (filter choices, interpolate text)
 	var presented_event = EventManager.present_event(intro_event, party_dict)
 	
-	# Display the event
-	event_window.display_event(presented_event, party_dict)
+	# Display the event with current node (for rest state effects)
+	var current_node = map_generator.current_party_node if map_generator else null
+	event_window.display_event(presented_event, party_dict, current_node)
 
 ## Build party dictionary for event system
 ## This is mainly for text interpolation (like {{party.member1_name}})
@@ -176,3 +188,54 @@ func _build_party_dict() -> Dictionary:
 	party_dict.variables = {}
 	
 	return party_dict
+
+# ============================================================================
+# REST SYSTEM
+# ============================================================================
+
+## Called when party moves to a new node - update rest button visibility
+func _on_party_moved_to_node(node: MapNode2D):
+	if ui_controller and node:
+		ui_controller.update_rest_button_visibility(node.can_rest_here)
+
+## Called when UI controller rest button is pressed
+func _on_rest_requested():
+	start_rest()
+
+## Start resting at the current node
+## Called when player clicks the rest button
+func start_rest():
+	if not rest_controller:
+		push_error("Main: RestController not found")
+		return
+	
+	# Check if party can rest at current location
+	var current_node = map_generator.current_party_node if map_generator else null
+	if not current_node:
+		print("Main: No current node to rest at")
+		return
+	
+	if not current_node.can_rest_here:
+		print("Main: Cannot rest at current node")
+		return
+	
+	print("Main: Starting rest at node %d" % current_node.node_index)
+	
+	# Hide map
+	if map_generator:
+		map_generator.visible = false
+	
+	# Show rest screen
+	rest_controller.start_rest()
+
+## Called when rest is complete - return to map
+func _on_rest_complete():
+	print("Main: Rest complete, returning to map")
+	
+	# Hide rest screen
+	if rest_controller:
+		rest_controller.visible = false
+	
+	# Show map
+	if map_generator:
+		map_generator.visible = true

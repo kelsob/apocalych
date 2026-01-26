@@ -165,6 +165,7 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 # ============================================================================
 
 signal map_generation_complete
+signal party_moved_to_node(node: MapNode2D)  # Emitted when party moves to a new node
 
 # ============================================================================
 # INTERNAL VARIABLES
@@ -218,6 +219,10 @@ func set_world_name(name: String):
 
 func generate_map():
 	print("=== Starting 2D Map Generation ===")
+	
+	# Hide nodes during generation
+	if mapnodes:
+		mapnodes.visible = false
 	
 	# Step 1: Clear existing
 	print("Step 1: Clearing existing nodes...")
@@ -301,7 +306,14 @@ func generate_map():
 	print("Step 12.7: Assigning biomes to nodes...")
 	assign_biomes()
 	
-	# Step 13: Visualize
+	# Check if regeneration was requested due to errors (BEFORE visualizing)
+	if _regeneration_requested:
+		_regeneration_requested = false
+		print("=== Regenerating map due to detected errors ===")
+		regenerate_map()
+		return
+	
+	# Step 13: Visualize (only if no errors detected)
 	print("Step 13: Visualizing map...")
 	visualize_map()
 	
@@ -309,13 +321,6 @@ func generate_map():
 	if use_static_rendering:
 		print("Step 13.5: Baking static map elements...")
 		await bake_static_map()
-	
-	# Check if regeneration was requested due to errors
-	if _regeneration_requested:
-		_regeneration_requested = false
-		print("=== Regenerating map due to detected errors ===")
-		regenerate_map()
-		return
 	
 	print("=== 2D Map Generation Complete ===")
 	
@@ -2148,6 +2153,12 @@ func assign_biomes():
 # ============================================================================
 
 func visualize_map():
+	# Make nodes visible now that all setup is complete
+	if mapnodes:
+		mapnodes.visible = true
+		# Make each individual node visible too
+		for node in map_nodes:
+			node.visible = true
 	queue_redraw()
 
 # ============================================================================
@@ -2173,7 +2184,15 @@ func bake_static_map():
 	var config = {
 		"line_width": line_width,
 		"line_color": line_color,
-		"use_curved_lines": use_curved_lines
+		"use_curved_lines": use_curved_lines,
+		"coastal_water_expansion": coastal_water_expansion,
+		"coastal_water_radius": coastal_water_radius,
+		"coastal_water_circles": coastal_water_circles,
+		"coastal_water_color": coastal_water_color,
+		"coastal_water_alpha_max": coastal_water_alpha_max,
+		"biome_blob_radius": biome_blob_radius,
+		"biome_blob_circles": biome_blob_circles,
+		"biome_blob_alpha_max": biome_blob_alpha_max
 	}
 	static_map_renderer.set_config(config)
 	
@@ -2209,6 +2228,102 @@ func bake_static_map():
 			
 			static_map_renderer.add_connection_line(line_data)
 	
+	# Pass coastal water blobs data
+	if enable_coastal_water_blobs and coastal_nodes.size() > 0 and coastal_water_circles > 0:
+		for node in coastal_nodes:
+			var node_center = node.position + (node.size / 2.0)
+			var blob_data = {
+				"node_center": node_center,
+				"away_direction": node.away_direction
+			}
+			static_map_renderer.add_coastal_water_blob(blob_data)
+	
+	# Pass landmass polygon data
+	if enable_landmass_shading and expanded_coast_lines.size() > 0:
+		var polygon_points = build_coast_polygon()
+		if polygon_points.size() >= 3:
+			static_map_renderer.set_landmass_polygon(polygon_points, landmass_base_color)
+	
+	# Pass biome blobs data
+	if enable_biome_blobs and map_nodes.size() > 0 and biome_blob_circles > 0:
+		for node in map_nodes:
+			if node.is_mountain or node.biome == null:
+				continue
+			var center = node.position + (node.size / 2.0)
+			var blob_data = {
+				"center": center,
+				"biome_color": node.biome.color
+			}
+			static_map_renderer.add_biome_blob(blob_data)
+	
+	# Pass coast ripple lines data
+	if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
+		# For each ripple layer (outermost first)
+		for ripple_index in range(ripple_count - 1, -1, -1):
+			# Calculate cumulative distance for this ripple
+			var cumulative_distance = coast_expansion_distance
+			for i in range(ripple_index + 1):
+				if i == 0:
+					cumulative_distance += ripple_base_spacing
+				else:
+					cumulative_distance += ripple_base_spacing * pow(ripple_spacing_growth, i)
+			
+			# Calculate width for this ripple
+			var ripple_width = ripple_base_width * pow(ripple_width_decay, ripple_index)
+			
+			# Calculate color for this ripple
+			var color_offset = ripple_color_fade * ripple_index
+			var ripple_alpha = ripple_base_color.a * pow(ripple_alpha_decay, ripple_index)
+			var ripple_color = Color(
+				min(ripple_base_color.r + color_offset, 1.0),
+				min(ripple_base_color.g + color_offset, 1.0),
+				min(ripple_base_color.b + color_offset, 1.0),
+				ripple_alpha
+			)
+			
+			# Generate expanded positions for this ripple distance
+			var ripple_positions: Dictionary = {}
+			for node in coastal_nodes:
+				var node_center = node.position + (node.size / 2.0)
+				var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
+				var ripple_pos = node_center + away_vector * cumulative_distance
+				ripple_positions[node.node_index] = ripple_pos
+			
+			# Add ripple lines for each coastal connection
+			for connection in coastal_connections:
+				var node_a = connection[0]
+				var node_b = connection[1]
+				
+				var pos_a = ripple_positions.get(node_a.node_index)
+				var pos_b = ripple_positions.get(node_b.node_index)
+				
+				if pos_a != null and pos_b != null:
+					var adjusted_width = get_orientation_adjusted_width(ripple_width, pos_a, pos_b)
+					var ripple_data = {
+						"pos_a": pos_a,
+						"pos_b": pos_b,
+						"color": ripple_color,
+						"width": adjusted_width
+					}
+					static_map_renderer.add_coast_ripple_line(ripple_data)
+	
+	# Pass expanded coast lines data
+	if expanded_coast_lines.size() > 0:
+		for coast_line in expanded_coast_lines:
+			var pos_a = coast_line[0]
+			var pos_b = coast_line[1]
+			
+			# Adjust line width based on orientation
+			var adjusted_coast_width = get_orientation_adjusted_width(coast_line_width, pos_a, pos_b)
+			
+			var coast_line_data = {
+				"pos_a": pos_a,
+				"pos_b": pos_b,
+				"color": coast_line_color,
+				"width": adjusted_coast_width
+			}
+			static_map_renderer.add_expanded_coast_line(coast_line_data)
+	
 	# Trigger render
 	static_map_renderer.queue_redraw()
 	
@@ -2219,7 +2334,12 @@ func bake_static_map():
 	static_map_sprite.texture = static_map_viewport.get_texture()
 	static_map_sprite.visible = true
 	
-	print("Static map baked successfully with %d connection lines" % processed_edges.size())
+	var water_blob_count = coastal_nodes.size() if (enable_coastal_water_blobs and coastal_water_circles > 0) else 0
+	var landmass_points = static_map_renderer.landmass_polygon.size()
+	var biome_blob_count = static_map_renderer.biome_blobs_data.size()
+	var ripple_line_count = static_map_renderer.coast_ripple_lines_data.size()
+	var coast_line_count = static_map_renderer.expanded_coast_lines_data.size()
+	print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, ripple_line_count, coast_line_count])
 
 ## Helper to extract curve data for a connection line (matches draw_curved_line logic)
 func _get_curve_data_for_line(pos_a: Vector2, pos_b: Vector2, node_a: MapNode2D, node_b: MapNode2D) -> Dictionary:
@@ -2333,16 +2453,16 @@ func _draw():
 	if not is_instance_valid(self):
 		return
 	
-	# Draw coastal water blobs FIRST (under landmass; blue circles radiating outward)
-	if enable_coastal_water_blobs:
+	# Draw coastal water blobs FIRST (skip if using static rendering - they're baked into texture)
+	if enable_coastal_water_blobs and not use_static_rendering:
 		draw_coastal_water_blobs()
 	
-	# Draw landmass fill (so it appears behind connections but above water blobs)
-	if enable_landmass_shading and expanded_coast_lines.size() > 0:
+	# Draw landmass fill (skip if using static rendering - it's baked into texture)
+	if enable_landmass_shading and expanded_coast_lines.size() > 0 and not use_static_rendering:
 		draw_landmass_fill()
 	
-	# Draw biome blobs (soft circles per node, biome color)
-	if enable_biome_blobs:
+	# Draw biome blobs (skip if using static rendering - they're baked into texture)
+	if enable_biome_blobs and not use_static_rendering:
 		draw_biome_blobs()
 	
 	# Draw connection lines (skip if using static rendering - they're baked into texture)
@@ -2374,8 +2494,8 @@ func _draw():
 					# Draw straight line
 					draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
 	
-	# Draw coastal ripples FIRST (behind main coast line)
-	if enable_coast_ripples and ripple_count > 0:
+	# Draw coastal ripples (skip if using static rendering - they're baked into texture)
+	if enable_coast_ripples and ripple_count > 0 and not use_static_rendering:
 		draw_coast_ripples()
 	
 	# Draw player trail (completed paths)
@@ -2389,23 +2509,24 @@ func _draw():
 	if hover_preview_path.size() > 1:
 		draw_preview_path(hover_preview_path)
 	
-	# Draw expanded coast lines LAST (so they appear on top)
-	for coast_line in expanded_coast_lines:
-		var pos_a = coast_line[0]
-		var pos_b = coast_line[1]
-		
-		# Adjust line width based on orientation
-		var adjusted_coast_width = get_orientation_adjusted_width(coast_line_width, pos_a, pos_b)
-		
-		# Draw coast line with coast color
-		draw_line(pos_a, pos_b, coast_line_color, adjusted_coast_width)
-		
-		# Draw rounded caps at endpoints
-		var cap_radius = adjusted_coast_width / 2.0
-		draw_circle(pos_a, cap_radius, coast_line_color)
-		draw_circle(pos_b, cap_radius, coast_line_color)
-		
-		edges_drawn += 1
+	# Draw expanded coast lines (skip if using static rendering - they're baked into texture)
+	if not use_static_rendering:
+		for coast_line in expanded_coast_lines:
+			var pos_a = coast_line[0]
+			var pos_b = coast_line[1]
+			
+			# Adjust line width based on orientation
+			var adjusted_coast_width = get_orientation_adjusted_width(coast_line_width, pos_a, pos_b)
+			
+			# Draw coast line with coast color
+			draw_line(pos_a, pos_b, coast_line_color, adjusted_coast_width)
+			
+			# Draw rounded caps at endpoints
+			var cap_radius = adjusted_coast_width / 2.0
+			draw_circle(pos_a, cap_radius, coast_line_color)
+			draw_circle(pos_b, cap_radius, coast_line_color)
+			
+			edges_drawn += 1
 	
 
 # ============================================================================
@@ -2900,6 +3021,9 @@ func set_party_position(node: MapNode2D):
 	current_party_node = node
 	var node_center = node.position + (node.size / 2.0)
 	party_indicator.global_position = node_center
+	
+	# Emit signal so systems can react to party movement
+	party_moved_to_node.emit(node)
 
 ## Check if party can move to a node (must be connected to current node)
 func can_party_move_to(node: MapNode2D) -> bool:

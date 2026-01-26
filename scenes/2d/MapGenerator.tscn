@@ -37,7 +37,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.717647, 0.670588, 0.439216, 0.635294)
+color = Color(0.717647, 0.670588, 0.439216, 1)
 
 [node name="MapNodes" type="Control" parent="."]
 anchors_preset = 0
@@ -194,5 +194,5 @@ transparent_bg = true
 script = ExtResource("9_bvoid")
 
 [node name="StaticMapSprite" type="Sprite2D" parent="."]
-z_index = 4096
+z_index = -1
 centered = false

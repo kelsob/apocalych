@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3 uid="uid://bdgphw4taxtfq"]
+
+[ext_resource type="Script" uid="uid://b4ffq6mefqp4t" path="res://scripts/2d/RestController.gd" id="1_hndvf"]
+
+[node name="RestController" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hndvf")
+
+[node name="RestButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -4.0
+offset_top = -48.0
+offset_right = 4.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Rest"
+
+[connection signal="pressed" from="RestButton" to="." method="_on_rest_button_pressed"]

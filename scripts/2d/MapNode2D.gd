@@ -31,6 +31,9 @@ var connections: Array[MapNode2D] = []
 # Event data
 var event_data = null
 
+# Rest state
+var can_rest_here: bool = false  # Whether party can rest at this node
+
 # Terrain properties
 var is_coastal: bool = false
 var is_lake_coast: bool = false
