@@ -55,9 +55,15 @@ theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_constants/shadow_outline_size = 1
 autowrap_mode = 2
 
-[node name="TextLabel" type="Label" parent="MarginContainer/MarginContainer/ContentContainer"]
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/MarginContainer/ContentContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_right = 8
+
+[node name="TextLabel" type="Label" parent="MarginContainer/MarginContainer/ContentContainer/MarginContainer2"]
 layout_mode = 2
 theme = ExtResource("2_h74rw")
+theme_override_colors/font_color = Color(0.432319, 0.349618, 0.201173, 1)
 theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_constants/shadow_outline_size = 1
 autowrap_mode = 2

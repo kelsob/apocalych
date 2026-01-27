@@ -115,12 +115,17 @@ func set_mountain_color():
 	node_color = Color(0.588, 0.482, 0.298)  # #967b4c - Node color
 	modulate = node_color
 
-func become_mountain():
+func become_mountain(frame: int = -1):
 	# Called when this node is designated as a mountain
-	# Randomize the sprite frame based on available hframes
+	# Set hframes to match sprite sheet (15 frames)
+	sprite_mountain.hframes = 15
+	# Set sprite frame (use provided frame, or randomize if not specified)
 	sprite_base.visible = false
 	sprite_mountain.visible = true
-	sprite_mountain.frame = randi() % sprite_mountain.hframes
+	if frame >= 0 and frame < sprite_mountain.hframes:
+		sprite_mountain.frame = frame
+	else:
+		sprite_mountain.frame = randi() % sprite_mountain.hframes
 
 func _on_button_pressed() -> void:
 	# Emit signal to notify MapGenerator2D

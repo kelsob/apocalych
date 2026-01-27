@@ -1,12 +1,15 @@
-[gd_scene load_steps=11 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=14 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_du8ac"]
 [ext_resource type="Texture2D" uid="uid://da075esvsqt8f" path="res://assets/icons/compassrose.png" id="3_sdxh4"]
+[ext_resource type="Texture2D" uid="uid://brq02nt25yjm7" path="res://assets/map/therebeoctopi.png" id="4_ldstu"]
 [ext_resource type="Texture2D" uid="uid://c36lju7xnowrn" path="res://assets/icons/scale.png" id="5_5r5px"]
+[ext_resource type="Texture2D" uid="uid://dhgxfngthqxrc" path="res://assets/map/waves.png" id="5_m5rfe"]
 [ext_resource type="Texture2D" uid="uid://c56h3fp3ouegp" path="res://assets/icons/party_present.png" id="6_jerfe"]
 [ext_resource type="Texture2D" uid="uid://d2rd43gwgirsi" path="res://assets/map/therebedagrons.png" id="6_o2kik"]
+[ext_resource type="Texture2D" uid="uid://dox1js6lhibgr" path="res://assets/map/waves-angled.png" id="6_p13sx"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 [ext_resource type="Script" uid="uid://dpiclq4dhx7e8" path="res://scripts/2d/CameraController2D.gd" id="8_n8x2r"]
 [ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
@@ -21,8 +24,9 @@ grow_vertical = 2
 script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
+coastal_water_expansion = 50.0
 coastal_water_radius = 300.0
-coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.0392157)
+coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
 ripple_base_spacing = 18.0
 ripple_spacing_growth = 1.035
 ripple_base_width = 1.0
@@ -47,16 +51,49 @@ offset_bottom = 40.0
 
 [node name="ThereBeDagrons" type="Sprite2D" parent="."]
 modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
 position = Vector2(148, 575)
 texture = ExtResource("6_o2kik")
 
+[node name="ThereBeOctopi" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1108, 135)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("4_ldstu")
+
+[node name="WavesE" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1196, 343)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesW" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(220, 375)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesNW" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(316, 183)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
+[node name="WavesSE" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(1068, 543)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
 [node name="MapDetails" type="VBoxContainer" parent="."]
+z_index = 10
 layout_mode = 0
-offset_left = 48.0
-offset_top = 48.0
-offset_right = 302.0
-offset_bottom = 300.0
-theme_override_constants/separation = 0
+offset_left = 24.0
+offset_top = 32.0
+offset_right = 278.0
+offset_bottom = 284.0
+theme_override_constants/separation = 2
 
 [node name="Label" type="Label" parent="MapDetails"]
 layout_mode = 2
@@ -77,7 +114,7 @@ expand_mode = 1
 
 [node name="Control" type="VBoxContainer" parent="MapDetails"]
 layout_mode = 2
-theme_override_constants/separation = -6
+theme_override_constants/separation = -9
 
 [node name="Label2" type="Label" parent="MapDetails/Control"]
 layout_mode = 2
@@ -92,6 +129,7 @@ text = "the Realm of"
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("3_du8ac")
+theme_override_colors/font_color = Color(0.709804, 0, 0, 1)
 theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_constants/shadow_outline_size = 4
 theme_override_font_sizes/font_size = 26
@@ -136,6 +174,7 @@ custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("3_du8ac")
+theme_override_colors/font_color = Color(0.709804, 0, 0, 1)
 theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_constants/shadow_outline_size = 2
 theme_override_font_sizes/font_size = 10
@@ -158,6 +197,7 @@ custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("3_du8ac")
+theme_override_colors/font_color = Color(0.709804, 0, 0, 1)
 theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_constants/shadow_outline_size = 2
 theme_override_font_sizes/font_size = 10

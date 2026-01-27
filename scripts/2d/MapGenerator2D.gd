@@ -115,6 +115,14 @@ class_name MapGenerator2D
 @export_group("Performance")
 @export var use_static_rendering: bool = true  # Bake static elements to texture (TEST: connection lines only for now)
 
+@export_group("Debug")
+@export var enable_debug_output: bool = false  # Enable/disable debug print statements
+
+@export_group("Map Decorations")
+@export var enable_map_decorations: bool = true  # Enable/disable map decoration sprites
+@export var decoration_distance_from_coast: float = 150.0  # Distance from coast to place decorations
+@export var decoration_edge_margin: float = 50.0  # Minimum distance from screen edges
+
 @export_group("Party")
 @export var party_travel_speed: float = 200.0  # Pixels per second
 @export var party_wait_at_node: float = 0.3  # Seconds to wait at a node before accepting new input
@@ -165,6 +173,12 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var static_map_viewport: SubViewport = $StaticMapViewport
 @onready var static_map_renderer: StaticMapRenderer = $StaticMapViewport/StaticMapRenderer
 @onready var static_map_sprite: Sprite2D = $StaticMapSprite
+@onready var dagron_sprite: Sprite2D = $ThereBeDagrons
+@onready var octopi_sprite: Sprite2D = $ThereBeOctopi
+@onready var waves_east_sprite: Sprite2D = $WavesE
+@onready var waves_west_sprite: Sprite2D = $WavesW
+@onready var waves_northwest_sprite: Sprite2D = $WavesNW
+@onready var waves_southeast_sprite: Sprite2D = $WavesSE
 # ============================================================================
 # SIGNALS
 # ============================================================================
@@ -209,6 +223,11 @@ var biome_ash_plains: Biome = null
 # CORE GENERATION
 # ============================================================================
 
+## Debug print helper - only prints if enable_debug_output is true
+func debug_print(message: String):
+	if enable_debug_output:
+		print(message)
+
 func _ready():
 	# Set to fill the screen
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -221,6 +240,20 @@ func _ready():
 	# Connect rest button
 	rest_button.pressed.connect(_on_rest_button_pressed)
 	rest_button.visible = false  # Hidden by default, shown when party can rest
+	
+	# Hide decoration sprites initially
+	if dagron_sprite:
+		dagron_sprite.visible = false
+	if octopi_sprite:
+		octopi_sprite.visible = false
+	if waves_east_sprite:
+		waves_east_sprite.visible = false
+	if waves_west_sprite:
+		waves_west_sprite.visible = false
+	if waves_northwest_sprite:
+		waves_northwest_sprite.visible = false
+	if waves_southeast_sprite:
+		waves_southeast_sprite.visible = false
 
 ## Set the world name and update the label
 func set_world_name(name: String):
@@ -229,122 +262,127 @@ func set_world_name(name: String):
 
 
 func generate_map():
-	print("=== Starting 2D Map Generation ===")
+	debug_print("=== Starting 2D Map Generation ===")
 	
 	# Hide nodes during generation
 	if mapnodes:
 		mapnodes.visible = false
 	
 	# Step 1: Clear existing
-	print("Step 1: Clearing existing nodes...")
+	debug_print("Step 1: Clearing existing nodes...")
 	clear_existing_nodes()
 	
 	# Step 2: Initialize shape noise
-	print("Step 2: Initializing shape noise...")
+	debug_print("Step 2: Initializing shape noise...")
 	initialize_shape_noise()
 	
 	# Step 3: Generate positions (Poisson-disk sampling)
-	print("Step 3: Generating node positions...")
+	debug_print("Step 3: Generating node positions...")
 	generate_poisson_positions()
 	
 	# Step 4: Instantiate nodes
-	print("Step 4: Instantiating nodes...")
+	debug_print("Step 4: Instantiating nodes...")
 	instantiate_nodes()
 	
 	# Step 5: Wait for nodes to be added
 	await get_tree().process_frame
 	
 	# Step 6: Center at origin
-	print("Step 6: Centering points at origin...")
+	debug_print("Step 6: Centering points at origin...")
 	center_points_at_origin()
 	
 	# Step 6.5: Rotate to horizontal (after centering, before connections)
 	if enable_rotation:
-		print("Step 6.5: Rotating to horizontal...")
+		debug_print("Step 6.5: Rotating to horizontal...")
 		rotate_to_horizontal()
 		
 		# Step 6.6: Vertically center after rotation
-		print("Step 6.6: Vertically centering nodes...")
+		debug_print("Step 6.6: Vertically centering nodes...")
 		vertically_center_nodes()
 	
 	# Step 7: Generate connections (Delaunay)
-	print("Step 7: Generating connections (Delaunay)...")
+	debug_print("Step 7: Generating connections (Delaunay)...")
 	generate_delaunay_connections()
 	
 	# Step 8: Filter edges by distance (optional)
 	if enable_distance_filtering:
-		print("Step 8: Filtering edges by distance...")
+		debug_print("Step 8: Filtering edges by distance...")
 		filter_edges_by_distance()
 	
 	# Step 8.25: Filter edges by minimum angle (prevent very small angles)
-	print("Step 8.25: Filtering edges by minimum angle...")
+	debug_print("Step 8.25: Filtering edges by minimum angle...")
 	filter_edges_by_angle()
 	
 	# Step 8.5: Validate nodes and connections (check for duplicates/overlaps)
-	print("Step 8.5: Validating nodes and connections...")
+	debug_print("Step 8.5: Validating nodes and connections...")
 	validate_nodes()
 	
 	# Step 9: Identify coastal nodes (BEFORE mountains, so connections are intact)
-	print("Step 9: Identifying coastal nodes...")
+	debug_print("Step 9: Identifying coastal nodes...")
 	identify_coastal_nodes()
 	
 	# Step 10: Build AStar2D graph
-	print("Step 10: Building AStar2D pathfinding graph...")
+	debug_print("Step 10: Building AStar2D pathfinding graph...")
 	build_astar_graph()
 	
 	# Step 11: Identify points of interest
-	print("Step 11: Identifying points of interest...")
+	debug_print("Step 11: Identifying points of interest...")
 	identify_points_of_interest()
 	
 	# Step 12: Create regions
-	print("Step 12: Creating regions...")
+	debug_print("Step 12: Creating regions...")
 	create_regions()
 	
 	# Step 12.5: Generate mountains at region boundaries
 	if enable_mountains:
-		print("Step 12.5: Generating mountains at region boundaries...")
+		debug_print("Step 12.5: Generating mountains at region boundaries...")
 		generate_mountains_at_borders()
 		
 		# Step 12.55: Center mountain nodes at average position of connected nodes
-		print("Step 12.55: Centering mountain nodes...")
+		debug_print("Step 12.55: Centering mountain nodes...")
 		center_mountain_nodes()
 		
 		# Step 12.6: Disconnect mountain nodes (mountains act as barriers)
-		print("Step 12.6: Disconnecting mountain nodes...")
+		debug_print("Step 12.6: Disconnecting mountain nodes...")
 		disconnect_mountain_nodes()
 	
 	# Step 12.7: Assign biomes to all nodes
-	print("Step 12.7: Assigning biomes to nodes...")
+	debug_print("Step 12.7: Assigning biomes to nodes...")
 	assign_biomes()
 	
 	# Check if regeneration was requested due to errors (BEFORE visualizing)
 	if _regeneration_requested:
 		_regeneration_requested = false
-		print("=== Regenerating map due to detected errors ===")
+		debug_print("=== Regenerating map due to detected errors ===")
 		regenerate_map()
 		return
 	
 	# Step 13: Visualize (only if no errors detected)
-	print("Step 13: Visualizing map...")
+	debug_print("Step 13: Visualizing map...")
 	visualize_map()
 	
 	# Step 13.5: Bake static elements (if enabled)
 	if use_static_rendering:
-		print("Step 13.5: Baking static map elements...")
+		debug_print("Step 13.5: Baking static map elements...")
 		await bake_static_map()
 	
-	print("=== 2D Map Generation Complete ===")
+	# Step 13.6: Position map decorations (dragons, octopi, etc.)
+	if enable_map_decorations:
+		debug_print("Step 13.6: Positioning map decorations...")
+		position_map_decorations()
+	
+	debug_print("=== 2D Map Generation Complete ===")
 	
 	# Enable camera when game starts and set its limits based on control size
 	if game_camera:
-		print("camera: MapGenerator Control size=%s, global_position=%s" % [size, global_position])
+		debug_print("camera: MapGenerator Control size=%s, global_position=%s" % [size, global_position])
 		game_camera.enabled = true
 		# Wait a frame for Control size to be properly set, then set camera limits
 		await get_tree().process_frame
-		print("camera: After frame wait, MapGenerator Control size=%s" % size)
+		debug_print("camera: After frame wait, MapGenerator Control size=%s" % size)
 		game_camera.set_map_limits(size)
 	else:
-		print("camera: ERROR - game_camera is null!")
+		debug_print("camera: ERROR - game_camera is null!")
 	
 	# Emit signal that generation is complete
 	map_generation_complete.emit()
@@ -368,6 +406,21 @@ func clear_existing_nodes():
 	delaunay_edges.clear()
 	visited_paths.clear()
 	current_travel_path.clear()
+	
+	# Hide decoration sprites during regeneration
+	if dagron_sprite:
+		dagron_sprite.visible = false
+	if octopi_sprite:
+		octopi_sprite.visible = false
+	if waves_east_sprite:
+		waves_east_sprite.visible = false
+	if waves_west_sprite:
+		waves_west_sprite.visible = false
+	if waves_northwest_sprite:
+		waves_northwest_sprite.visible = false
+	if waves_southeast_sprite:
+		waves_southeast_sprite.visible = false
+	
 	if is_inside_tree():
 		queue_redraw()  # Clear drawn lines
 
@@ -379,7 +432,7 @@ func initialize_shape_noise():
 	# Determine noise intensity
 	if randf() < shape_noise_chance_off or not shape_noise_enabled:
 		current_noise_intensity = 0.0
-		print("  Shape noise: DISABLED (pure ellipse)")
+		debug_print("  Shape noise: DISABLED (pure ellipse)")
 		return
 	
 	current_noise_intensity = randf_range(shape_noise_min, shape_noise_max)
@@ -398,7 +451,7 @@ func initialize_shape_noise():
 	shape_noise_small.frequency = randf_range(small_scale_frequency_min, small_scale_frequency_max)
 	current_small_scale_weight = randf_range(small_scale_weight_min, small_scale_weight_max)
 	
-	print("  Noise intensity: %.2f" % current_noise_intensity)
+	debug_print("  Noise intensity: %.2f" % current_noise_intensity)
 
 # ============================================================================
 # STEP 3: POISSON-DISK SAMPLING
@@ -458,7 +511,7 @@ func generate_poisson_positions():
 		if not found_valid:
 			active_list.remove_at(random_idx)
 	
-	print("  Generated %d nodes" % node_positions.size())
+	debug_print("  Generated %d nodes" % node_positions.size())
 
 func get_random_point_in_ellipse(a: float, b: float) -> Vector2:
 	var angle = randf() * TAU
@@ -564,7 +617,7 @@ func instantiate_nodes():
 		call_deferred("defer_node_setup", node_instance, pos)
 		map_nodes.append(node_instance)
 	
-	print("  Instantiated %d nodes" % map_nodes.size())
+	debug_print("  Instantiated %d nodes" % map_nodes.size())
 
 func validate_nodes():
 	# Check for overlapping/duplicate nodes
@@ -584,9 +637,9 @@ func validate_nodes():
 				overlapping_pairs.append([node_a.node_index, node_b.node_index, distance])
 	
 	if overlapping_pairs.size() > 0:
-		print("  WARNING: Found %d overlapping node pairs:" % overlapping_pairs.size())
+		debug_print("  WARNING: Found %d overlapping node pairs:" % overlapping_pairs.size())
 		for pair in overlapping_pairs:
-			print("    Nodes %d and %d are %.2f units apart" % [pair[0], pair[1], pair[2]])
+			debug_print("    Nodes %d and %d are %.2f units apart" % [pair[0], pair[1], pair[2]])
 	
 	# Check for duplicate connections in node connection lists
 	var duplicate_connections = 0
@@ -595,16 +648,16 @@ func validate_nodes():
 		for neighbor in node.connections:
 			if seen_neighbors.has(neighbor.node_index):
 				duplicate_connections += 1
-				print("  WARNING: Node %d has duplicate connection to node %d" % [node.node_index, neighbor.node_index])
+				debug_print("  WARNING: Node %d has duplicate connection to node %d" % [node.node_index, neighbor.node_index])
 			else:
 				seen_neighbors[neighbor.node_index] = true
 		
 		# Also check if node is connected to itself
 		if seen_neighbors.has(node.node_index):
-			print("  ERROR: Node %d is connected to itself!" % node.node_index)
+			debug_print("  ERROR: Node %d is connected to itself!" % node.node_index)
 	
 	if duplicate_connections > 0:
-		print("  WARNING: Found %d duplicate connections" % duplicate_connections)
+		debug_print("  WARNING: Found %d duplicate connections" % duplicate_connections)
 	
 	# Check for asymmetric connections (A has B but B doesn't have A)
 	var asymmetric_connections = 0
@@ -612,12 +665,12 @@ func validate_nodes():
 		for neighbor in node.connections:
 			if node not in neighbor.connections:
 				asymmetric_connections += 1
-				print("  ERROR: Asymmetric connection: Node %d has %d, but %d doesn't have %d" % [node.node_index, neighbor.node_index, neighbor.node_index, node.node_index])
+				debug_print("  ERROR: Asymmetric connection: Node %d has %d, but %d doesn't have %d" % [node.node_index, neighbor.node_index, neighbor.node_index, node.node_index])
 	
 	if asymmetric_connections > 0:
-		print("  ERROR: Found %d asymmetric connections" % asymmetric_connections)
+		debug_print("  ERROR: Found %d asymmetric connections" % asymmetric_connections)
 	else:
-		print("  Node validation passed (no overlaps, duplicates, or asymmetric connections)")
+		debug_print("  Node validation passed (no overlaps, duplicates, or asymmetric connections)")
 
 func defer_node_setup(node: MapNode2D, pos: Vector2):
 	# Control nodes position from top-left, so offset by half size to center
@@ -643,7 +696,7 @@ func center_points_at_origin():
 	for node in map_nodes:
 		node.position += offset
 	
-	print("  Centered at screen (offset: %.1f, %.1f)" % [offset.x, offset.y])
+	debug_print("  Centered at screen (offset: %.1f, %.1f)" % [offset.x, offset.y])
 
 # ============================================================================
 # STEP 6.5: ROTATE TO HORIZONTAL
@@ -674,7 +727,7 @@ func rotate_to_horizontal():
 	var pos_a_center = node_a.position + (node_a.size / 2.0)
 	var pos_b_center = node_b.position + (node_b.size / 2.0)
 	
-	print("  Furthest nodes: %d and %d (distance: %.1f)" % [node_a.node_index, node_b.node_index, max_distance])
+	debug_print("  Furthest nodes: %d and %d (distance: %.1f)" % [node_a.node_index, node_b.node_index, max_distance])
 	
 	# Calculate current angle between these nodes
 	var direction = (pos_b_center - pos_a_center).normalized()
@@ -701,7 +754,7 @@ func rotate_to_horizontal():
 		node.position = new_center - (node.size / 2.0)
 	
 	var angle_degrees = rad_to_deg(rotation_angle)
-	print("  Rotated by %.1f degrees around center (%.1f, %.1f)" % [angle_degrees, center.x, center.y])
+	debug_print("  Rotated by %.1f degrees around center (%.1f, %.1f)" % [angle_degrees, center.x, center.y])
 
 # ============================================================================
 # STEP 6.6: VERTICALLY CENTER NODES
@@ -709,7 +762,7 @@ func rotate_to_horizontal():
 
 func vertically_center_nodes():
 	if map_nodes.size() == 0:
-		print("  ERROR: No nodes to vertically center!")
+		debug_print("  ERROR: No nodes to vertically center!")
 		return
 	
 	# Find the bounding box (min and max Y positions)
@@ -726,14 +779,14 @@ func vertically_center_nodes():
 	var screen_center_y = size.y / 2.0
 	var y_offset = screen_center_y - bounding_box_center_y
 	
-	print("  DEBUG: Bounding box Y range: %.1f to %.1f (center: %.1f)" % [min_y, max_y, bounding_box_center_y])
-	print("  DEBUG: Screen center Y: %.1f, Offset: %.1f" % [screen_center_y, y_offset])
+	debug_print("  DEBUG: Bounding box Y range: %.1f to %.1f (center: %.1f)" % [min_y, max_y, bounding_box_center_y])
+	debug_print("  DEBUG: Screen center Y: %.1f, Offset: %.1f" % [screen_center_y, y_offset])
 	
 	# Shift all nodes vertically
 	for node in map_nodes:
 		node.position.y += y_offset
 	
-	print("  Vertically centered (y offset: %.1f)" % y_offset)
+	debug_print("  Vertically centered (y offset: %.1f)" % y_offset)
 
 # ============================================================================
 # STEP 7: DELAUNAY TRIANGULATION
@@ -743,7 +796,7 @@ func generate_delaunay_connections():
 	delaunay_edges.clear()
 	
 	if map_nodes.size() < 3:
-		print("  Not enough nodes for triangulation")
+		debug_print("  Not enough nodes for triangulation")
 		return
 	
 	# Use Godot's Geometry2D for Delaunay
@@ -783,7 +836,7 @@ func generate_delaunay_connections():
 		
 		delaunay_edges.append([node_a.position, node_b.position])
 	
-	print("  Created %d edges" % delaunay_edges.size())
+	debug_print("  Created %d edges" % delaunay_edges.size())
 
 # ============================================================================
 # STEP 8: FILTER EDGES (OPTIONAL)
@@ -793,7 +846,7 @@ func filter_edges_by_distance():
 	var max_dist = poisson_min_distance * max_connection_distance_multiplier
 	var removed_count = 0
 	
-	print("  Filtering edges longer than %.1f units..." % max_dist)
+	debug_print("  Filtering edges longer than %.1f units..." % max_dist)
 	
 	for node in map_nodes:
 		var connections_to_remove = []
@@ -817,7 +870,7 @@ func filter_edges_by_distance():
 				processed_edges[key] = true
 				delaunay_edges.append([node.position, neighbor.position])
 	
-	print("  Removed %d long edges, %d remaining" % [removed_count / 2, delaunay_edges.size()])
+	debug_print("  Removed %d long edges, %d remaining" % [removed_count / 2, delaunay_edges.size()])
 
 func filter_edges_by_angle():
 	# Remove connections that create very small angles
@@ -922,7 +975,7 @@ func filter_edges_by_angle():
 				var pos_b = neighbor.position + (neighbor.size / 2.0)
 				delaunay_edges.append([pos_a, pos_b])
 	
-	print("  Removed %d edges with angles smaller than %.1f degrees" % [removed_count, min_angle_threshold_degrees])
+	debug_print("  Removed %d edges with angles smaller than %.1f degrees" % [removed_count, min_angle_threshold_degrees])
 
 # ============================================================================
 # STEP 9: IDENTIFY COASTAL NODES
@@ -999,11 +1052,11 @@ func identify_coastal_nodes():
 		
 		# Verify both nodes are marked (they should be, but double-check)
 		if not node_a_found.is_coastal:
-			print("  DEBUG: Node %d on boundary edge %s was not marked coastal! Fixing..." % [node_a_idx, boundary.edge])
+			debug_print("  DEBUG: Node %d on boundary edge %s was not marked coastal! Fixing..." % [node_a_idx, boundary.edge])
 			node_a_found.is_coastal = true
 			verification_fixes += 1
 		if not node_b_found.is_coastal:
-			print("  DEBUG: Node %d on boundary edge %s was not marked coastal! Fixing..." % [node_b_idx, boundary.edge])
+			debug_print("  DEBUG: Node %d on boundary edge %s was not marked coastal! Fixing..." % [node_b_idx, boundary.edge])
 			node_b_found.is_coastal = true
 			verification_fixes += 1
 	
@@ -1015,7 +1068,7 @@ func identify_coastal_nodes():
 			node.set_debug_color(Color.WHITE)
 	
 	if verification_fixes > 0:
-		print("  WARNING: Fixed %d nodes that should have been marked coastal" % verification_fixes)
+		debug_print("  WARNING: Fixed %d nodes that should have been marked coastal" % verification_fixes)
 	
 	# PASS 2.5: Fix coastal nodes with missing coastal edge connections
 	# If a coastal node has fewer than 2 coastal neighbors, check its connections to other coastal nodes
@@ -1046,7 +1099,7 @@ func identify_coastal_nodes():
 						fixed_coastal_edges += 1
 	
 	if fixed_coastal_edges > 0:
-		print("  Fixed %d missing coastal edge connections" % fixed_coastal_edges)
+		debug_print("  Fixed %d missing coastal edge connections" % fixed_coastal_edges)
 	
 	# PASS 3: Remove interior loop nodes that were incorrectly marked as coastal
 	# Interior loop nodes: coastal nodes that are ONLY connected to other coastal nodes
@@ -1134,9 +1187,9 @@ func identify_coastal_nodes():
 			node.set_debug_color(Color.WHITE)
 	
 	if removed_count > 0:
-		print("  Removed %d interior loop nodes incorrectly marked as coastal" % removed_count)
+		debug_print("  Removed %d interior loop nodes incorrectly marked as coastal" % removed_count)
 	
-	print("  Identified %d coastal nodes with %d coastal connections (found %d boundary edges)" % [coastal_nodes.size(), coastal_connections.size(), boundary_edge_data.size()])
+	debug_print("  Identified %d coastal nodes with %d coastal connections (found %d boundary edges)" % [coastal_nodes.size(), coastal_connections.size(), boundary_edge_data.size()])
 	
 	# PASS 2.75: Identify interior loops
 	identify_interior_loops()
@@ -1192,7 +1245,7 @@ func identify_interior_loops():
 	
 	# Find the largest loop (main boundary)
 	if all_loops.size() == 0:
-		print("  No loops found in coastal connections")
+		debug_print("  No loops found in coastal connections")
 		return
 	
 	var largest_loop: Array = all_loops[0]
@@ -1202,7 +1255,7 @@ func identify_interior_loops():
 			largest_loop = loop
 			largest_size = loop.size()
 	
-	print("  Found %d loops, largest loop has %d nodes (main boundary)" % [all_loops.size(), largest_size])
+	debug_print("  Found %d loops, largest loop has %d nodes (main boundary)" % [all_loops.size(), largest_size])
 	
 	# Identify interior loops (loops that share nodes with main boundary but are smaller)
 	var interior_loops: Array = []
@@ -1223,12 +1276,12 @@ func identify_interior_loops():
 		
 		if shares_nodes:
 			interior_loops.append(loop)
-			print("  INTERIOR LOOP FOUND: %s (shares nodes with main boundary)" % str(loop))
+			debug_print("  INTERIOR LOOP FOUND: %s (shares nodes with main boundary)" % str(loop))
 	
 	if interior_loops.size() > 0:
-		print("  Identified %d interior loops" % interior_loops.size())
+		debug_print("  Identified %d interior loops" % interior_loops.size())
 	else:
-		print("  No interior loops found")
+		debug_print("  No interior loops found")
 
 func find_cycle_dfs(current: MapNode2D, start: MapNode2D, path: Array, adjacency: Dictionary, visited_edges: Dictionary, path_set: Dictionary):
 	# Base case: found cycle back to start
@@ -1338,7 +1391,7 @@ func generate_expanded_coast():
 		if expanded_a != null and expanded_b != null:
 			expanded_coast_lines.append([expanded_a, expanded_b])
 	
-	print("  Generated %d expanded coast lines from %d coastal nodes (%d connections)" % [expanded_coast_lines.size(), coastal_nodes.size(), coastal_connections.size()])
+	debug_print("  Generated %d expanded coast lines from %d coastal nodes (%d connections)" % [expanded_coast_lines.size(), coastal_nodes.size(), coastal_connections.size()])
 
 # ============================================================================
 # COAST EXPANSION: AWAY DIRECTION CALCULATION
@@ -1346,7 +1399,7 @@ func generate_expanded_coast():
 
 func calculate_away_directions_pass1():
 	# PASS 1: ALL coastal nodes with 3+ connections
-	print("  PASS 1: Processing ALL coastal nodes with 3+ connections...")
+	debug_print("  PASS 1: Processing ALL coastal nodes with 3+ connections...")
 	var processed_count = 0
 	for node in coastal_nodes:
 		if node.connections.size() < 3:
@@ -1363,7 +1416,7 @@ func calculate_away_directions_pass1():
 				non_coastal_neighbors.append(neighbor)
 		
 		processed_count += 1
-		print("    PASS 1: Node %d (connections=%d, coastal_neighbors=%d, non_coastal_neighbors=%d)" % [node.node_index, node.connections.size(), coastal_neighbors.size(), non_coastal_neighbors.size()])
+		debug_print("    PASS 1: Node %d (connections=%d, coastal_neighbors=%d, non_coastal_neighbors=%d)" % [node.node_index, node.connections.size(), coastal_neighbors.size(), non_coastal_neighbors.size()])
 		
 		var node_center = node.position + (node.size / 2.0)
 		var away_angle: float
@@ -1422,7 +1475,7 @@ func calculate_away_directions_pass1():
 			# Case: 3+ coastal neighbors
 			# Find the 2 coastal neighbors where the EDGE is also coastal (in coastal_connections)
 			var coastal_neighbors_with_coastal_edges: Array[MapNode2D] = []
-			print("      Node %d: Checking %d coastal neighbors for coastal edges..." % [node.node_index, coastal_neighbors.size()])
+			debug_print("      Node %d: Checking %d coastal neighbors for coastal edges..." % [node.node_index, coastal_neighbors.size()])
 			for neighbor in coastal_neighbors:
 				# Check if the edge between node and neighbor is in coastal_connections
 				var edge_is_coastal = false
@@ -1431,20 +1484,20 @@ func calculate_away_directions_pass1():
 						edge_is_coastal = true
 						break
 				
-				print("        Neighbor %d: edge_is_coastal=%s" % [neighbor.node_index, edge_is_coastal])
+				debug_print("        Neighbor %d: edge_is_coastal=%s" % [neighbor.node_index, edge_is_coastal])
 				if edge_is_coastal:
 					coastal_neighbors_with_coastal_edges.append(neighbor)
 			
 			# There should be exactly 2 coastal neighbors with coastal edges
 			if coastal_neighbors_with_coastal_edges.size() != 2:
 				_handle_generation_error("Node %d has %d coastal neighbors with coastal edges (expected 2)" % [node.node_index, coastal_neighbors_with_coastal_edges.size()])
-				print("      ERROR: Expected 2, got %d. Using fallback (first 2 coastal neighbors)" % coastal_neighbors_with_coastal_edges.size())
+				debug_print("      ERROR: Expected 2, got %d. Using fallback (first 2 coastal neighbors)" % coastal_neighbors_with_coastal_edges.size())
 				# Fallback: use first two coastal neighbors
 				coastal_neighbors_with_coastal_edges = [coastal_neighbors[0], coastal_neighbors[1]]
 			
 			var coastal_1 = coastal_neighbors_with_coastal_edges[0]
 			var coastal_2 = coastal_neighbors_with_coastal_edges[1]
-			print("      SELECTED: Using neighbors %d and %d for arc calculation" % [coastal_1.node_index, coastal_2.node_index])
+			debug_print("      SELECTED: Using neighbors %d and %d for arc calculation" % [coastal_1.node_index, coastal_2.node_index])
 			
 			var pos_1 = coastal_1.position + (coastal_1.size / 2.0)
 			var pos_2 = coastal_2.position + (coastal_2.size / 2.0)
@@ -1470,9 +1523,9 @@ func calculate_away_directions_pass1():
 			var other_neighbors_in_arc1 = false
 			var other_neighbors_in_arc2 = false
 			
-			print("      Checking other neighbors for arc classification:")
-			print("      Arc 1 range: %.1f° to %.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end)])
-			print("      Arc 2 range: %.1f° to %.1f° (wrapping)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU)])
+			debug_print("      Checking other neighbors for arc classification:")
+			debug_print("      Arc 1 range: %.1f° to %.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end)])
+			debug_print("      Arc 2 range: %.1f° to %.1f° (wrapping)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU)])
 			
 			for other_neighbor in node.connections:
 				if other_neighbor == coastal_1 or other_neighbor == coastal_2:
@@ -1491,7 +1544,7 @@ func calculate_away_directions_pass1():
 				# Arc 2 is the wrapping range (everything else)
 				var in_arc1 = (angle_other >= arc_1_start and angle_other <= arc_1_end)
 				
-				print("        Neighbor %d: angle=%.1f°, in_arc1=%s (check: %.1f >= %.1f AND %.1f <= %.1f)" % [
+				debug_print("        Neighbor %d: angle=%.1f°, in_arc1=%s (check: %.1f >= %.1f AND %.1f <= %.1f)" % [
 					other_neighbor.node_index,
 					angle_other_deg,
 					in_arc1,
@@ -1503,11 +1556,11 @@ func calculate_away_directions_pass1():
 				
 				if in_arc1:
 					other_neighbors_in_arc1 = true
-					print("          → Classified as ARC 1")
+					debug_print("          → Classified as ARC 1")
 				else:
 					# Must be in arc 2 (the two arcs cover the full circle)
 					other_neighbors_in_arc2 = true
-					print("          → Classified as ARC 2")
+					debug_print("          → Classified as ARC 2")
 			
 			# Calculate candidate angles
 			var candidate_arc1 = arc_1_start + arc_1_span / 2.0
@@ -1515,8 +1568,8 @@ func calculate_away_directions_pass1():
 			if candidate_arc2 >= TAU:
 				candidate_arc2 -= TAU
 			
-			print("      Candidate angles: Arc1_midpoint=%.1f°, Arc2_midpoint=%.1f°" % [rad_to_deg(candidate_arc1), rad_to_deg(candidate_arc2)])
-			print("      Neighbors in arc1: %s, Neighbors in arc2: %s" % [other_neighbors_in_arc1, other_neighbors_in_arc2])
+			debug_print("      Candidate angles: Arc1_midpoint=%.1f°, Arc2_midpoint=%.1f°" % [rad_to_deg(candidate_arc1), rad_to_deg(candidate_arc2)])
+			debug_print("      Neighbors in arc1: %s, Neighbors in arc2: %s" % [other_neighbors_in_arc1, other_neighbors_in_arc2])
 			
 			# Pick the midpoint of the arc OPPOSITE to where other neighbors lie
 			# If neighbors are in arc 1, use arc 2's midpoint
@@ -1524,20 +1577,20 @@ func calculate_away_directions_pass1():
 			if other_neighbors_in_arc1 and not other_neighbors_in_arc2:
 				# Neighbors are in arc 1, use arc 2
 				away_angle = candidate_arc2
-				print("      DECISION: Neighbors in ARC 1 → Use ARC 2 candidate = %.1f°" % rad_to_deg(away_angle))
+				debug_print("      DECISION: Neighbors in ARC 1 → Use ARC 2 candidate = %.1f°" % rad_to_deg(away_angle))
 			elif other_neighbors_in_arc2 and not other_neighbors_in_arc1:
 				# Neighbors are in arc 2, use arc 1
 				away_angle = candidate_arc1
-				print("      DECISION: Neighbors in ARC 2 → Use ARC 1 candidate = %.1f°" % rad_to_deg(away_angle))
+				debug_print("      DECISION: Neighbors in ARC 2 → Use ARC 1 candidate = %.1f°" % rad_to_deg(away_angle))
 			else:
 				# ERROR: Neighbors in both arcs or neither - this should be impossible
 				_handle_generation_error("Node %d: ERROR - Neighbors found in both arcs or neither! arc1=%s, arc2=%s" % [node.node_index, other_neighbors_in_arc1, other_neighbors_in_arc2])
-				print("      ERROR: Cannot determine which arc neighbors are in!")
-				print("      Arc 1: %.1f° to %.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end)])
-				print("      Arc 2: %.1f° to %.1f° (wrapping)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU)])
+				debug_print("      ERROR: Cannot determine which arc neighbors are in!")
+				debug_print("      Arc 1: %.1f° to %.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end)])
+				debug_print("      Arc 2: %.1f° to %.1f° (wrapping)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU)])
 				# Fallback: use arc 1 midpoint
 				away_angle = candidate_arc1
-				print("      FALLBACK: Using ARC 1 candidate = %.1f°" % rad_to_deg(away_angle))
+				debug_print("      FALLBACK: Using ARC 1 candidate = %.1f°" % rad_to_deg(away_angle))
 		
 		else:
 			# Case: 0-1 coastal neighbors - use non-coastal neighbors to determine away direction
@@ -1558,9 +1611,9 @@ func calculate_away_directions_pass1():
 		
 		# SET THE AWAY DIRECTION - DO NOT SKIP THIS
 		node.away_direction = away_angle
-		print("      → Set away_direction=%.1f° for node %d" % [rad_to_deg(away_angle), node.node_index])
+		debug_print("      → Set away_direction=%.1f° for node %d" % [rad_to_deg(away_angle), node.node_index])
 	
-	print("  PASS 1: Processed %d nodes" % processed_count)
+	debug_print("  PASS 1: Processed %d nodes" % processed_count)
 
 func calculate_away_directions_pass2():
 	# PASS 2: Coastal nodes with exactly 2 connections
@@ -1568,7 +1621,7 @@ func calculate_away_directions_pass2():
 		if node.connections.size() != 2:
 			continue
 		
-		print("  PASS 2: Node %d (2 connections)" % node.node_index)
+		debug_print("  PASS 2: Node %d (2 connections)" % node.node_index)
 		
 		var node_center = node.position + (node.size / 2.0)
 		var neighbor_1 = node.connections[0]
@@ -1589,8 +1642,8 @@ func calculate_away_directions_pass2():
 		if angle_2 < 0:
 			angle_2 += TAU
 		
-		print("    Neighbor 1 (node %d): angle=%.1f° (%.2f rad), is_coastal=%s, away_direction=%.1f°" % [neighbor_1.node_index, rad_to_deg(angle_1), angle_1, neighbor_1.is_coastal, rad_to_deg(neighbor_1.away_direction) if neighbor_1.away_direction != 0.0 else 0.0])
-		print("    Neighbor 2 (node %d): angle=%.1f° (%.2f rad), is_coastal=%s, away_direction=%.1f°" % [neighbor_2.node_index, rad_to_deg(angle_2), angle_2, neighbor_2.is_coastal, rad_to_deg(neighbor_2.away_direction) if neighbor_2.away_direction != 0.0 else 0.0])
+		debug_print("    Neighbor 1 (node %d): angle=%.1f° (%.2f rad), is_coastal=%s, away_direction=%.1f°" % [neighbor_1.node_index, rad_to_deg(angle_1), angle_1, neighbor_1.is_coastal, rad_to_deg(neighbor_1.away_direction) if neighbor_1.away_direction != 0.0 else 0.0])
+		debug_print("    Neighbor 2 (node %d): angle=%.1f° (%.2f rad), is_coastal=%s, away_direction=%.1f°" % [neighbor_2.node_index, rad_to_deg(angle_2), angle_2, neighbor_2.is_coastal, rad_to_deg(neighbor_2.away_direction) if neighbor_2.away_direction != 0.0 else 0.0])
 		
 		# Calculate both candidate away angles
 		var arc_1_start = min(angle_1, angle_2)
@@ -1603,8 +1656,8 @@ func calculate_away_directions_pass2():
 		if candidate_2 >= TAU:
 			candidate_2 -= TAU
 		
-		print("    Arc 1: %.1f° to %.1f° (span=%.1f°), candidate=%.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end), rad_to_deg(arc_1_span), rad_to_deg(candidate_1)])
-		print("    Arc 2: %.1f° to %.1f° (span=%.1f°), candidate=%.1f°" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU), rad_to_deg(arc_2_span), rad_to_deg(candidate_2)])
+		debug_print("    Arc 1: %.1f° to %.1f° (span=%.1f°), candidate=%.1f°" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end), rad_to_deg(arc_1_span), rad_to_deg(candidate_1)])
+		debug_print("    Arc 2: %.1f° to %.1f° (span=%.1f°), candidate=%.1f°" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU), rad_to_deg(arc_2_span), rad_to_deg(candidate_2)])
 		
 		# Find which candidate is closest to neighboring coastal nodes' away_directions
 		var use_candidate_1 = true
@@ -1616,10 +1669,10 @@ func calculate_away_directions_pass2():
 		var total_distance_to_candidate_2 = 0.0
 		var neighbor_count = 0
 		
-		print("    Checking neighbors' away_directions:")
+		debug_print("    Checking neighbors' away_directions:")
 		for neighbor in node.connections:
 			var away_str = "%.1f° (raw=%.4f)" % [rad_to_deg(neighbor.away_direction), neighbor.away_direction] if neighbor.away_direction != 0.0 else "NOT SET (0.0)"
-			print("      Neighbor %d: is_coastal=%s, away_direction=%s" % [neighbor.node_index, neighbor.is_coastal, away_str])
+			debug_print("      Neighbor %d: is_coastal=%s, away_direction=%s" % [neighbor.node_index, neighbor.is_coastal, away_str])
 			
 			if neighbor.is_coastal and neighbor.away_direction != 0.0:  # away_direction is set (non-zero)
 				has_coastal_neighbors_with_away = true
@@ -1640,18 +1693,18 @@ func calculate_away_directions_pass2():
 				total_distance_to_candidate_2 += dist_to_c2
 				neighbor_count += 1
 				
-				print("        → USING: away_direction=%.1f°, dist_to_c1=%.1f°, dist_to_c2=%.1f°" % [rad_to_deg(neighbor_away), rad_to_deg(dist_to_c1), rad_to_deg(dist_to_c2)])
+				debug_print("        → USING: away_direction=%.1f°, dist_to_c1=%.1f°, dist_to_c2=%.1f°" % [rad_to_deg(neighbor_away), rad_to_deg(dist_to_c1), rad_to_deg(dist_to_c2)])
 			else:
 				if neighbor.is_coastal:
-					print("        → SKIPPING: is_coastal but away_direction not set (value=%.4f)" % neighbor.away_direction)
+					debug_print("        → SKIPPING: is_coastal but away_direction not set (value=%.4f)" % neighbor.away_direction)
 				else:
-					print("        → SKIPPING: not coastal")
+					debug_print("        → SKIPPING: not coastal")
 		
 		if has_coastal_neighbors_with_away:
 			# Use the candidate that's closer to neighboring away_directions
 			use_candidate_1 = total_distance_to_candidate_1 < total_distance_to_candidate_2
 			selection_reason = "closer to neighboring away_directions (total dist: c1=%.1f°, c2=%.1f°)" % [rad_to_deg(total_distance_to_candidate_1), rad_to_deg(total_distance_to_candidate_2)]
-			print("    DECISION: Using away_direction comparison - total_dist_c1=%.1f°, total_dist_c2=%.1f°" % [rad_to_deg(total_distance_to_candidate_1), rad_to_deg(total_distance_to_candidate_2)])
+			debug_print("    DECISION: Using away_direction comparison - total_dist_c1=%.1f°, total_dist_c2=%.1f°" % [rad_to_deg(total_distance_to_candidate_1), rad_to_deg(total_distance_to_candidate_2)])
 		else:
 			# Fallback: if one neighbor is non-coastal, use the arc away from it
 			var non_coastal = neighbor_1 if not neighbor_1.is_coastal else (neighbor_2 if not neighbor_2.is_coastal else null)
@@ -1665,17 +1718,17 @@ func calculate_away_directions_pass2():
 				var non_coastal_in_arc1 = (angle_nc >= arc_1_start and angle_nc <= arc_1_end)
 				use_candidate_1 = not non_coastal_in_arc1  # Use opposite arc
 				selection_reason = "non-coastal neighbor %d at %.1f° is %s arc_1, using %s arc" % [non_coastal.node_index, rad_to_deg(angle_nc), "in" if non_coastal_in_arc1 else "not in", "opposite" if non_coastal_in_arc1 else "same"]
-				print("    DECISION: Using non-coastal fallback - neighbor %d at angle=%.1f°" % [non_coastal.node_index, rad_to_deg(angle_nc)])
+				debug_print("    DECISION: Using non-coastal fallback - neighbor %d at angle=%.1f°" % [non_coastal.node_index, rad_to_deg(angle_nc)])
 			else:
 				selection_reason = "no away_directions available and both neighbors are coastal, defaulting to candidate_1"
-				print("    DECISION: FALLBACK - No away_directions and both neighbors are coastal")
+				debug_print("    DECISION: FALLBACK - No away_directions and both neighbors are coastal")
 		
 		# Set the chosen away direction
 		var chosen_candidate = candidate_1 if use_candidate_1 else candidate_2
 		node.away_direction = chosen_candidate
 		
-		print("    SELECTED: Candidate %d (%.1f°) - %s" % [1 if use_candidate_1 else 2, rad_to_deg(chosen_candidate), selection_reason])
-		print("")
+		debug_print("    SELECTED: Candidate %d (%.1f°) - %s" % [1 if use_candidate_1 else 2, rad_to_deg(chosen_candidate), selection_reason])
+		debug_print("")
 
 func validate_all_coastal_nodes_processed():
 	# Ensure all coastal nodes have been processed (have away_direction set)
@@ -1686,11 +1739,11 @@ func validate_all_coastal_nodes_processed():
 	
 	if unprocessed_nodes.size() > 0:
 		_handle_generation_error("ERROR: %d coastal nodes were not processed!" % unprocessed_nodes.size())
-		print("  Unprocessed coastal nodes:")
+		debug_print("  Unprocessed coastal nodes:")
 		for node in unprocessed_nodes:
-			print("    Node %d: connections=%d" % [node.node_index, node.connections.size()])
+			debug_print("    Node %d: connections=%d" % [node.node_index, node.connections.size()])
 	else:
-		print("  ✓ All %d coastal nodes have been processed" % coastal_nodes.size())
+		debug_print("  ✓ All %d coastal nodes have been processed" % coastal_nodes.size())
 
 # ============================================================================
 # STEP 10: BUILD ASTAR2D
@@ -1709,7 +1762,7 @@ func build_astar_graph():
 			if not astar.are_points_connected(node.node_index, neighbor.node_index):
 				astar.connect_points(node.node_index, neighbor.node_index)
 	
-	print("  Built AStar2D with %d points" % astar.get_point_count())
+	debug_print("  Built AStar2D with %d points" % astar.get_point_count())
 
 # ============================================================================
 # STEP 11: IDENTIFY POINTS OF INTEREST
@@ -1742,7 +1795,7 @@ func identify_points_of_interest():
 	if most_isolated:
 		most_isolated.is_poi = true
 		most_isolated.poi_type = "lonely_mountain"
-		print("  Identified lonely mountain at node %d" % most_isolated.node_index)
+		debug_print("  Identified lonely mountain at node %d" % most_isolated.node_index)
 
 # ============================================================================
 # STEP 12: CREATE REGIONS
@@ -1788,7 +1841,7 @@ func create_regions():
 	# Colorize regions
 	colorize_regions(region_count)
 	
-	print("  Created %d regions" % region_count)
+	debug_print("  Created %d regions" % region_count)
 
 func colorize_regions(num_regions: int):
 	# All nodes get the configured node color (export property)
@@ -1803,6 +1856,24 @@ func colorize_regions(num_regions: int):
 # ============================================================================
 
 func generate_mountains_at_borders():
+	# Mountain sprite frame distributor (15 frames available)
+	var mountain_frame_count: int = 15
+	var mountain_frame_usage: Array[int] = []  # Track how many times each frame is used
+	for i in range(mountain_frame_count):
+		mountain_frame_usage.append(0)
+	
+	# Helper function to get next frame (uses least-used frame)
+	var get_next_mountain_frame = func() -> int:
+		var min_usage = mountain_frame_usage.min()
+		var available_frames: Array[int] = []
+		for i in range(mountain_frame_count):
+			if mountain_frame_usage[i] == min_usage:
+				available_frames.append(i)
+		# Pick randomly from least-used frames
+		var frame = available_frames[randi() % available_frames.size()]
+		mountain_frame_usage[frame] += 1
+		return frame
+	
 	# Step 1: Find all border nodes (nodes connected to nodes in different regions)
 	var border_nodes: Array[MapNode2D] = []
 	
@@ -1816,7 +1887,7 @@ func generate_mountains_at_borders():
 					border_nodes.append(node)
 				break
 	
-	print("  Total border nodes found: %d" % border_nodes.size())
+	debug_print("  Total border nodes found: %d" % border_nodes.size())
 	
 	# Step 2: Group border nodes into segments between region pairs
 	# Dictionary: "regionA_regionB" -> Array of nodes in that border segment
@@ -1861,10 +1932,10 @@ func generate_mountains_at_borders():
 	# Step 4: Assign rolls with rules
 	var border_keys = border_segments.keys()
 	if border_keys.size() == 0:
-		print("  No border segments found")
+		debug_print("  No border segments found")
 		return
 	
-	print("  Found %d border segments between regions" % border_keys.size())
+	debug_print("  Found %d border segments between regions" % border_keys.size())
 	
 	# Dictionary to store assigned rolls: key -> roll
 	var assigned_rolls: Dictionary = {}
@@ -1882,7 +1953,7 @@ func generate_mountains_at_borders():
 			# This border MUST be 2 or 3 (randomly choose)
 			var forced_roll = 2 + (randi() % 2)  # Either 2 or 3
 			assigned_rolls[key] = forced_roll
-			print("    Border Region %d <-> Region %d: FORCED to roll=%d (one region has only 1 border)" % [region_a_id, region_b_id, forced_roll])
+			debug_print("    Border Region %d <-> Region %d: FORCED to roll=%d (one region has only 1 border)" % [region_a_id, region_b_id, forced_roll])
 		else:
 			available_for_distribution.append(key)
 	
@@ -1941,7 +2012,7 @@ func generate_mountains_at_borders():
 	var roll_counts = [0, 0, 0, 0]
 	for key in assigned_rolls.keys():
 		roll_counts[assigned_rolls[key]] += 1
-	print("  Roll distribution: 0=%d, 1=%d, 2=%d, 3=%d" % [roll_counts[0], roll_counts[1], roll_counts[2], roll_counts[3]])
+	debug_print("  Roll distribution: 0=%d, 1=%d, 2=%d, 3=%d" % [roll_counts[0], roll_counts[1], roll_counts[2], roll_counts[3]])
 	
 	# Step 6: Apply rolls to border segments
 	var mountains_created = 0
@@ -1954,7 +2025,7 @@ func generate_mountains_at_borders():
 		var roll = assigned_rolls[key]
 		var region_a_id = int(key.split("_")[0])
 		var region_b_id = int(key.split("_")[1])
-		print("    Border Region %d <-> Region %d: Roll=%d, %d nodes" % [region_a_id, region_b_id, roll, segment_nodes.size()])
+		debug_print("    Border Region %d <-> Region %d: Roll=%d, %d nodes" % [region_a_id, region_b_id, roll, segment_nodes.size()])
 		
 		if roll == 0:
 			continue  # No mountains
@@ -1986,7 +2057,7 @@ func generate_mountains_at_borders():
 			for node in target_nodes:
 				node.is_mountain = true
 				node.set_mountain_color()
-				node.become_mountain()
+				node.become_mountain(get_next_mountain_frame.call())
 				# Assign mountain biome
 				node.biome = biome_mountain
 				nodes_made_mountains += 1
@@ -1994,19 +2065,19 @@ func generate_mountains_at_borders():
 		elif roll == 2:
 			# All except first and last
 			if target_nodes.size() <= 2:
-				print("      → Skipped (need 3+ nodes, got %d)" % target_nodes.size())
+				debug_print("      → Skipped (need 3+ nodes, got %d)" % target_nodes.size())
 				continue  # Need at least 3 nodes
 			
 			for i in range(1, target_nodes.size() - 1):
 				target_nodes[i].is_mountain = true
 				target_nodes[i].set_mountain_color()
-				target_nodes[i].become_mountain()
+				target_nodes[i].become_mountain(get_next_mountain_frame.call())
 				nodes_made_mountains += 1
 		
 		elif roll == 3:
 			# All except one random node
 			if target_nodes.size() <= 1:
-				print("      → Skipped (need 2+ nodes, got %d)" % target_nodes.size())
+				debug_print("      → Skipped (need 2+ nodes, got %d)" % target_nodes.size())
 				continue  # Need at least 2 nodes
 			
 			var exclude_idx = randi() % target_nodes.size()
@@ -2014,14 +2085,21 @@ func generate_mountains_at_borders():
 				if i != exclude_idx:
 					target_nodes[i].is_mountain = true
 					target_nodes[i].set_mountain_color()
-					target_nodes[i].become_mountain()
+					target_nodes[i].become_mountain(get_next_mountain_frame.call())
 					nodes_made_mountains += 1
 		
 		if nodes_made_mountains > 0:
-			print("      → Made %d nodes into mountains (from %d total in segment)" % [nodes_made_mountains, target_nodes.size()])
+			debug_print("      → Made %d nodes into mountains (from %d total in segment)" % [nodes_made_mountains, target_nodes.size()])
 		mountains_created += nodes_made_mountains
 	
-	print("  Total: Created %d mountain nodes from %d border nodes across %d border segments" % [mountains_created, border_nodes.size(), border_segments.size()])
+	debug_print("  Total: Created %d mountain nodes from %d border nodes across %d border segments" % [mountains_created, border_nodes.size(), border_segments.size()])
+	
+	# Debug: Show sprite frame distribution
+	if mountains_created > 0:
+		var frame_distribution = "  Mountain sprite frame distribution: "
+		for i in range(mountain_frame_count):
+			frame_distribution += "f%d=%d " % [i, mountain_frame_usage[i]]
+		debug_print(frame_distribution)
 
 # ============================================================================
 # STEP 12.55: CENTER MOUNTAIN NODES
@@ -2035,7 +2113,7 @@ func center_mountain_nodes():
 			mountain_nodes.append(node)
 	
 	if mountain_nodes.size() == 0:
-		print("  No mountain nodes to center")
+		debug_print("  No mountain nodes to center")
 		return
 	
 	# Iterate multiple times (3 passes)
@@ -2070,9 +2148,9 @@ func center_mountain_nodes():
 			mountain_node.position = new_positions[mountain_node]
 		
 		if iteration < iterations - 1:
-			print("  Centering pass %d/%d complete" % [iteration + 1, iterations])
+			debug_print("  Centering pass %d/%d complete" % [iteration + 1, iterations])
 	
-	print("  Centered %d mountain nodes (%d iterations)" % [mountain_nodes.size(), iterations])
+	debug_print("  Centered %d mountain nodes (%d iterations)" % [mountain_nodes.size(), iterations])
 
 # ============================================================================
 # STEP 12.6: DISCONNECT MOUNTAIN NODES
@@ -2090,7 +2168,7 @@ func disconnect_mountain_nodes():
 				neighbor.connections.erase(node)
 				disconnected_count += 1
 	
-	print("  Disconnected %d connections from mountain nodes" % disconnected_count)
+	debug_print("  Disconnected %d connections from mountain nodes" % disconnected_count)
 	
 	# Rebuild AStar2D graph (exclude mountains)
 	if astar != null:
@@ -2109,7 +2187,7 @@ func _load_biome_resources():
 	biome_badlands = preload("res://resources/biomes/badlands.tres")
 	biome_ash_plains = preload("res://resources/biomes/ash_plains.tres")
 	
-	print("  Loaded %d biome resources" % 6)
+	debug_print("  Loaded %d biome resources" % 6)
 
 ## Assign biomes to all nodes based on their properties
 func assign_biomes():
@@ -2155,9 +2233,9 @@ func assign_biomes():
 		biome_counts[biome_name] = biome_counts.get(biome_name, 0) + 1
 	
 	# Print summary
-	print("  Biome assignment complete:")
+	debug_print("  Biome assignment complete:")
 	for biome_name in biome_counts:
-		print("    %s: %d nodes" % [biome_name, biome_counts[biome_name]])
+		debug_print("    %s: %d nodes" % [biome_name, biome_counts[biome_name]])
 
 # ============================================================================
 # STEP 13: VISUALIZATION
@@ -2183,7 +2261,7 @@ func bake_static_map():
 		push_warning("Static map rendering nodes not found, skipping baking")
 		return
 	
-	print("Baking static map elements...")
+	debug_print("Baking static map elements...")
 	
 	# Clear previous data
 	static_map_renderer.clear_data()
@@ -2350,7 +2428,99 @@ func bake_static_map():
 	var biome_blob_count = static_map_renderer.biome_blobs_data.size()
 	var ripple_line_count = static_map_renderer.coast_ripple_lines_data.size()
 	var coast_line_count = static_map_renderer.expanded_coast_lines_data.size()
-	print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, ripple_line_count, coast_line_count])
+	debug_print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, ripple_line_count, coast_line_count])
+
+# ============================================================================
+# MAP DECORATIONS (Dragons, Octopi, etc.)
+# ============================================================================
+
+func position_map_decorations():
+	if coastal_nodes.size() == 0:
+		debug_print("  No coastal nodes found, skipping decoration placement")
+		return
+	
+	# Get map bounds (the Control's size)
+	var map_bounds = size
+	
+	# Find coastal nodes in all 8 directions
+	var southwest_node: MapNode2D = null
+	var northeast_node: MapNode2D = null
+	var east_node: MapNode2D = null
+	var west_node: MapNode2D = null
+	var northwest_node: MapNode2D = null
+	var southeast_node: MapNode2D = null
+	
+	var min_sw_score: float = INF
+	var max_ne_score: float = -INF
+	var max_east_x: float = -INF
+	var min_west_x: float = INF
+	var min_nw_score: float = INF
+	var max_se_score: float = -INF
+	
+	for node in coastal_nodes:
+		var node_center = node.position + (node.size / 2.0)
+		
+		# Southwest: x - y (minimize for left + down)
+		var sw_score = node_center.x - node_center.y
+		if sw_score < min_sw_score:
+			min_sw_score = sw_score
+			southwest_node = node
+		
+		# Northeast: x - y (maximize for right + up)
+		var ne_score = node_center.x - node_center.y
+		if ne_score > max_ne_score:
+			max_ne_score = ne_score
+			northeast_node = node
+		
+		# East: maximize x
+		if node_center.x > max_east_x:
+			max_east_x = node_center.x
+			east_node = node
+		
+		# West: minimize x
+		if node_center.x < min_west_x:
+			min_west_x = node_center.x
+			west_node = node
+		
+		# Northwest: x + y (minimize for left + up)
+		var nw_score = node_center.x + node_center.y
+		if nw_score < min_nw_score:
+			min_nw_score = nw_score
+			northwest_node = node
+		
+		# Southeast: x + y (maximize for right + down)
+		var se_score = node_center.x + node_center.y
+		if se_score > max_se_score:
+			max_se_score = se_score
+			southeast_node = node
+	
+	# Helper function to position a sprite
+	var position_sprite = func(sprite: Sprite2D, node: MapNode2D, direction: Vector2, direction_name: String, clamp_to_bounds: bool = true):
+		if not sprite or not node:
+			return
+		
+		var node_center = node.position + (node.size / 2.0)
+		var decoration_pos = node_center + direction.normalized() * decoration_distance_from_coast
+		
+		# Optionally clamp position to stay within map bounds
+		if clamp_to_bounds:
+			var sprite_half_size = sprite.texture.get_size() * sprite.scale / 2.0 if sprite.texture else Vector2(32, 32)
+			var min_bounds = sprite_half_size + Vector2(decoration_edge_margin, decoration_edge_margin)
+			var max_bounds = map_bounds - sprite_half_size - Vector2(decoration_edge_margin, decoration_edge_margin)
+			decoration_pos.x = clamp(decoration_pos.x, min_bounds.x, max_bounds.x)
+			decoration_pos.y = clamp(decoration_pos.y, min_bounds.y, max_bounds.y)
+		
+		sprite.position = decoration_pos
+		sprite.visible = true
+		debug_print("  Positioned %s sprite at %s %s from node %d" % [sprite.name, decoration_pos, direction_name, node.node_index])
+	
+	# Position all sprites (waves can go off-screen, dagron/octopi stay on-screen)
+	position_sprite.call(dagron_sprite, southwest_node, Vector2(-1.0, 1.0), "SOUTHWEST", true)
+	position_sprite.call(octopi_sprite, northeast_node, Vector2(1.0, -1.0), "NORTHEAST", true)
+	position_sprite.call(waves_east_sprite, east_node, Vector2(1.0, 0.0), "EAST", false)
+	position_sprite.call(waves_west_sprite, west_node, Vector2(-1.0, 0.0), "WEST", false)
+	position_sprite.call(waves_northwest_sprite, northwest_node, Vector2(-1.0, -1.0), "NORTHWEST", false)
+	position_sprite.call(waves_southeast_sprite, southeast_node, Vector2(1.0, 1.0), "SOUTHEAST", false)
 
 ## Helper to extract curve data for a connection line (matches draw_curved_line logic)
 func _get_curve_data_for_line(pos_a: Vector2, pos_b: Vector2, node_a: MapNode2D, node_b: MapNode2D) -> Dictionary:
@@ -2628,11 +2798,11 @@ func draw_landmass_fill():
 	# Build a closed polygon from the expanded coastline
 	var polygon_points = build_coast_polygon()
 	if polygon_points.size() < 3:
-		print("DEBUG: Landmass polygon has < 3 points: %d" % polygon_points.size())
+		debug_print("DEBUG: Landmass polygon has < 3 points: %d" % polygon_points.size())
 		return  # Need at least 3 points for a polygon
 	
 	# Draw filled polygon with solid color (no gradient)
-	print("DEBUG: Drawing landmass with %d points" % polygon_points.size())
+	debug_print("DEBUG: Drawing landmass with %d points" % polygon_points.size())
 	draw_colored_polygon(polygon_points, landmass_base_color)
 
 func build_coast_polygon() -> PackedVector2Array:
@@ -3018,7 +3188,7 @@ func spawn_party():
 	var spawn_node = valid_nodes[randi() % valid_nodes.size()]
 	set_party_position(spawn_node)
 	
-	print("Party spawned at node %d" % spawn_node.node_index)
+	debug_print("Party spawned at node %d" % spawn_node.node_index)
 
 # ============================================================================
 # PARTY MANAGEMENT
@@ -3196,7 +3366,7 @@ func navigate_party_to_node(target_node: MapNode2D):
 	# Request redraw to show trail
 	queue_redraw()
 	
-	print("Party started traveling to node %d" % target_node.node_index)
+	debug_print("Party started traveling to node %d" % target_node.node_index)
 
 ## Process party movement when in PARTY_MOVING state
 func _process(delta: float):
@@ -3306,7 +3476,7 @@ func _finish_party_travel():
 		# Clear current travel path
 		current_travel_path.clear()
 		
-		print("Party moved to node %d" % travel_target_node.node_index)
+		debug_print("Party moved to node %d" % travel_target_node.node_index)
 		
 		# Emit travel completed signal (only when actual travel happened)
 		travel_completed.emit(travel_target_node)
@@ -3352,23 +3522,23 @@ func clear_rested_node():
 ## Handle node click for navigation during gameplay
 func handle_node_navigation(clicked_node: MapNode2D):
 	if map_state == MapState.PARTY_MOVING:
-		print("Party is already traveling, ignoring click")
+		debug_print("Party is already traveling, ignoring click")
 		return
 	
 	if not current_party_node:
-		print("Party not spawned yet, ignoring click")
+		debug_print("Party not spawned yet, ignoring click")
 		return
 	
 	# Check if this is a valid move
 	if can_party_move_to(clicked_node):
 		navigate_party_to_node(clicked_node)
 	else:
-		print("Cannot move to node %d (not connected or invalid)" % clicked_node.node_index)
+		debug_print("Cannot move to node %d (not connected or invalid)" % clicked_node.node_index)
 
 func _handle_generation_error(message: String):
 	push_error(message)
 	if auto_regenerate_on_error:
-		print("  → Auto-regeneration enabled, will regenerate map after current generation completes")
+		debug_print("  → Auto-regeneration enabled, will regenerate map after current generation completes")
 		_regeneration_requested = true
 
 # ============================================================================
@@ -3627,20 +3797,20 @@ func _update_hover_preview_path():
 	hover_preview_path = all_path_points
 
 func debug_node_away_directions(node: MapNode2D):
-	print("\n=== DEBUG: Node %d Away Direction Analysis ===" % node.node_index)
-	print("Node %d: is_coastal=%s, connections=%d" % [node.node_index, node.is_coastal, node.connections.size()])
+	debug_print("\n=== DEBUG: Node %d Away Direction Analysis ===" % node.node_index)
+	debug_print("Node %d: is_coastal=%s, connections=%d" % [node.node_index, node.is_coastal, node.connections.size()])
 	
 	var away_deg = rad_to_deg(node.away_direction) if node.away_direction != 0.0 else 0.0
 	var away_str = "%.1f° (%.4f rad)" % [away_deg, node.away_direction] if node.away_direction != 0.0 else "NOT SET (0.0)"
-	print("  Node %d away_direction: %s" % [node.node_index, away_str])
+	debug_print("  Node %d away_direction: %s" % [node.node_index, away_str])
 	
 	if node.is_coastal:
 		var node_center = node.position + (node.size / 2.0)
 		var away_vec = Vector2(cos(node.away_direction), sin(node.away_direction))
 		var expanded_pos = node_center + away_vec * coast_expansion_distance
-		print("  Node %d center: (%.1f, %.1f)" % [node.node_index, node_center.x, node_center.y])
-		print("  Node %d away_vector: (%.3f, %.3f)" % [node.node_index, away_vec.x, away_vec.y])
-		print("  Node %d expanded_pos: (%.1f, %.1f)" % [node.node_index, expanded_pos.x, expanded_pos.y])
+		debug_print("  Node %d center: (%.1f, %.1f)" % [node.node_index, node_center.x, node_center.y])
+		debug_print("  Node %d away_vector: (%.3f, %.3f)" % [node.node_index, away_vec.x, away_vec.y])
+		debug_print("  Node %d expanded_pos: (%.1f, %.1f)" % [node.node_index, expanded_pos.x, expanded_pos.y])
 	
 	# Analyze which neighbors were used for away_direction calculation
 	if node.is_coastal and node.connections.size() >= 3:
@@ -3654,7 +3824,7 @@ func debug_node_away_directions(node: MapNode2D):
 				non_coastal_neighbors.append(neighbor)
 		
 		if coastal_neighbors.size() >= 3:
-			print("  PASS 1 LOGIC ANALYSIS (3+ coastal neighbors):")
+			debug_print("  PASS 1 LOGIC ANALYSIS (3+ coastal neighbors):")
 			# Find which neighbors have coastal edges
 			var coastal_neighbors_with_coastal_edges: Array[MapNode2D] = []
 			for neighbor in coastal_neighbors:
@@ -3667,13 +3837,13 @@ func debug_node_away_directions(node: MapNode2D):
 				if edge_is_coastal:
 					coastal_neighbors_with_coastal_edges.append(neighbor)
 			
-			print("    Total coastal neighbors: %d" % coastal_neighbors.size())
-			print("    Coastal neighbors WITH coastal edges: %d" % coastal_neighbors_with_coastal_edges.size())
+			debug_print("    Total coastal neighbors: %d" % coastal_neighbors.size())
+			debug_print("    Coastal neighbors WITH coastal edges: %d" % coastal_neighbors_with_coastal_edges.size())
 			
 			if coastal_neighbors_with_coastal_edges.size() == 2:
 				var used_1 = coastal_neighbors_with_coastal_edges[0]
 				var used_2 = coastal_neighbors_with_coastal_edges[1]
-				print("    ✓ USED FOR ARC: Neighbors %d and %d" % [used_1.node_index, used_2.node_index])
+				debug_print("    ✓ USED FOR ARC: Neighbors %d and %d" % [used_1.node_index, used_2.node_index])
 				
 				# Calculate what the arc would be
 				var node_center = node.position + (node.size / 2.0)
@@ -3691,14 +3861,14 @@ func debug_node_away_directions(node: MapNode2D):
 				var arc_1_end = max(angle_1, angle_2)
 				var arc_1_span = arc_1_end - arc_1_start
 				var arc_2_span = TAU - arc_1_span
-				print("    Arc 1: %.1f° to %.1f° (span=%.1f°)" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end), rad_to_deg(arc_1_span)])
-				print("    Arc 2: %.1f° to %.1f° (span=%.1f°)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU), rad_to_deg(arc_2_span)])
+				debug_print("    Arc 1: %.1f° to %.1f° (span=%.1f°)" % [rad_to_deg(arc_1_start), rad_to_deg(arc_1_end), rad_to_deg(arc_1_span)])
+				debug_print("    Arc 2: %.1f° to %.1f° (span=%.1f°)" % [rad_to_deg(arc_1_end), rad_to_deg(arc_1_start + TAU), rad_to_deg(arc_2_span)])
 			else:
-				print("    ✗ ERROR: Expected 2 coastal neighbors with coastal edges, got %d" % coastal_neighbors_with_coastal_edges.size())
+				debug_print("    ✗ ERROR: Expected 2 coastal neighbors with coastal edges, got %d" % coastal_neighbors_with_coastal_edges.size())
 				if coastal_neighbors_with_coastal_edges.size() > 0:
-					print("    Would have used: %s" % str(coastal_neighbors_with_coastal_edges.map(func(n): return n.node_index)))
+					debug_print("    Would have used: %s" % str(coastal_neighbors_with_coastal_edges.map(func(n): return n.node_index)))
 	
-	print("  All Neighbors:")
+	debug_print("  All Neighbors:")
 	for neighbor in node.connections:
 		var neighbor_away_deg = rad_to_deg(neighbor.away_direction) if neighbor.away_direction != 0.0 else 0.0
 		var neighbor_away_str = "%.1f° (%.4f rad)" % [neighbor_away_deg, neighbor.away_direction] if neighbor.away_direction != 0.0 else "NOT SET (0.0)"
@@ -3717,22 +3887,22 @@ func debug_node_away_directions(node: MapNode2D):
 				break
 		
 		var edge_status = "COASTAL EDGE" if edge_is_coastal else "interior edge"
-		print("    Neighbor %d: is_coastal=%s, %s, away_direction=%s, angle_to_neighbor=%.1f°" % [neighbor.node_index, neighbor.is_coastal, edge_status, neighbor_away_str, angle_to_neighbor_deg])
+		debug_print("    Neighbor %d: is_coastal=%s, %s, away_direction=%s, angle_to_neighbor=%.1f°" % [neighbor.node_index, neighbor.is_coastal, edge_status, neighbor_away_str, angle_to_neighbor_deg])
 		
 		if neighbor.is_coastal and neighbor.away_direction != 0.0:
 			var neighbor_away_vec = Vector2(cos(neighbor.away_direction), sin(neighbor.away_direction))
 			var neighbor_expanded_pos = neighbor_center + neighbor_away_vec * coast_expansion_distance
-			print("      Neighbor %d center: (%.1f, %.1f)" % [neighbor.node_index, neighbor_center.x, neighbor_center.y])
-			print("      Neighbor %d away_vector: (%.3f, %.3f)" % [neighbor.node_index, neighbor_away_vec.x, neighbor_away_vec.y])
-			print("      Neighbor %d expanded_pos: (%.1f, %.1f)" % [neighbor.node_index, neighbor_expanded_pos.x, neighbor_expanded_pos.y])
+			debug_print("      Neighbor %d center: (%.1f, %.1f)" % [neighbor.node_index, neighbor_center.x, neighbor_center.y])
+			debug_print("      Neighbor %d away_vector: (%.3f, %.3f)" % [neighbor.node_index, neighbor_away_vec.x, neighbor_away_vec.y])
+			debug_print("      Neighbor %d expanded_pos: (%.1f, %.1f)" % [neighbor.node_index, neighbor_expanded_pos.x, neighbor_expanded_pos.y])
 	
-	print("=== End Away Direction Debug ===\n")
+	debug_print("=== End Away Direction Debug ===\n")
 
 func debug_node_edges(node: MapNode2D):
-	print("\n=== DEBUG: Node %d Edge Analysis ===" % node.node_index)
-	print("Node %d is currently marked as coastal: %s" % [node.node_index, node.is_coastal])
-	print("Node %d has %d connections" % [node.node_index, node.connections.size()])
-	print("")
+	debug_print("\n=== DEBUG: Node %d Edge Analysis ===" % node.node_index)
+	debug_print("Node %d is currently marked as coastal: %s" % [node.node_index, node.is_coastal])
+	debug_print("Node %d has %d connections" % [node.node_index, node.connections.size()])
+	debug_print("")
 	
 	# Analyze each edge connected to this node
 	for neighbor in node.connections:
@@ -3743,34 +3913,34 @@ func debug_node_edges(node: MapNode2D):
 		var triangle_nodes: Array = []
 		var all_candidates: Array = []  # All nodes checked
 		
-		print("  Edge %d-%d: Checking for triangles..." % [node.node_index, neighbor.node_index])
+		debug_print("  Edge %d-%d: Checking for triangles..." % [node.node_index, neighbor.node_index])
 		for node_c in node.connections:
 			if node_c == neighbor:
 				continue
 			all_candidates.append(node_c.node_index)
 			# Check if node_c is also connected to neighbor (forms triangle)
 			var is_connected_to_neighbor = node_c in neighbor.connections
-			print("    Checking node %d: connected to neighbor? %s" % [node_c.node_index, is_connected_to_neighbor])
+			debug_print("    Checking node %d: connected to neighbor? %s" % [node_c.node_index, is_connected_to_neighbor])
 			if is_connected_to_neighbor:
 				triangle_count += 1
 				triangle_nodes.append(node_c.node_index)
-				print("      -> Triangle found: %d-%d-%d" % [node.node_index, neighbor.node_index, node_c.node_index])
+				debug_print("      -> Triangle found: %d-%d-%d" % [node.node_index, neighbor.node_index, node_c.node_index])
 				if triangle_count >= 2:
-					print("      -> Reached 2 triangles, stopping")
+					debug_print("      -> Reached 2 triangles, stopping")
 					break  # Interior edges have exactly 2 triangles
 		
-		print("    All candidates checked: %s" % str(all_candidates))
+		debug_print("    All candidates checked: %s" % str(all_candidates))
 		
 		# Determine if this is a boundary edge
 		var is_boundary_edge = triangle_count < 2
 		var edge_type = "BOUNDARY" if is_boundary_edge else "INTERIOR"
 		
-		print("  Edge %d-%d:" % [node.node_index, neighbor.node_index])
-		print("    Neighbor %d is coastal: %s" % [neighbor.node_index, neighbor.is_coastal])
-		print("    Triangle count: %d" % triangle_count)
+		debug_print("  Edge %d-%d:" % [node.node_index, neighbor.node_index])
+		debug_print("    Neighbor %d is coastal: %s" % [neighbor.node_index, neighbor.is_coastal])
+		debug_print("    Triangle count: %d" % triangle_count)
 		if triangle_count > 0:
-			print("    Triangles: %s" % str(triangle_nodes))
-		print("    Edge type: %s (triangle_count < 2 = %s)" % [edge_type, is_boundary_edge])
+			debug_print("    Triangles: %s" % str(triangle_nodes))
+		debug_print("    Edge type: %s (triangle_count < 2 = %s)" % [edge_type, is_boundary_edge])
 		
 		# Check if this edge is in coastal_connections
 		var in_coastal_connections = false
@@ -3778,8 +3948,8 @@ func debug_node_edges(node: MapNode2D):
 			if (conn[0] == node and conn[1] == neighbor) or (conn[0] == neighbor and conn[1] == node):
 				in_coastal_connections = true
 				break
-		print("    In coastal_connections: %s" % in_coastal_connections)
-		print("")
+		debug_print("    In coastal_connections: %s" % in_coastal_connections)
+		debug_print("")
 	
 	# Summary
 	var boundary_edge_count = 0
@@ -3805,9 +3975,9 @@ func debug_node_edges(node: MapNode2D):
 		if triangle_count < 2:
 			boundary_edge_count += 1
 	
-	print("SUMMARY:")
-	print("  Boundary edges: %d" % boundary_edge_count)
-	print("  Coastal neighbors: %d" % coastal_neighbor_count)
-	print("  Non-coastal neighbors: %d" % non_coastal_neighbor_count)
-	print("  Should be coastal: %s (has boundary edges: %d > 0)" % [boundary_edge_count > 0, boundary_edge_count])
-	print("=== End Debug ===\n")
+	debug_print("SUMMARY:")
+	debug_print("  Boundary edges: %d" % boundary_edge_count)
+	debug_print("  Coastal neighbors: %d" % coastal_neighbor_count)
+	debug_print("  Non-coastal neighbors: %d" % non_coastal_neighbor_count)
+	debug_print("  Should be coastal: %s (has boundary edges: %d > 0)" % [boundary_edge_count > 0, boundary_edge_count])
+	debug_print("=== End Debug ===\n")
