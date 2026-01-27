@@ -11,19 +11,24 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_hndvf")
 
-[node name="RestButton" type="Button" parent="."]
+[node name="UI" type="Control" parent="."]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="RestButton" type="Button" parent="UI"]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -4.0
-offset_top = -48.0
-offset_right = 4.0
-offset_bottom = -40.0
+offset_left = 590.0
+offset_top = 598.0
+offset_right = 650.0
+offset_bottom = 640.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "Rest"
 
-[connection signal="pressed" from="RestButton" to="." method="_on_rest_button_pressed"]
+[connection signal="pressed" from="UI/RestButton" to="." method="_on_rest_button_pressed"]

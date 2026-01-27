@@ -1,0 +1,29 @@
+[
+	{
+		"id": "dangerous_location_event",
+		"title": "An Unsettling Arrival",
+		"biomes": ["forest", "plains", "coast", "mountain", "hills", "swamp", "badlands", "ash_plains"],
+		"weight": 1,
+		"one_shot": false,
+		"prereqs": {
+			"requires_tags": [],
+			"forbids_tags": []
+		},
+		"text": "Your party arrives at the location. Something feels off about this place. The air is tense, and you sense danger lurking nearby. This is not a safe place to rest.",
+		"choices": [
+			{
+				"id": "continue",
+				"text": "Continue",
+				"condition": {
+					"requires_tags": [],
+					"forbids_tags": []
+				},
+				"effects": [
+					{ "type": "set_rest_state", "allow_rest": false }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

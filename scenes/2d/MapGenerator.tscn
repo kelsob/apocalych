@@ -164,12 +164,6 @@ layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("5_5r5px")
 
-[node name="PartyIndicator" type="Sprite2D" parent="."]
-modulate = Color(0.710938, 0, 0, 1)
-z_index = 10
-texture = ExtResource("6_jerfe")
-offset = Vector2(0, 1)
-
 [node name="TextureRect" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -180,6 +174,43 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("7_et537")
 
+[node name="UI" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -92.0
+offset_top = -74.0
+offset_right = 92.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ResetMapButton" type="Button" parent="UI/HBoxContainer"]
+layout_mode = 2
+text = "reset map"
+
+[node name="RestButton" type="Button" parent="UI/HBoxContainer"]
+layout_mode = 2
+text = "Rest"
+
+[node name="PartyIndicator" type="Sprite2D" parent="."]
+modulate = Color(0.710938, 0, 0, 1)
+z_index = 10
+texture = ExtResource("6_jerfe")
+offset = Vector2(0, 1)
+
 [node name="GameCamera" type="Camera2D" parent="."]
 position = Vector2(640, 360)
 enabled = false
@@ -187,12 +218,12 @@ script = ExtResource("8_n8x2r")
 zoom_min = 1.0
 zoom_max = 2.0
 
+[node name="StaticMapSprite" type="Sprite2D" parent="."]
+z_index = -1
+centered = false
+
 [node name="StaticMapViewport" type="SubViewport" parent="."]
 transparent_bg = true
 
 [node name="StaticMapRenderer" type="Node2D" parent="StaticMapViewport"]
 script = ExtResource("9_bvoid")
-
-[node name="StaticMapSprite" type="Sprite2D" parent="."]
-z_index = -1
-centered = false

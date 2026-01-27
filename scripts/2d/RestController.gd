@@ -8,7 +8,8 @@ class_name RestController
 signal rest_complete()  # Emitted when rest is finished and should return to map
 
 # References (set these via @onready or in editor)
-@onready var rest_button: Button = $RestButton
+@onready var UI: Control = $UI
+@onready var rest_button: Button = $UI/RestButton
 
 # Rest state
 var is_resting: bool = false
@@ -16,6 +17,9 @@ var is_resting: bool = false
 func _ready():
 	# Hide rest screen initially
 	visible = false
+	
+	# Connect rest button
+	rest_button.pressed.connect(_on_rest_button_pressed)
 
 ## Show the rest screen and begin resting
 func start_rest():

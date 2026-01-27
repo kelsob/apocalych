@@ -130,6 +130,7 @@ var events_paused: bool = false  # True when event window is open, prevents all 
 
 # Party state
 var current_party_node: MapNode2D = null
+var rested_at_node_index: int = -1  # Track which node was rested at (reset when party leaves)
 
 # Hover preview state
 var hovered_node: MapNode2D = null
@@ -156,6 +157,10 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var world_name_label: Label = $MapDetails/Control/WorldNameLabel
 @onready var game_camera: Camera2D = $GameCamera
 
+# MapControls (child of MapGenerator2D)
+@onready var UI: Control = $UI
+@onready var rest_button: Button = $UI/HBoxContainer/RestButton
+
 # Static map rendering (performance optimization)
 @onready var static_map_viewport: SubViewport = $StaticMapViewport
 @onready var static_map_renderer: StaticMapRenderer = $StaticMapViewport/StaticMapRenderer
@@ -166,6 +171,8 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 
 signal map_generation_complete
 signal party_moved_to_node(node: MapNode2D)  # Emitted when party moves to a new node
+signal travel_completed(node: MapNode2D)  # Emitted when party finishes traveling to a node
+signal rest_requested()  # Emitted when rest button is pressed
 
 # ============================================================================
 # INTERNAL VARIABLES
@@ -210,6 +217,10 @@ func _ready():
 	# Load biome resources
 	_load_biome_resources()
 	# Map generation will be triggered manually when game starts
+	
+	# Connect rest button
+	rest_button.pressed.connect(_on_rest_button_pressed)
+	rest_button.visible = false  # Hidden by default, shown when party can rest
 
 ## Set the world name and update the label
 func set_world_name(name: String):
@@ -3022,6 +3033,9 @@ func set_party_position(node: MapNode2D):
 	var node_center = node.position + (node.size / 2.0)
 	party_indicator.global_position = node_center
 	
+	# Hide rest button initially - events will determine if rest is safe
+	rest_button.visible = false
+	
 	# Emit signal so systems can react to party movement
 	party_moved_to_node.emit(node)
 
@@ -3154,6 +3168,9 @@ func navigate_party_to_node(target_node: MapNode2D):
 		# Fallback: just jump to target
 		set_party_position(target_node)
 		return
+	
+	# Clear rested node tracking when leaving current node
+	clear_rested_node()
 	
 	# Calculate total distance along path
 	var total_distance = 0.0
@@ -3290,6 +3307,9 @@ func _finish_party_travel():
 		current_travel_path.clear()
 		
 		print("Party moved to node %d" % travel_target_node.node_index)
+		
+		# Emit travel completed signal (only when actual travel happened)
+		travel_completed.emit(travel_target_node)
 	
 	# Clear travel state
 	travel_path_points.clear()
@@ -3304,6 +3324,30 @@ func _finish_party_travel():
 	
 	# Return to idle state
 	map_state = MapState.IDLE
+
+## Called when rest button is pressed
+func _on_rest_button_pressed():
+	rest_requested.emit()
+
+## Update rest button visibility based on whether party can rest at current node
+## can_rest: bool - Whether the party can rest at the current location
+func update_rest_button_visibility(can_rest: bool):
+	# Check if we've already rested at this node in this visit
+	var has_rested_here = (current_party_node != null and current_party_node.node_index == rested_at_node_index)
+	
+	# Rest button is visible only if rest is allowed AND we haven't rested here yet
+	rest_button.visible = can_rest and not has_rested_here
+
+## Mark that the party has successfully rested at the current node
+func mark_node_as_rested():
+	if current_party_node:
+		rested_at_node_index = current_party_node.node_index
+		# Update button visibility immediately
+		update_rest_button_visibility(current_party_node.can_rest_here)
+
+## Clear rested node tracking (called when party leaves a node)
+func clear_rested_node():
+	rested_at_node_index = -1
 
 ## Handle node click for navigation during gameplay
 func handle_node_navigation(clicked_node: MapNode2D):

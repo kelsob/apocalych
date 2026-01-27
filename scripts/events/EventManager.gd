@@ -141,59 +141,8 @@ func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 
 ## Pick an event for a node based on biome and prerequisites
 func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionary = {}) -> Dictionary:
-	var candidate_events: Array[Dictionary] = []
-	var candidate_weights: Array[int] = []
-	
-	# Build party state dictionary for condition checking
-	var party_state_dict = _build_party_state(party)
-	
-	# Find all events that match biome and prerequisites
-	for event_id in events:
-		var event = events[event_id]
-		
-		# Check biome match
-		if not event.has("biomes") or not event.biomes.has(biome):
-			continue
-		
-		# Check if one-shot event has already been seen
-		if event.get("one_shot", false) and seen_one_shot_events.has(event_id):
-			continue
-		
-		# Check prerequisites
-		if event.has("prereqs"):
-			if not condition_passes(event.prereqs, party_state_dict):
-				continue
-		
-		# Event is a candidate
-		var weight = event.get("weight", 1)
-		candidate_events.append(event)
-		candidate_weights.append(weight)
-	
-	if candidate_events.is_empty():
-		push_warning("EventManager: No events found for biome: " + biome)
-		return {}
-	
-	# Weighted random selection
-	var total_weight = 0
-	for weight in candidate_weights:
-		total_weight += weight
-	
-	var roll = rng.randi_range(1, total_weight)
-	var current_weight = 0
-	
-	for i in range(candidate_events.size()):
-		current_weight += candidate_weights[i]
-		if roll <= current_weight:
-			var selected_event = candidate_events[i]
-			
-			# Mark one-shot events as seen
-			if selected_event.get("one_shot", false):
-				seen_one_shot_events.append(selected_event.id)
-			
-			return selected_event
-	
-	# Fallback (shouldn't happen)
-	return candidate_events[0]
+	# For now, just always return the dangerous placeholder event (for testing)
+	return events.get("dangerous_location_event", {})
 
 ## Present an event - returns event with filtered choices
 func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
@@ -227,7 +176,7 @@ func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
 	return presented_event
 
 ## Apply effects from a choice
-func apply_effects(effects: Array[Dictionary], party: Dictionary, node_state: Dictionary = {}):
+func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {}):
 	if not effects is Array:
 		return
 	
