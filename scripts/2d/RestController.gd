@@ -17,9 +17,6 @@ var is_resting: bool = false
 func _ready():
 	# Hide rest screen initially
 	visible = false
-	
-	# Connect rest button
-	rest_button.pressed.connect(_on_rest_button_pressed)
 
 ## Show the rest screen and begin resting
 func start_rest():
