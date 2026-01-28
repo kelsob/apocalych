@@ -273,3 +273,5 @@ transparent_bg = true
 
 [node name="StaticMapRenderer" type="Node2D" parent="StaticMapViewport"]
 script = ExtResource("9_bvoid")
+
+[connection signal="pressed" from="UI/HBoxContainer/ResetMapButton" to="." method="regenerate_map"]
