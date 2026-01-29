@@ -141,8 +141,17 @@ func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 
 ## Pick an event for a node based on biome and prerequisites
 func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionary = {}) -> Dictionary:
-	# For now, just always return the dangerous placeholder event (for testing)
-	return events.get("dangerous_location_event", {})
+	# Return empty dict if no events are loaded
+	if events.is_empty():
+		push_warning("EventManager: No events loaded, cannot pick random event")
+		return {}
+	
+	# Get all event IDs and randomly select one
+	var event_ids = events.keys()
+	var random_index = rng.randi_range(0, event_ids.size() - 1)
+	var selected_event_id = event_ids[random_index]
+	
+	return events.get(selected_event_id, {})
 
 ## Present an event - returns event with filtered choices
 func present_event(event: Dictionary, party: Dictionary) -> Dictionary:

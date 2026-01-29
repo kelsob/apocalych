@@ -15,12 +15,14 @@ var map_generator: Control = null  # Reference to parent MapGenerator2D
 # ============================================================================
 
 var connection_lines_data: Array = []  # Array of dictionaries with line data
+var connection_line_highlights_data: Array = []  # Array of highlight/shadow lines for paths
 var coastal_water_blobs_data: Array = []  # Array of dictionaries with blob data
 var landmass_polygon: PackedVector2Array = PackedVector2Array()  # Landmass polygon points
 var landmass_color: Color = Color.WHITE  # Landmass fill color
 var biome_blobs_data: Array = []  # Array of biome blob dictionaries
 var coast_ripple_lines_data: Array = []  # Array of ripple line dictionaries
 var expanded_coast_lines_data: Array = []  # Array of expanded coast line dictionaries
+var trees_data: Array = []  # Array of tree dictionaries
 
 # ============================================================================
 # CONFIGURATION (inherited from MapGenerator2D)
@@ -42,6 +44,14 @@ var biome_blob_radius: float = 55.0
 var biome_blob_circles: int = 6
 var biome_blob_alpha_max: float = 0.175
 
+# Tree configuration
+var tree_foliage_radius: float = 3.5
+var tree_foliage_color: Color = Color(0.2, 0.5, 0.2, 1.0)
+var tree_foliage_outline_width: float = 0.8
+var tree_trunk_width: float = 1.0
+var tree_trunk_length: float = 2.5
+var tree_trunk_color: Color = Color(0.4, 0.25, 0.15, 1.0)
+
 # ============================================================================
 # SETUP
 # ============================================================================
@@ -55,11 +65,13 @@ func _ready():
 ## Clear all stored data (call before regenerating map)
 func clear_data():
 	connection_lines_data.clear()
+	connection_line_highlights_data.clear()
 	coastal_water_blobs_data.clear()
 	landmass_polygon.clear()
 	biome_blobs_data.clear()
 	coast_ripple_lines_data.clear()
 	expanded_coast_lines_data.clear()
+	trees_data.clear()
 
 # ============================================================================
 # DATA RECEPTION - MapGenerator2D calls these to pass data
@@ -69,6 +81,11 @@ func clear_data():
 ## line_data should contain: { pos_a: Vector2, pos_b: Vector2, color: Color, width: float, curve_data: Dictionary (optional) }
 func add_connection_line(line_data: Dictionary):
 	connection_lines_data.append(line_data)
+
+## Add a connection line highlight to be drawn (offset shadow/highlight effect)
+## line_data should contain: { pos_a: Vector2, pos_b: Vector2, color: Color, width: float, curve_data: Dictionary (optional) }
+func add_connection_line_highlight(line_data: Dictionary):
+	connection_line_highlights_data.append(line_data)
 
 ## Add a coastal water blob to be drawn
 ## blob_data should contain: { center: Vector2, node_center: Vector2, away_direction: float }
@@ -94,6 +111,11 @@ func add_coast_ripple_line(ripple_data: Dictionary):
 ## coast_line_data should contain: { pos_a: Vector2, pos_b: Vector2, color: Color, width: float }
 func add_expanded_coast_line(coast_line_data: Dictionary):
 	expanded_coast_lines_data.append(coast_line_data)
+
+## Add a tree to be drawn
+## tree_data should contain: { position: Vector2, vertical_stretch: float }
+func add_tree(tree_data: Dictionary):
+	trees_data.append(tree_data)
 
 ## Set configuration from MapGenerator2D
 func set_config(config: Dictionary):
@@ -123,6 +145,20 @@ func set_config(config: Dictionary):
 		biome_blob_circles = config["biome_blob_circles"]
 	if config.has("biome_blob_alpha_max"):
 		biome_blob_alpha_max = config["biome_blob_alpha_max"]
+	
+	# Tree configuration
+	if config.has("tree_foliage_radius"):
+		tree_foliage_radius = config["tree_foliage_radius"]
+	if config.has("tree_foliage_color"):
+		tree_foliage_color = config["tree_foliage_color"]
+	if config.has("tree_foliage_outline_width"):
+		tree_foliage_outline_width = config["tree_foliage_outline_width"]
+	if config.has("tree_trunk_width"):
+		tree_trunk_width = config["tree_trunk_width"]
+	if config.has("tree_trunk_length"):
+		tree_trunk_length = config["tree_trunk_length"]
+	if config.has("tree_trunk_color"):
+		tree_trunk_color = config["tree_trunk_color"]
 
 # ============================================================================
 # RENDERING
@@ -130,12 +166,14 @@ func set_config(config: Dictionary):
 
 func _draw():
 	# Draw in order from bottom to top
-	_draw_coastal_water_blobs()  # Bottom layer
-	_draw_landmass_fill()  # Above water blobs, behind connections
-	_draw_biome_blobs()  # Above landmass, behind connections
-	_draw_connection_lines()  # Above biome blobs
-	_draw_coast_ripples()  # Above connection lines
-	_draw_expanded_coast_lines()  # Top static layer (above everything except dynamic trails/paths)
+	_draw_coastal_water_blobs()  # Bottom layer (water)
+	_draw_coast_ripples()  # Ripples in the water
+	_draw_landmass_fill()  # Landmass base color
+	_draw_expanded_coast_lines()  # Coast border/outline (on top of landmass base)
+	_draw_biome_blobs()  # Biome colors on land
+	_draw_connection_line_highlights()  # Path highlights/shadows (underneath main paths)
+	_draw_connection_lines()  # Paths/roads
+	_draw_trees()  # Trees on top of paths
 
 ## Draw all coastal water blobs that were added
 func _draw_coastal_water_blobs():
@@ -174,6 +212,82 @@ func _draw_biome_blobs():
 			var a = biome_blob_alpha_max * (0.1 + 0.9 * t)
 			var col = Color(base.r, base.g, base.b, a)
 			draw_circle(center, r, col)
+
+## Draw all trees that were added
+func _draw_trees():
+	# Y-sort trees: trees with lower Y (further up) draw first, higher Y (further down) draw on top
+	var sorted_trees = trees_data.duplicate()
+	sorted_trees.sort_custom(func(a, b): return a.get("position", Vector2.ZERO).y < b.get("position", Vector2.ZERO).y)
+	
+	for tree_data in sorted_trees:
+		# Extract tree properties (with fallbacks to defaults)
+		var position: Vector2 = tree_data.get("position", Vector2.ZERO)
+		var vertical_stretch: float = tree_data.get("vertical_stretch", 1.0)
+		var foliage_radius: float = tree_data.get("foliage_radius", tree_foliage_radius)
+		var foliage_color: Color = tree_data.get("foliage_color", tree_foliage_color)
+		var trunk_color: Color = tree_data.get("trunk_color", tree_trunk_color)
+		var trunk_width: float = tree_data.get("trunk_width", tree_trunk_width)
+		var trunk_length: float = tree_data.get("trunk_length", tree_trunk_length)
+		var outline_width: float = tree_data.get("outline_width", tree_foliage_outline_width)
+		
+		# Calculate foliage dimensions
+		var radius_x = foliage_radius
+		var radius_y = foliage_radius * vertical_stretch
+		
+		# Draw trunk (small line extending down from bottom center of foliage)
+		var trunk_start = position + Vector2(0, radius_y)
+		var trunk_end = trunk_start + Vector2(0, trunk_length)
+		draw_line(trunk_start, trunk_end, trunk_color, trunk_width)
+		
+		# Draw foliage with outline
+		# If stretching is needed, we'll approximate with a polygon
+		if abs(vertical_stretch - 1.0) < 0.01:
+			# No significant stretching, just draw circles
+			# Draw outline first (larger circle with trunk color)
+			if outline_width > 0:
+				draw_circle(position, foliage_radius + outline_width, trunk_color)
+			# Draw main foliage on top
+			draw_circle(position, foliage_radius, foliage_color)
+		else:
+			# Draw stretched circle as polygons
+			var segments = 24
+			
+			# Draw outline first (trunk color, slightly larger)
+			if outline_width > 0:
+				var outline_points: PackedVector2Array = []
+				var outline_radius_x = radius_x + outline_width
+				var outline_radius_y = radius_y + outline_width
+				for i in range(segments):
+					var angle = (float(i) / float(segments)) * TAU
+					var x = position.x + cos(angle) * outline_radius_x
+					var y = position.y + sin(angle) * outline_radius_y
+					outline_points.append(Vector2(x, y))
+				draw_colored_polygon(outline_points, trunk_color)
+			
+			# Draw main foliage on top
+			var points: PackedVector2Array = []
+			for i in range(segments):
+				var angle = (float(i) / float(segments)) * TAU
+				var x = position.x + cos(angle) * radius_x
+				var y = position.y + sin(angle) * radius_y
+				points.append(Vector2(x, y))
+			draw_colored_polygon(points, foliage_color)
+
+## Draw all connection line highlights (offset lighter lines underneath main paths)
+func _draw_connection_line_highlights():
+	for line_data in connection_line_highlights_data:
+		var pos_a: Vector2 = line_data.get("pos_a", Vector2.ZERO)
+		var pos_b: Vector2 = line_data.get("pos_b", Vector2.ZERO)
+		var color: Color = line_data.get("color", line_color)
+		var width: float = line_data.get("width", line_width)
+		
+		if line_data.has("curve_data") and use_curved_lines:
+			# Draw curved line (matches MapGenerator2D curve logic)
+			var curve_data = line_data["curve_data"]
+			_draw_bezier_curve(pos_a, pos_b, curve_data, color, width)
+		else:
+			# Draw straight line
+			draw_line(pos_a, pos_b, color, width)
 
 ## Draw all connection lines that were added
 func _draw_connection_lines():

@@ -33,6 +33,7 @@ ripple_base_width = 1.0
 ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
 ripple_color_fade = 0.0
 biome_blob_alpha_max = 0.1
+enable_debug_output = true
 
 [node name="ColorRect" type="ColorRect" parent="."]
 z_index = -1

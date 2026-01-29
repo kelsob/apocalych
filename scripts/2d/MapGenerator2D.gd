@@ -109,11 +109,16 @@ class_name MapGenerator2D
 @export var biome_blob_circles: int = 6
 @export var biome_blob_alpha_max: float = 0.175
 
+@export_group("Map Features")
+@export var enable_map_features: bool = true  # Master toggle for all decorative features
+@export var feature_debug_output: bool = false  # Print detailed feature generation info
+
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
 
 @export_group("Performance")
 @export var use_static_rendering: bool = true  # Bake static elements to texture (TEST: connection lines only for now)
+@export var map_resolution_scale: float = 2.0  # Scale factor for static map texture (higher = crisper when zoomed)
 
 @export_group("Debug")
 @export var enable_debug_output: bool = false  # Enable/disable debug print statements
@@ -199,6 +204,7 @@ var node_positions: Array[Vector2] = []
 var coastal_nodes: Array[MapNode2D] = []
 var coastal_connections: Array = []  # Stored pairs [node_a, node_b] for coastal edges
 var expanded_coast_lines: Array = []  # Array of [pos_a, pos_b] for expanded coast lines
+var map_features: Array = []  # Array of feature dictionaries (trees, rocks, etc.)
 var astar: AStar2D
 
 # Shape noise
@@ -349,6 +355,11 @@ func generate_map():
 	# Step 12.7: Assign biomes to all nodes
 	debug_print("Step 12.7: Assigning biomes to nodes...")
 	assign_biomes()
+	
+	# Step 12.8: Generate map features (trees, decorations, etc.)
+	if enable_map_features:
+		debug_print("Step 12.8: Generating map features...")
+		generate_map_features()
 	
 	# Check if regeneration was requested due to errors (BEFORE visualizing)
 	if _regeneration_requested:
@@ -2238,6 +2249,366 @@ func assign_biomes():
 		debug_print("    %s: %d nodes" % [biome_name, biome_counts[biome_name]])
 
 # ============================================================================
+# STEP 12.8: MAP FEATURE GENERATION
+# ============================================================================
+
+## Generate decorative features for the map based on biomes
+func generate_map_features():
+	map_features.clear()
+	
+	# Get landmass polygon for bounds checking
+	var landmass_polygon = PackedVector2Array()
+	if enable_landmass_shading and expanded_coast_lines.size() > 0:
+		landmass_polygon = build_coast_polygon()
+	
+	# Build list of all connection lines for path avoidance
+	var connection_lines: Array = []
+	for node in map_nodes:
+		var node_center = node.position + (node.size / 2.0)
+		for neighbor in node.connections:
+			var neighbor_center = neighbor.position + (neighbor.size / 2.0)
+			# Avoid duplicates by only adding if this node has lower index
+			if node.node_index < neighbor.node_index:
+				connection_lines.append([node_center, neighbor_center])
+	
+	# Group nodes by biome
+	var nodes_by_biome: Dictionary = {}
+	for node in map_nodes:
+		if node.biome == null:
+			continue
+		var biome_name = node.biome.biome_name
+		if not nodes_by_biome.has(biome_name):
+			nodes_by_biome[biome_name] = []
+		nodes_by_biome[biome_name].append(node)
+	
+	# Generate features for each biome type
+	var feature_counts: Dictionary = {}
+	for biome_name in nodes_by_biome:
+		var biome_nodes = nodes_by_biome[biome_name]
+		debug_print("  Processing biome '%s' with %d nodes" % [biome_name, biome_nodes.size()])
+		var features = generate_features_for_biome(biome_name, biome_nodes, landmass_polygon, connection_lines)
+		map_features.append_array(features)
+		feature_counts[biome_name] = features.size()
+		debug_print("  Biome '%s' generated %d features" % [biome_name, features.size()])
+	
+	# Print summary
+	if feature_debug_output:
+		debug_print("  Feature generation complete:")
+		for biome_name in feature_counts:
+			debug_print("    %s: %d features" % [biome_name, feature_counts[biome_name]])
+		debug_print("  Total features: %d" % map_features.size())
+	else:
+		debug_print("  Generated %d total features" % map_features.size())
+
+## Check if a position is too close to any connection line (path)
+func is_too_close_to_path(pos: Vector2, connection_lines: Array, min_distance: float = 5.0) -> bool:
+	for line in connection_lines:
+		var line_start = line[0]
+		var line_end = line[1]
+		var closest_point = Geometry2D.get_closest_point_to_segment(pos, line_start, line_end)
+		var distance = pos.distance_to(closest_point)
+		if distance < min_distance:
+			return true
+	return false
+
+## Generate features for a specific biome type
+func generate_features_for_biome(biome_name: String, biome_nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	match biome_name:
+		"forest":
+			return generate_forest_features(biome_nodes, landmass_polygon, connection_lines)
+		"plains":
+			return generate_plains_features(biome_nodes, landmass_polygon, connection_lines)
+		"swamp":
+			return generate_swamp_features(biome_nodes, landmass_polygon, connection_lines)
+		"mountain":
+			return generate_mountain_features(biome_nodes, landmass_polygon, connection_lines)
+		"ash_plains":
+			return generate_ash_plains_features(biome_nodes, landmass_polygon, connection_lines)
+		"badlands":
+			return generate_badlands_features(biome_nodes, landmass_polygon, connection_lines)
+		_:
+			return []
+
+## Generate trees for forest biome - HIGH DENSITY with overlapping canopy pattern
+func generate_forest_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	var features = []
+	
+	# Create overlapping grid pattern for dense forest canopy, but ONLY near forest nodes
+	var avg_radius = 2.1  # Average foliage radius
+	var spacing_x = avg_radius * 2.5  # Horizontal spacing
+	var spacing_y = avg_radius * 9.0  # Vertical spacing (balanced)
+	var forest_radius = 50.0  # Generate trees within this radius of forest nodes
+	
+	debug_print("  Forest generation: Received %d nodes" % nodes.size())
+	
+	# Get all mountain node positions to avoid placing trees on them
+	var mountain_positions: Array[Vector2] = []
+	for map_node in map_nodes:
+		if map_node.is_mountain:
+			mountain_positions.append(map_node.position + (map_node.size / 2.0))
+	
+	debug_print("  Forest: Found %d mountain nodes to avoid" % mountain_positions.size())
+	
+	var forest_node_count = 0
+	# For each forest biome node, generate a grid of trees around it
+	for node in nodes:
+		# VERIFY this is actually a forest node
+		if node.biome == null:
+			debug_print("  Forest: Skipping node %d - biome is null" % node.node_index)
+			continue
+		
+		if node.biome.biome_name != "forest":
+			debug_print("  Forest: Skipping node %d - biome is '%s' not forest" % [node.node_index, node.biome.biome_name])
+			continue
+		
+		forest_node_count += 1
+		var node_center = node.position + (node.size / 2.0)
+		var trees_for_this_node = 0
+		
+		# Create grid around this node
+		var start_x = node_center.x - forest_radius
+		var end_x = node_center.x + forest_radius
+		var start_y = node_center.y - forest_radius
+		var end_y = node_center.y + forest_radius
+		
+		var y = start_y
+		while y <= end_y:
+			var x = start_x
+			# Offset every other row for honeycomb-like pattern
+			if int((y - start_y) / spacing_y) % 2 == 1:
+				x += spacing_x * 0.5
+			
+			while x <= end_x:
+				var pos = Vector2(x, y)
+				# Add jitter for organic look
+				pos += Vector2(
+					randf_range(-spacing_x * 0.2, spacing_x * 0.2),
+					randf_range(-spacing_y * 0.2, spacing_y * 0.2)
+				)
+				
+				# Check if within forest radius of this node
+				if pos.distance_to(node_center) > forest_radius:
+					x += spacing_x
+					continue
+				
+				# Check if valid position
+				if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+					x += spacing_x
+					continue
+				
+				# Avoid placing trees on paths
+				if is_too_close_to_path(pos, connection_lines):
+					x += spacing_x
+					continue
+				
+				# Avoid placing trees near mountains
+				var too_close_to_mountain = false
+				for mountain_pos in mountain_positions:
+					if pos.distance_to(mountain_pos) < 30.0:  # Keep 30 pixel buffer from mountains
+						too_close_to_mountain = true
+						break
+				
+				if too_close_to_mountain:
+					x += spacing_x
+					continue
+				
+				# Create tree with randomized properties
+				var radius = randf_range(1.7, 2.55)
+				var vertical_stretch = 1.0 + randf_range(0.0, 1.0)
+				
+				features.append({
+					"type": "tree",
+					"biome": "forest",
+					"data": {
+						"position": pos,
+						"vertical_stretch": vertical_stretch,
+						"foliage_radius": radius,
+						"foliage_color": Color(0.588, 0.482, 0.298),  # Brown/tan to match map
+						"trunk_color": Color(0.4, 0.25, 0.15),
+						"trunk_width": 2.0,
+						"trunk_length": randf_range(1.15, 1.95),
+						"outline_width": 2.0
+					}
+				})
+				trees_for_this_node += 1
+				
+				x += spacing_x
+			y += spacing_y
+		
+		debug_print("  Forest: Node %d generated %d trees" % [node.node_index, trees_for_this_node])
+	
+	debug_print("  Forest: Generated %d trees around %d forest nodes (out of %d total nodes provided)" % [features.size(), forest_node_count, nodes.size()])
+	
+	return features
+
+## Generate trees for plains biome - SPARSE/MEDIUM DENSITY
+func generate_plains_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	var features = []
+	var tree_count = randi_range(30, 60)  # More sparse
+	var attempts = 0
+	var max_attempts = tree_count * 10
+	
+	while features.size() < tree_count and attempts < max_attempts:
+		attempts += 1
+		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
+		
+		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+			continue
+		
+		# Avoid placing trees on paths
+		if is_too_close_to_path(pos, connection_lines):
+			continue
+		
+		features.append({
+			"type": "tree",
+			"biome": "plains",
+			"data": {
+				"position": pos,
+				"vertical_stretch": 1.0 + randf_range(0.1, 0.8),  # Less stretch
+				"foliage_radius": randf_range(1.7, 2.25),  # 56% of original
+				"foliage_color": Color(0.588, 0.482, 0.298),  # Brown/tan
+				"trunk_color": Color(0.4, 0.25, 0.15),
+				"trunk_width": 2.0,
+				"trunk_length": randf_range(1.15, 1.7),  # Shorter trunk
+				"outline_width": 2.0
+			}
+		})
+	
+	return features
+
+## Generate scraggly trees for swamp biome - VERY SPARSE
+func generate_swamp_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	var features = []
+	var tree_count = randi_range(10, 25)  # Extra sparse
+	var attempts = 0
+	var max_attempts = tree_count * 10
+	
+	while features.size() < tree_count and attempts < max_attempts:
+		attempts += 1
+		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
+		
+		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+			continue
+		
+		# Avoid placing trees on paths
+		if is_too_close_to_path(pos, connection_lines):
+			continue
+		
+		# Scraggly swamp trees: dark colors, thin trunks, irregular shapes
+		features.append({
+			"type": "tree",
+			"biome": "swamp",
+			"data": {
+				"position": pos,
+				"vertical_stretch": 1.0 + randf_range(-0.2, 0.5),  # Less extreme stretch
+				"foliage_radius": randf_range(1.15, 1.7),  # 56% of original, smaller
+				"foliage_color": Color(0.35, 0.30, 0.22),  # Dark murky brown
+				"trunk_color": Color(0.25, 0.20, 0.15),  # Very dark trunk
+				"trunk_width": 2.0,
+				"trunk_length": randf_range(1.7, 2.8),  # Shorter scraggly trunk
+				"outline_width": 2.0
+			}
+		})
+	
+	return features
+
+## Generate trees around mountain nodes - RADIAL PLACEMENT
+func generate_mountain_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	var features = []
+	var mountain_positions: Array[Vector2] = []
+	
+	# Get all mountain node positions
+	for node in nodes:
+		mountain_positions.append(node.position + (node.size / 2.0))
+	
+	# For each mountain, place trees in a ring around it
+	for i in range(nodes.size()):
+		var mountain_center = mountain_positions[i]
+		var ring_radius = randf_range(40, 60)  # Distance from mountain center
+		var tree_count_per_mountain = randi_range(5, 10)  # Fewer trees per mountain
+		
+		for j in range(tree_count_per_mountain):
+			# Place trees in a ring
+			var angle = (float(j) / float(tree_count_per_mountain)) * TAU + randf_range(-0.3, 0.3)
+			var offset = Vector2(cos(angle), sin(angle)) * ring_radius
+			var pos = mountain_center + offset
+			
+			# Check if too close to other mountains
+			var too_close_to_other_mountain = false
+			for k in range(mountain_positions.size()):
+				if k != i:
+					if pos.distance_to(mountain_positions[k]) < 35:
+						too_close_to_other_mountain = true
+						break
+			
+			if too_close_to_other_mountain:
+				continue
+			
+			if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+				continue
+			
+			# Avoid placing trees on paths
+			if is_too_close_to_path(pos, connection_lines):
+				continue
+			
+			features.append({
+				"type": "tree",
+				"biome": "mountain",
+				"data": {
+					"position": pos,
+					"vertical_stretch": 1.0 + randf_range(0.3, 0.8),  # Less stretch
+					"foliage_radius": randf_range(1.4, 1.95),  # 56% of original
+					"foliage_color": Color(0.50, 0.42, 0.28),  # Slightly darker tan
+					"trunk_color": Color(0.35, 0.22, 0.12),
+					"trunk_width": 2.0,
+					"trunk_length": randf_range(1.15, 1.7),  # Shorter trunk
+					"outline_width": 2.0
+				}
+			})
+	
+	return features
+
+## Generate NO trees for ash plains biome - BARREN
+func generate_ash_plains_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	return []  # Completely barren
+
+## Generate dead/dying trees for badlands biome - VERY SPARSE
+func generate_badlands_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
+	var features = []
+	var tree_count = randi_range(10, 25)  # Extra sparse
+	var attempts = 0
+	var max_attempts = tree_count * 10
+	
+	while features.size() < tree_count and attempts < max_attempts:
+		attempts += 1
+		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
+		
+		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+			continue
+		
+		# Avoid placing trees on paths
+		if is_too_close_to_path(pos, connection_lines):
+			continue
+		
+		# Dead badlands trees: grey/brown, small, sparse foliage
+		features.append({
+			"type": "tree",
+			"biome": "badlands",
+			"data": {
+				"position": pos,
+				"vertical_stretch": 1.0 + randf_range(0.0, 0.3),  # Minimal stretch
+				"foliage_radius": randf_range(1.15, 1.6),  # 56% of original, small
+				"foliage_color": Color(0.45, 0.38, 0.30),  # Grey-brown dead color
+				"trunk_color": Color(0.35, 0.28, 0.22),  # Dead grey trunk
+				"trunk_width": 2.0,
+				"trunk_length": randf_range(0.85, 1.4),  # Very short
+				"outline_width": 2.0
+			}
+		})
+	
+	return features
+
+# ============================================================================
 # STEP 13: VISUALIZATION
 # ============================================================================
 
@@ -2266,20 +2637,20 @@ func bake_static_map():
 	# Clear previous data
 	static_map_renderer.clear_data()
 	
-	# Set viewport size to match map size
-	static_map_viewport.size = Vector2i(size)
+	# Set viewport size to match map size (scaled for higher resolution)
+	static_map_viewport.size = Vector2i(size * map_resolution_scale)
 	
-	# Pass configuration to renderer
+	# Pass configuration to renderer (scaled for higher resolution)
 	var config = {
-		"line_width": line_width,
+		"line_width": line_width * map_resolution_scale,
 		"line_color": line_color,
 		"use_curved_lines": use_curved_lines,
-		"coastal_water_expansion": coastal_water_expansion,
-		"coastal_water_radius": coastal_water_radius,
+		"coastal_water_expansion": coastal_water_expansion * map_resolution_scale,
+		"coastal_water_radius": coastal_water_radius * map_resolution_scale,
 		"coastal_water_circles": coastal_water_circles,
 		"coastal_water_color": coastal_water_color,
 		"coastal_water_alpha_max": coastal_water_alpha_max,
-		"biome_blob_radius": biome_blob_radius,
+		"biome_blob_radius": biome_blob_radius * map_resolution_scale,
 		"biome_blob_circles": biome_blob_circles,
 		"biome_blob_alpha_max": biome_blob_alpha_max
 	}
@@ -2303,47 +2674,108 @@ func bake_static_map():
 			var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
 			var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
 			
-			# Build line data
+			# Build line data (scale positions and widths)
 			var line_data = {
-				"pos_a": pos_a,
-				"pos_b": pos_b,
+				"pos_a": pos_a * map_resolution_scale,
+				"pos_b": pos_b * map_resolution_scale,
 				"color": adjusted_color,
-				"width": adjusted_width
+				"width": adjusted_width * map_resolution_scale
 			}
 			
-			# Add curve data if using curved lines
+			# Add curve data if using curved lines (scale control points)
 			if use_curved_lines:
-				line_data["curve_data"] = _get_curve_data_for_line(pos_a, pos_b, node, neighbor)
+				var curve_data = _get_curve_data_for_line(pos_a, pos_b, node, neighbor)
+				var scaled_curve_data = {}
+				
+				# Scale control points
+				if curve_data.has("control_point"):
+					scaled_curve_data["control_point"] = curve_data["control_point"] * map_resolution_scale
+				if curve_data.has("control1"):
+					scaled_curve_data["control1"] = curve_data["control1"] * map_resolution_scale
+				if curve_data.has("control2"):
+					scaled_curve_data["control2"] = curve_data["control2"] * map_resolution_scale
+				if curve_data.has("is_s_curve"):
+					scaled_curve_data["is_s_curve"] = curve_data["is_s_curve"]
+				
+				line_data["curve_data"] = scaled_curve_data
 			
 			static_map_renderer.add_connection_line(line_data)
+			
+			# Create highlight/shadow version (offset and lighter, scaled)
+			var offset = Vector2(2, 2) * map_resolution_scale  # Scaled offset
+			var highlight_color = adjusted_color.lightened(0.15)  # Slightly lighter
+			
+			var highlight_data = {
+				"pos_a": pos_a * map_resolution_scale + offset,
+				"pos_b": pos_b * map_resolution_scale + offset,
+				"color": highlight_color,
+				"width": adjusted_width * map_resolution_scale
+			}
+			
+			# Add same curve data if using curved lines (already scaled, just offset)
+			if use_curved_lines and line_data.has("curve_data"):
+				# Properly duplicate curve data and offset control points
+				var original_curve = line_data["curve_data"]
+				var highlight_curve = original_curve.duplicate(true)  # Deep copy
+				
+				# Offset control points based on curve type (they're already scaled)
+				if highlight_curve.has("control1"):
+					highlight_curve["control1"] = highlight_curve["control1"] + offset
+				if highlight_curve.has("control2"):
+					highlight_curve["control2"] = highlight_curve["control2"] + offset
+				if highlight_curve.has("control_point"):
+					highlight_curve["control_point"] = highlight_curve["control_point"] + offset
+				
+				highlight_data["curve_data"] = highlight_curve
+			
+			static_map_renderer.add_connection_line_highlight(highlight_data)
 	
-	# Pass coastal water blobs data
+	# Pass coastal water blobs data (scale positions)
 	if enable_coastal_water_blobs and coastal_nodes.size() > 0 and coastal_water_circles > 0:
 		for node in coastal_nodes:
 			var node_center = node.position + (node.size / 2.0)
 			var blob_data = {
-				"node_center": node_center,
+				"node_center": node_center * map_resolution_scale,
 				"away_direction": node.away_direction
 			}
 			static_map_renderer.add_coastal_water_blob(blob_data)
 	
-	# Pass landmass polygon data
+	# Pass landmass polygon data (scale polygon points)
 	if enable_landmass_shading and expanded_coast_lines.size() > 0:
 		var polygon_points = build_coast_polygon()
 		if polygon_points.size() >= 3:
-			static_map_renderer.set_landmass_polygon(polygon_points, landmass_base_color)
+			# Scale all polygon points
+			var scaled_polygon = PackedVector2Array()
+			for point in polygon_points:
+				scaled_polygon.append(point * map_resolution_scale)
+			static_map_renderer.set_landmass_polygon(scaled_polygon, landmass_base_color)
 	
-	# Pass biome blobs data
+	# Pass biome blobs data (scale positions)
 	if enable_biome_blobs and map_nodes.size() > 0 and biome_blob_circles > 0:
 		for node in map_nodes:
 			if node.is_mountain or node.biome == null:
 				continue
 			var center = node.position + (node.size / 2.0)
 			var blob_data = {
-				"center": center,
+				"center": center * map_resolution_scale,
 				"biome_color": node.biome.color
 			}
 			static_map_renderer.add_biome_blob(blob_data)
+	
+	# Pass feature data (trees, etc.) from pre-generated features (scale all properties)
+	if enable_map_features and map_features.size() > 0:
+		for feature in map_features:
+			match feature.type:
+				"tree":
+					# Scale tree data
+					var tree_data = feature.data.duplicate()
+					tree_data["position"] = tree_data["position"] * map_resolution_scale
+					tree_data["foliage_radius"] = tree_data["foliage_radius"] * map_resolution_scale
+					tree_data["trunk_width"] = tree_data["trunk_width"] * map_resolution_scale
+					tree_data["trunk_length"] = tree_data["trunk_length"] * map_resolution_scale
+					tree_data["outline_width"] = tree_data["outline_width"] * map_resolution_scale
+					static_map_renderer.add_tree(tree_data)
+				# Future: add other feature types here
 	
 	# Pass coast ripple lines data
 	if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
@@ -2389,14 +2821,14 @@ func bake_static_map():
 				if pos_a != null and pos_b != null:
 					var adjusted_width = get_orientation_adjusted_width(ripple_width, pos_a, pos_b)
 					var ripple_data = {
-						"pos_a": pos_a,
-						"pos_b": pos_b,
+						"pos_a": pos_a * map_resolution_scale,
+						"pos_b": pos_b * map_resolution_scale,
 						"color": ripple_color,
-						"width": adjusted_width
+						"width": adjusted_width * map_resolution_scale
 					}
 					static_map_renderer.add_coast_ripple_line(ripple_data)
 	
-	# Pass expanded coast lines data
+	# Pass expanded coast lines data (scale positions and widths)
 	if expanded_coast_lines.size() > 0:
 		for coast_line in expanded_coast_lines:
 			var pos_a = coast_line[0]
@@ -2406,10 +2838,10 @@ func bake_static_map():
 			var adjusted_coast_width = get_orientation_adjusted_width(coast_line_width, pos_a, pos_b)
 			
 			var coast_line_data = {
-				"pos_a": pos_a,
-				"pos_b": pos_b,
+				"pos_a": pos_a * map_resolution_scale,
+				"pos_b": pos_b * map_resolution_scale,
 				"color": coast_line_color,
-				"width": adjusted_coast_width
+				"width": adjusted_coast_width * map_resolution_scale
 			}
 			static_map_renderer.add_expanded_coast_line(coast_line_data)
 	
@@ -2419,8 +2851,9 @@ func bake_static_map():
 	# Wait for render to complete
 	await RenderingServer.frame_post_draw
 	
-	# Capture texture and display
+	# Capture texture and display (scale sprite down to original size)
 	static_map_sprite.texture = static_map_viewport.get_texture()
+	static_map_sprite.scale = Vector2.ONE / map_resolution_scale  # Scale down to compensate for high-res texture
 	static_map_sprite.visible = true
 	
 	var water_blob_count = coastal_nodes.size() if (enable_coastal_water_blobs and coastal_water_circles > 0) else 0
@@ -2428,7 +2861,8 @@ func bake_static_map():
 	var biome_blob_count = static_map_renderer.biome_blobs_data.size()
 	var ripple_line_count = static_map_renderer.coast_ripple_lines_data.size()
 	var coast_line_count = static_map_renderer.expanded_coast_lines_data.size()
-	debug_print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, ripple_line_count, coast_line_count])
+	var tree_count = static_map_renderer.trees_data.size()
+	debug_print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d trees, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, tree_count, ripple_line_count, coast_line_count])
 
 # ============================================================================
 # MAP DECORATIONS (Dragons, Octopi, etc.)
