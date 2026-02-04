@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=18 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -15,6 +15,8 @@
 [ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
 [ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="11_ug3a7"]
 [ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="12_rpxmf"]
+[ext_resource type="Script" uid="uid://dcicsb0rvsjk8" path="res://scripts/UI.gd" id="14_n07c6"]
+[ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="15_mfg10"]
 
 [node name="MapGenerator" type="Control"]
 layout_mode = 3
@@ -25,21 +27,22 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
+coast_line_color = Color(0.3, 0.1878, 0.096, 1)
+coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
+ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
+coast_line_width = 1.0
 coastal_water_expansion = 50.0
 coastal_water_radius = 300.0
-coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
 ripple_base_spacing = 18.0
 ripple_spacing_growth = 1.035
 ripple_base_width = 1.0
-ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
 ripple_color_fade = 0.0
 region_count = 9
 enable_biome_blobs = false
 biome_blob_radius = 128.0
 biome_blob_circles = 4
 biome_blob_alpha_max = 0.06
-river_color = Color(0.0848186, 0.188696, 0.343554, 1)
 enable_debug_output = true
 
 [node name="ColorRect" type="ColorRect" parent="."]
@@ -97,10 +100,10 @@ flip_h = true
 [node name="MapDetails" type="VBoxContainer" parent="."]
 z_index = 10
 layout_mode = 0
-offset_left = 63.0
-offset_top = 24.0
-offset_right = 317.0
-offset_bottom = 276.0
+offset_left = 39.0
+offset_top = 48.0
+offset_right = 293.0
+offset_bottom = 300.0
 scale = Vector2(0.75, 0.75)
 theme_override_constants/separation = 2
 
@@ -229,61 +232,6 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("7_et537")
 
-[node name="UI" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UI"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -92.0
-offset_top = -74.0
-offset_right = 92.0
-offset_bottom = -32.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="ResetMapButton" type="Button" parent="UI/HBoxContainer"]
-layout_mode = 2
-text = "reset map"
-
-[node name="RestButton" type="Button" parent="UI/HBoxContainer"]
-layout_mode = 2
-text = "Rest"
-
-[node name="LocationDetailDisplay" parent="UI" instance=ExtResource("11_ug3a7")]
-layout_mode = 1
-
-[node name="VBoxContainer" type="VBoxContainer" parent="UI"]
-custom_minimum_size = Vector2(256, 256)
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 24.0
-offset_top = -139.0
-offset_right = 280.0
-offset_bottom = 139.0
-grow_vertical = 2
-
-[node name="CharacterDetails" parent="UI/VBoxContainer" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
-[node name="CharacterDetails2" parent="UI/VBoxContainer" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
-[node name="CharacterDetails3" parent="UI/VBoxContainer" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
 [node name="PartyIndicator" type="Sprite2D" parent="."]
 modulate = Color(0.710938, 0, 0, 1)
 z_index = 10
@@ -307,4 +255,64 @@ transparent_bg = true
 [node name="StaticMapRenderer" type="Node2D" parent="StaticMapViewport"]
 script = ExtResource("9_bvoid")
 
-[connection signal="pressed" from="UI/HBoxContainer/ResetMapButton" to="." method="regenerate_map"]
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="UI" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("14_n07c6")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/UI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -92.0
+offset_top = -74.0
+offset_right = 92.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ResetMapButton" type="Button" parent="CanvasLayer/UI/HBoxContainer"]
+layout_mode = 2
+text = "reset map"
+
+[node name="RestButton" type="Button" parent="CanvasLayer/UI/HBoxContainer"]
+layout_mode = 2
+text = "Rest"
+
+[node name="LocationDetailDisplay" parent="CanvasLayer/UI" instance=ExtResource("11_ug3a7")]
+layout_mode = 1
+
+[node name="PartyDetails" type="VBoxContainer" parent="CanvasLayer/UI"]
+custom_minimum_size = Vector2(256, 256)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 32.0
+offset_top = -107.0
+offset_right = 288.0
+offset_bottom = 171.0
+grow_vertical = 2
+scale = Vector2(0.8, 0.8)
+script = ExtResource("15_mfg10")
+
+[node name="CharacterDetails" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
+layout_mode = 2
+
+[node name="CharacterDetails2" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
+layout_mode = 2
+
+[node name="CharacterDetails3" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
+layout_mode = 2
+
+[connection signal="pressed" from="CanvasLayer/UI/HBoxContainer/ResetMapButton" to="." method="regenerate_map"]

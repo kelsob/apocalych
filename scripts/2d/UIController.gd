@@ -8,11 +8,11 @@ class_name UIController
 @onready var viewport_fx: Node = $ViewportFX
 
 # References to individual FX layers (optional - for granular control)
-@onready var painterly_effect: CanvasLayer = $ViewportFX/PainterlyEffect
-@onready var painterly_effect2: CanvasLayer = $ViewportFX/PainterlyEffect2
-@onready var edge_reddening_effect: CanvasLayer = $ViewportFX/EdgeReddeningEffect
-@onready var radial_reddening_effect: CanvasLayer = $ViewportFX/RadialReddeningEffect
-@onready var blur_effect: CanvasLayer = $ViewportFX/BlurEffect
+@onready var painterly_effect: ColorRect = $ViewportFX/PainterlyEffect
+@onready var painterly_effect2: ColorRect = $ViewportFX/PainterlyEffect2
+@onready var edge_reddening_effect: ColorRect = $ViewportFX/EdgeReddeningEffect
+@onready var radial_reddening_effect: ColorRect = $ViewportFX/RadialReddeningEffect
+@onready var blur_effect: ColorRect = $ViewportFX/BlurEffect
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0

@@ -106,6 +106,7 @@ func _on_party_select_back_pressed():
 ## Called when map generation is complete
 func _on_map_generation_complete():
 	print("Main: Map generation complete, starting game...")
+	map_generator.initialize_party_ui(current_party_members)
 	start_game()
 
 ## Start the game - enables player interaction and begins gameplay loop

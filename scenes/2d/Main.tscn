@@ -59,15 +59,15 @@ node_count = 256
 map_size = Vector2(1280, 720)
 poisson_min_distance = 30.0
 shape_noise_enabled = false
-line_width = 2.0
-line_color = Color(0.580392, 0.47451, 0.294118, 0.752941)
 node_base_color = Color(0.461684, 0.368652, 0.233192, 1)
-coast_line_color = Color(0.588235, 0.482353, 0.298039, 1)
+coast_line_color = Color(0.35, 0.287117, 0.1785, 1)
+landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
+mountain_color = Color(0.34902, 0.286275, 0.180392, 1)
+line_width = 1.0
 coast_line_width = 6.0
 horizontal_line_width_multiplier = 1.8
-preview_path_dot_size = 3.0
-landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
 landmass_gradient_distance = 50.0
+preview_path_dot_size = 3.0
 party_travel_speed = 50.0
 
 [node name="GameUI" type="Control" parent="."]
@@ -89,11 +89,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PainterlyEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
-
-[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/PainterlyEffect"]
+[node name="PainterlyEffect" type="ColorRect" parent="GameUI/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_voiwj")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -101,11 +100,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PainterlyEffect2" type="CanvasLayer" parent="GameUI/ViewportFX"]
-
-[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/PainterlyEffect2"]
+[node name="PainterlyEffect2" type="ColorRect" parent="GameUI/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_mifn2")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -113,11 +111,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="EdgeReddeningEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
-
-[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/EdgeReddeningEffect"]
+[node name="EdgeReddeningEffect" type="ColorRect" parent="GameUI/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_2dj7u")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -125,11 +122,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="RadialReddeningEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
-
-[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/RadialReddeningEffect"]
+[node name="RadialReddeningEffect" type="ColorRect" parent="GameUI/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_p3fih")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -137,12 +133,10 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="BlurEffect" type="CanvasLayer" parent="GameUI/ViewportFX"]
-visible = false
-
-[node name="ColorRect" type="ColorRect" parent="GameUI/ViewportFX/BlurEffect"]
+[node name="BlurEffect" type="ColorRect" parent="GameUI/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_kpsef")
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

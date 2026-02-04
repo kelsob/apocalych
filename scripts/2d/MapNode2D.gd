@@ -110,9 +110,9 @@ func set_region_color(color: Color):
 	node_color = color
 	modulate = color
 
-func set_mountain_color():
-	# Mountain color: use node color #967b4c
-	node_color = Color(0.588, 0.482, 0.298)  # #967b4c - Node color
+func set_mountain_color(color: Color = Color(0.588, 0.482, 0.298)):
+	# Mountain color: set by MapGenerator2D.mountain_color export
+	node_color = color
 	modulate = node_color
 
 func become_mountain(frame: int = -1):

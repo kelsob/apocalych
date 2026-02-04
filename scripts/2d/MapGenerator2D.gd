@@ -8,6 +8,7 @@ class_name MapGenerator2D
 # EXPORTS
 # ============================================================================
 
+@export_group("Map")
 @export var node_count: int = 20
 @export var map_size: Vector2 = Vector2(100, 100)  # Ellipse semi-axes
 @export var node_scene: PackedScene  # Scene to instantiate for each node
@@ -41,61 +42,66 @@ class_name MapGenerator2D
 @export var max_connection_distance_multiplier: float = 2.5
 @export var min_angle_threshold_degrees: float = 10.0  # Minimum angle (in degrees) to allow a connection
 
-@export_group("Visuals")
+@export_group("Colors")
+@export var line_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Connection lines
+@export var node_base_color: Color = Color(0.635, 0.518, 0.349)  # #a28459 - Node base
+@export var coast_line_color: Color = Color(0.137, 0.055, 0.035)  # #230e09 - Coast outline
+@export var landmass_base_color: Color = Color(0.757, 0.635, 0.467, 1.0)  # #c1a277 - Landmass fill
+@export var coastal_water_color: Color = Color(0.25, 0.45, 0.7, 1.0)  # Coastal water blobs
+@export var ripple_base_color: Color = Color(0.55, 0.45, 0.32, 0.8)  # Coast ripple lines
+@export var mountain_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Mountain nodes
+@export var trail_color: Color = Color(0.709, 0.0, 0.0, 1.0)  # #b50000 - Player trail
+@export var trail_outline_color: Color = Color(0.4, 0.0, 0.0, 1.0)  # Trail dot outline
+@export var preview_path_color: Color = Color(1.0, 0.9, 0.3, 0.6)  # Hover path preview
+@export var river_color: Color = Color(0.3, 0.5, 0.8, 1.0)  # Rivers
+
+@export_group("Lines & Strokes")
 @export var line_width: float = 4.0
-@export var line_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Node connections
-@export var node_base_color: Color = Color(0.635, 0.518, 0.349)  # #a28459 - Node color
-@export var coast_line_color: Color = Color(0.137, 0.055, 0.035)  # #230e09 - Coast lines
+@export var coast_line_width: float = 0.75
 @export var coast_expansion_distance: float = 20.0  # How far to expand coast outward from edges
-@export var coast_line_width: float = 0.75  # Width of the coast line (4x thinner)
-@export var horizontal_line_width_multiplier: float = 1.5  # How much thicker horizontal lines are (1.0 = no change, 1.5 = 50% thicker)
-@export var horizontal_line_darken: float = 0.08  # How much darker horizontal lines are (0.0-1.0, subtle amount)
-@export var coastal_neighbor_weight_when_mixed: float = 0.5  # Weight for coastal neighbors when non-coastal neighbors also exist (0.0-1.0)
-@export var trail_color: Color = Color(0.709, 0.0, 0.0, 1.0)  # #b50000 - Player trail color
-@export var trail_line_width: float = 3.0  # Width of the trail line
-@export var trail_dot_length: float = 4.0  # Length of each dot segment
-@export var trail_dot_gap: float = 3.0  # Gap between dot segments
-@export var trail_dot_size_variation: float = 0.0  # No size variation for dots
-@export var trail_dot_spacing_variation: float = 0.0  # No spacing variation for gaps
-@export var trail_outline_width: float = 1.0  # Width of outline around dots
-@export var trail_outline_color: Color = Color(0.4, 0.0, 0.0, 1.0)  # Darker red for outline
+@export var horizontal_line_width_multiplier: float = 1.5  # Thicker horizontal lines (1.0 = no change)
+@export var horizontal_line_darken: float = 0.08  # Darken horizontal lines (0.0-1.0)
+@export var trail_line_width: float = 3.0
+@export var trail_dot_length: float = 4.0
+@export var trail_dot_gap: float = 3.0
+@export var trail_dot_size_variation: float = 0.0
+@export var trail_dot_spacing_variation: float = 0.0
+@export var trail_outline_width: float = 1.0
 
-@export_group("Hover Preview")
-@export var preview_path_color: Color = Color(1.0, 0.9, 0.3, 0.6)  # Glowy yellow, low opacity
-@export var preview_path_dot_size: float = 5.0  # Bigger dots for preview
-@export var preview_path_dot_gap: float = 4.0  # Gap between preview dots
-@export var enable_pass1: bool = true  # Process all nodes with 3+ connections
-@export var enable_pass2: bool = true  # Process nodes with exactly 2 connections
-@export var use_curved_lines: bool = true  # Use smooth curves instead of straight lines
-
-# Landmass shading
-@export var enable_landmass_shading: bool = true  # Fill the landmass with color
-@export var landmass_base_color: Color = Color(0.757, 0.635, 0.467, 1.0)  # #c1a277 - Landmass color
+@export_group("Landmass")
+@export var enable_landmass_shading: bool = true
 @export var landmass_coast_darken: float = 0.3  # How much darker at coast (0.0-1.0)
 @export var landmass_gradient_distance: float = 100.0  # Distance from coast where gradient fades
-@export var curve_strength: float = 0.3  # How much curves bend (0.0 = straight, 0.5 = strong curves)
+@export var curve_strength: float = 0.3  # How much curves bend (0.0 = straight, 0.5 = strong)
 @export var s_curve_threshold: float = 50.0  # Distance above which S-curves become more likely
 @export var s_curve_probability: float = 0.6  # Probability of S-curve for long paths
 
-# Coastal water blobs (blue circles under landmass, radiate outward from coast)
+@export_group("Coast")
+@export var coastal_neighbor_weight_when_mixed: float = 0.5  # Weight when mixed with non-coastal (0.0-1.0)
+
 @export_group("Coastal Water Blobs")
 @export var enable_coastal_water_blobs: bool = true
 @export var coastal_water_expansion: float = 35.0
 @export var coastal_water_radius: float = 145.0
 @export var coastal_water_circles: int = 8
-@export var coastal_water_color: Color = Color(0.25, 0.45, 0.7, 1.0)
 @export var coastal_water_alpha_max: float = 0.45
 
-# Coastal ripples (concentric lines expanding from coast)
+@export_group("Coastal Ripples")
 @export var enable_coast_ripples: bool = true
-@export var ripple_count: int = 3  # Number of ripple lines
-@export var ripple_base_spacing: float = 12.0  # Distance between ripples
-@export var ripple_spacing_growth: float = 1.2  # Each ripple is this much further than the last (multiplier)
-@export var ripple_base_width: float = 2.0  # Width of first ripple
-@export var ripple_width_decay: float = 0.7  # Each ripple is this fraction of previous width
-@export var ripple_base_color: Color = Color(0.55, 0.45, 0.32, 0.8)  # Starting ripple color
-@export var ripple_color_fade: float = 0.25  # How much lighter each successive ripple gets (added to RGB)
-@export var ripple_alpha_decay: float = 0.7  # Each ripple is this fraction of previous alpha
+@export var ripple_count: int = 3
+@export var ripple_base_spacing: float = 12.0
+@export var ripple_spacing_growth: float = 1.2  # Each ripple further than the last (multiplier)
+@export var ripple_base_width: float = 2.0
+@export var ripple_width_decay: float = 0.7  # Each ripple width as fraction of previous
+@export var ripple_color_fade: float = 0.25  # How much lighter each successive ripple (added to RGB)
+@export var ripple_alpha_decay: float = 0.7  # Each ripple alpha as fraction of previous
+
+@export_group("Hover Preview")
+@export var preview_path_dot_size: float = 5.0
+@export var preview_path_dot_gap: float = 4.0
+@export var enable_pass1: bool = true  # Process all nodes with 3+ connections
+@export var enable_pass2: bool = true  # Process nodes with exactly 2 connections
+@export var use_curved_lines: bool = true  # Use smooth curves instead of straight lines
 
 @export_group("Regions")
 @export var region_count: int = 6
@@ -112,26 +118,25 @@ class_name MapGenerator2D
 @export_group("Map Features")
 @export var enable_map_features: bool = true
 @export var enable_rivers: bool = false
-@export var river_merge_distance: float = 20.0  # Distance threshold for river merging
+@export var river_merge_distance: float = 20.0
 @export var river_base_width: float = 2.0
 @export var river_tributary_bonus: float = 1.5
 @export var river_max_width: float = 8.0
-@export var river_color: Color = Color(0.3, 0.5, 0.8, 1.0)  # Master toggle for all decorative features
 @export var feature_debug_output: bool = false  # Print detailed feature generation info
+
+@export_group("Performance")
+@export var use_static_rendering: bool = true  # Bake static elements to texture
+@export var map_resolution_scale: float = 2.0  # Scale factor for static map texture (higher = crisper when zoomed)
 
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
-
-@export_group("Performance")
-@export var use_static_rendering: bool = true  # Bake static elements to texture (TEST: connection lines only for now)
-@export var map_resolution_scale: float = 2.0  # Scale factor for static map texture (higher = crisper when zoomed)
 
 @export_group("Debug")
 @export var enable_debug_output: bool = false  # Enable/disable debug print statements
 
 @export_group("Map Decorations")
-@export var enable_map_decorations: bool = true  # Enable/disable map decoration sprites
-@export var decoration_distance_from_coast: float = 150.0  # Distance from coast to place decorations
+@export var enable_map_decorations: bool = true
+@export var decoration_distance_from_coast: float = 150.0
 @export var decoration_edge_margin: float = 50.0  # Minimum distance from screen edges
 
 @export_group("Party")
@@ -177,9 +182,9 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var game_camera: Camera2D = $GameCamera
 
 # MapControls (child of MapGenerator2D)
-@onready var UI: Control = $UI
-@onready var location_detail_display: Control = $UI/LocationDetailDisplay
-@onready var rest_button: Button = $UI/HBoxContainer/RestButton
+@onready var UI: Control = $CanvasLayer/UI
+@onready var location_detail_display: Control = $CanvasLayer/UI/LocationDetailDisplay
+@onready var rest_button: Button = $CanvasLayer/UI/HBoxContainer/RestButton
 
 # Static map rendering (performance optimization)
 @onready var static_map_viewport: SubViewport = $StaticMapViewport
@@ -191,6 +196,8 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var waves_west_sprite: Sprite2D = $WavesW
 @onready var waves_northwest_sprite: Sprite2D = $WavesNW
 @onready var waves_southeast_sprite: Sprite2D = $WavesSE
+
+@onready var canvas_layer: CanvasLayer = $CanvasLayer
 
 # ============================================================================
 # SIGNALS
@@ -253,6 +260,10 @@ func _ready():
 	_load_biome_resources()
 	# Map generation will be triggered manually when game starts
 	
+	# Map UI (canvas layer) only shown when map is displayed, not at launch
+	if canvas_layer:
+		canvas_layer.visible = false
+	
 	# Connect rest button
 	rest_button.pressed.connect(_on_rest_button_pressed)
 	rest_button.visible = false  # Hidden by default, shown when party can rest
@@ -275,6 +286,11 @@ func _ready():
 func set_world_name(name: String):
 	if world_name_label:
 		world_name_label.text = name
+
+
+## Initialize the map UI (e.g. party detail slots) with the current party. Call when the game starts and the map is displayed.
+func initialize_party_ui(members: Array[PartyMember]) -> void:
+	get_node("CanvasLayer/UI/PartyDetails").initialize_party(members)
 
 
 func generate_map():
@@ -409,6 +425,10 @@ func generate_map():
 		game_camera.set_map_limits(size)
 	else:
 		debug_print("camera: ERROR - game_camera is null!")
+	
+	# Show map UI now that the map is displayed
+	if canvas_layer:
+		canvas_layer.visible = true
 	
 	# Emit signal that generation is complete
 	map_generation_complete.emit()
@@ -2079,7 +2099,7 @@ func generate_mountains_at_borders():
 			# All nodes become mountains
 			for node in target_nodes:
 				node.is_mountain = true
-				node.set_mountain_color()
+				node.set_mountain_color(mountain_color)
 				node.become_mountain(get_next_mountain_frame.call())
 				# Assign mountain biome
 				node.biome = biome_mountain
@@ -2093,7 +2113,7 @@ func generate_mountains_at_borders():
 			
 			for i in range(1, target_nodes.size() - 1):
 				target_nodes[i].is_mountain = true
-				target_nodes[i].set_mountain_color()
+				target_nodes[i].set_mountain_color(mountain_color)
 				target_nodes[i].become_mountain(get_next_mountain_frame.call())
 				# Assign mountain biome
 				target_nodes[i].biome = biome_mountain
@@ -2109,7 +2129,7 @@ func generate_mountains_at_borders():
 			for i in range(target_nodes.size()):
 				if i != exclude_idx:
 					target_nodes[i].is_mountain = true
-					target_nodes[i].set_mountain_color()
+					target_nodes[i].set_mountain_color(mountain_color)
 					target_nodes[i].become_mountain(get_next_mountain_frame.call())
 					# Assign mountain biome
 					target_nodes[i].biome = biome_mountain
