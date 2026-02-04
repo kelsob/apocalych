@@ -23,6 +23,7 @@ var biome_blobs_data: Array = []  # Array of biome blob dictionaries
 var coast_ripple_lines_data: Array = []  # Array of ripple line dictionaries
 var expanded_coast_lines_data: Array = []  # Array of expanded coast line dictionaries
 var trees_data: Array = []  # Array of tree dictionaries
+var river_segments_data: Array = []  # Array of river segment dictionaries
 
 # ============================================================================
 # CONFIGURATION (inherited from MapGenerator2D)
@@ -72,6 +73,7 @@ func clear_data():
 	coast_ripple_lines_data.clear()
 	expanded_coast_lines_data.clear()
 	trees_data.clear()
+	river_segments_data.clear()
 
 # ============================================================================
 # DATA RECEPTION - MapGenerator2D calls these to pass data
@@ -116,6 +118,11 @@ func add_expanded_coast_line(coast_line_data: Dictionary):
 ## tree_data should contain: { position: Vector2, vertical_stretch: float }
 func add_tree(tree_data: Dictionary):
 	trees_data.append(tree_data)
+
+## Add a river segment to be drawn
+## segment_data should contain: { pos_a: Vector2, pos_b: Vector2, width: float, color: Color }
+func add_river_segment(segment_data: Dictionary):
+	river_segments_data.append(segment_data)
 
 ## Set configuration from MapGenerator2D
 func set_config(config: Dictionary):
@@ -171,9 +178,10 @@ func _draw():
 	_draw_landmass_fill()  # Landmass base color
 	_draw_expanded_coast_lines()  # Coast border/outline (on top of landmass base)
 	_draw_biome_blobs()  # Biome colors on land
+	_draw_rivers()  # Rivers (underneath trees and paths)
+	_draw_trees()  # Trees (underneath paths)
 	_draw_connection_line_highlights()  # Path highlights/shadows (underneath main paths)
-	_draw_connection_lines()  # Paths/roads
-	_draw_trees()  # Trees on top of paths
+	_draw_connection_lines()  # Paths/roads on top
 
 ## Draw all coastal water blobs that were added
 func _draw_coastal_water_blobs():
@@ -212,6 +220,22 @@ func _draw_biome_blobs():
 			var a = biome_blob_alpha_max * (0.1 + 0.9 * t)
 			var col = Color(base.r, base.g, base.b, a)
 			draw_circle(center, r, col)
+
+## Draw all rivers that were added
+func _draw_rivers():
+	for segment_data in river_segments_data:
+		var pos_a: Vector2 = segment_data.get("pos_a", Vector2.ZERO)
+		var pos_b: Vector2 = segment_data.get("pos_b", Vector2.ZERO)
+		var width: float = segment_data.get("width", 2.0)
+		var color: Color = segment_data.get("color", Color(0.3, 0.5, 0.8, 1.0))
+		
+		# Draw river segment
+		draw_line(pos_a, pos_b, color, width)
+		
+		# Draw rounded caps for smooth connections
+		var cap_radius = width / 2.0
+		draw_circle(pos_a, cap_radius, color)
+		draw_circle(pos_b, cap_radius, color)
 
 ## Draw all trees that were added
 func _draw_trees():

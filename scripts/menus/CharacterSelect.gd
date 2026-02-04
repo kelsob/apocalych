@@ -161,6 +161,7 @@ func create_party_member() -> PartyMember:
 	member.member_name = character_name
 	member.race = selected_race
 	member.class_resource = selected_class
+	member.initialize()  # Initialize health, level, and experience based on stats
 	return member
 
 ## Check if this character is complete (has name, race, and class)

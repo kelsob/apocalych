@@ -45,9 +45,9 @@ class_name MapGenerator2D
 @export var line_width: float = 4.0
 @export var line_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Node connections
 @export var node_base_color: Color = Color(0.635, 0.518, 0.349)  # #a28459 - Node color
-@export var coast_line_color: Color = Color(0.600, 0.376, 0.192)  # #996031 - Coast lines
+@export var coast_line_color: Color = Color(0.137, 0.055, 0.035)  # #230e09 - Coast lines
 @export var coast_expansion_distance: float = 20.0  # How far to expand coast outward from edges
-@export var coast_line_width: float = 3.0  # Width of the coast line
+@export var coast_line_width: float = 0.75  # Width of the coast line (4x thinner)
 @export var horizontal_line_width_multiplier: float = 1.5  # How much thicker horizontal lines are (1.0 = no change, 1.5 = 50% thicker)
 @export var horizontal_line_darken: float = 0.08  # How much darker horizontal lines are (0.0-1.0, subtle amount)
 @export var coastal_neighbor_weight_when_mixed: float = 0.5  # Weight for coastal neighbors when non-coastal neighbors also exist (0.0-1.0)
@@ -55,8 +55,8 @@ class_name MapGenerator2D
 @export var trail_line_width: float = 3.0  # Width of the trail line
 @export var trail_dot_length: float = 4.0  # Length of each dot segment
 @export var trail_dot_gap: float = 3.0  # Gap between dot segments
-@export var trail_dot_size_variation: float = 0.15  # ±15% size variation for dots
-@export var trail_dot_spacing_variation: float = 0.2  # ±20% spacing variation for gaps
+@export var trail_dot_size_variation: float = 0.0  # No size variation for dots
+@export var trail_dot_spacing_variation: float = 0.0  # No spacing variation for gaps
 @export var trail_outline_width: float = 1.0  # Width of outline around dots
 @export var trail_outline_color: Color = Color(0.4, 0.0, 0.0, 1.0)  # Darker red for outline
 
@@ -110,7 +110,13 @@ class_name MapGenerator2D
 @export var biome_blob_alpha_max: float = 0.175
 
 @export_group("Map Features")
-@export var enable_map_features: bool = true  # Master toggle for all decorative features
+@export var enable_map_features: bool = true
+@export var enable_rivers: bool = false
+@export var river_merge_distance: float = 20.0  # Distance threshold for river merging
+@export var river_base_width: float = 2.0
+@export var river_tributary_bonus: float = 1.5
+@export var river_max_width: float = 8.0
+@export var river_color: Color = Color(0.3, 0.5, 0.8, 1.0)  # Master toggle for all decorative features
 @export var feature_debug_output: bool = false  # Print detailed feature generation info
 
 @export_group("Error Handling")
@@ -172,6 +178,7 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 
 # MapControls (child of MapGenerator2D)
 @onready var UI: Control = $UI
+@onready var location_detail_display: Control = $UI/LocationDetailDisplay
 @onready var rest_button: Button = $UI/HBoxContainer/RestButton
 
 # Static map rendering (performance optimization)
@@ -184,6 +191,7 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var waves_west_sprite: Sprite2D = $WavesW
 @onready var waves_northwest_sprite: Sprite2D = $WavesNW
 @onready var waves_southeast_sprite: Sprite2D = $WavesSE
+
 # ============================================================================
 # SIGNALS
 # ============================================================================
@@ -204,7 +212,9 @@ var node_positions: Array[Vector2] = []
 var coastal_nodes: Array[MapNode2D] = []
 var coastal_connections: Array = []  # Stored pairs [node_a, node_b] for coastal edges
 var expanded_coast_lines: Array = []  # Array of [pos_a, pos_b] for expanded coast lines
+var expanded_coast_positions: Dictionary = {}  # node_index -> expanded Vector2 position (cached)
 var map_features: Array = []  # Array of feature dictionaries (trees, rocks, etc.)
+var rivers: Array = []  # Array of river dictionaries
 var astar: AStar2D
 
 # Shape noise
@@ -361,6 +371,11 @@ func generate_map():
 		debug_print("Step 12.8: Generating map features...")
 		generate_map_features()
 	
+	# Step 12.9: Generate rivers
+	if enable_rivers:
+		debug_print("Step 12.9: Generating rivers...")
+		generate_rivers()
+	
 	# Check if regeneration was requested due to errors (BEFORE visualizing)
 	if _regeneration_requested:
 		_regeneration_requested = false
@@ -414,6 +429,8 @@ func clear_existing_nodes():
 	coastal_nodes.clear()
 	coastal_connections.clear()
 	expanded_coast_lines.clear()
+	expanded_coast_positions.clear()
+	rivers.clear()
 	delaunay_edges.clear()
 	visited_paths.clear()
 	current_travel_path.clear()
@@ -1381,23 +1398,23 @@ func generate_expanded_coast():
 	# Validate that all coastal nodes have been processed
 	validate_all_coastal_nodes_processed()
 	
-	# Use away_directions to calculate expanded positions
-	var expanded_positions: Dictionary = {}  # node_index -> expanded Vector2
+	# Use away_directions to calculate expanded positions and CACHE them
+	expanded_coast_positions.clear()
 	
 	for node in coastal_nodes:
 		var node_center = node.position + (node.size / 2.0)
 		# Use the stored away_direction angle
 		var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
 		var expanded_pos = node_center + away_vector * coast_expansion_distance
-		expanded_positions[node.node_index] = expanded_pos
+		expanded_coast_positions[node.node_index] = expanded_pos
 	
 	# Third pass: create lines between expanded vertices using original connections
 	for connection in coastal_connections:
 		var node_a = connection[0]
 		var node_b = connection[1]
 		
-		var expanded_a = expanded_positions.get(node_a.node_index)
-		var expanded_b = expanded_positions.get(node_b.node_index)
+		var expanded_a = expanded_coast_positions.get(node_a.node_index)
+		var expanded_b = expanded_coast_positions.get(node_b.node_index)
 		
 		if expanded_a != null and expanded_b != null:
 			expanded_coast_lines.append([expanded_a, expanded_b])
@@ -1814,27 +1831,22 @@ func identify_points_of_interest():
 
 func create_regions():
 	# Simple region assignment: divide nodes into N groups
-	# More sophisticated algorithm could use graph-based region growing
+	# All nodes (including coastal) get assigned to regions
 	
-	var interior_nodes = []
-	for node in map_nodes:
-		if not node.is_coastal:
-			interior_nodes.append(node)
-	
-	if interior_nodes.size() == 0:
+	if map_nodes.size() == 0:
 		return
 	
-	# Pick random seed nodes
+	# Pick random seed nodes from ALL nodes
 	var seeds = []
-	for i in range(min(region_count, interior_nodes.size())):
-		var random_node = interior_nodes[randi() % interior_nodes.size()]
+	for i in range(min(region_count, map_nodes.size())):
+		var random_node = map_nodes[randi() % map_nodes.size()]
 		while random_node in seeds:
-			random_node = interior_nodes[randi() % interior_nodes.size()]
+			random_node = map_nodes[randi() % map_nodes.size()]
 		seeds.append(random_node)
 		random_node.region_id = i
 	
 	# Assign all other nodes to nearest seed
-	for node in interior_nodes:
+	for node in map_nodes:
 		if node.region_id >= 0:
 			continue
 		
@@ -2083,6 +2095,8 @@ func generate_mountains_at_borders():
 				target_nodes[i].is_mountain = true
 				target_nodes[i].set_mountain_color()
 				target_nodes[i].become_mountain(get_next_mountain_frame.call())
+				# Assign mountain biome
+				target_nodes[i].biome = biome_mountain
 				nodes_made_mountains += 1
 		
 		elif roll == 3:
@@ -2097,6 +2111,8 @@ func generate_mountains_at_borders():
 					target_nodes[i].is_mountain = true
 					target_nodes[i].set_mountain_color()
 					target_nodes[i].become_mountain(get_next_mountain_frame.call())
+					# Assign mountain biome
+					target_nodes[i].biome = biome_mountain
 					nodes_made_mountains += 1
 		
 		if nodes_made_mountains > 0:
@@ -2207,37 +2223,26 @@ func assign_biomes():
 	
 	var biome_counts: Dictionary = {}
 	
+	# Map each region to a biome (region 0 = forest, region 1 = plains, etc.)
+	var biomes_list = [biome_forest, biome_plains, biome_swamp, biome_badlands, biome_ash_plains]
+	
+	# Create region -> biome mapping
+	var region_biome_map: Dictionary = {}
+	for i in range(region_count):
+		region_biome_map[i] = biomes_list[i % 5]
+	
 	for node in map_nodes:
-		# Mountains already have biome assigned during generation
-		if node.is_mountain and node.biome == biome_mountain:
+		# Skip ALL mountains - they should already have mountain biome assigned
+		if node.is_mountain:
+			# Verify mountain has correct biome (should always be true now)
+			if node.biome != biome_mountain:
+				push_warning("Mountain node %d missing mountain biome, fixing..." % node.node_index)
+				node.biome = biome_mountain
 			biome_counts["mountain"] = biome_counts.get("mountain", 0) + 1
 			continue
 		
-		# Coastal and interior nodes: assign based on region (same logic)
-		# For now, use a simple region-based assignment with some variation
-		# This can be made more sophisticated later
-		var assigned_biome: Biome = null
-		
-		# Use region_id to create some biome clustering
-		if node.region_id >= 0:
-			# Use deterministic hash based on region_id for consistency
-			var region_hash = hash(str(node.region_id) + str(node.node_index))
-			var biome_roll = region_hash % 100
-			
-			# Distribution: forest (30%), plains (25%), swamp (15%), badlands (15%), ash_plains (15%)
-			if biome_roll < 30:
-				assigned_biome = biome_forest
-			elif biome_roll < 55:
-				assigned_biome = biome_plains
-			elif biome_roll < 70:
-				assigned_biome = biome_swamp
-			elif biome_roll < 85:
-				assigned_biome = biome_badlands
-			else:
-				assigned_biome = biome_ash_plains
-		else:
-			# No region assigned, default to plains
-			assigned_biome = biome_plains
+		# All nodes should have region_id now, use region's biome
+		var assigned_biome = region_biome_map[node.region_id]
 		
 		node.biome = assigned_biome
 		var biome_name = assigned_biome.biome_name if assigned_biome else "unknown"
@@ -2329,240 +2334,233 @@ func generate_features_for_biome(biome_name: String, biome_nodes: Array, landmas
 		_:
 			return []
 
-## Generate trees for forest biome - HIGH DENSITY with overlapping canopy pattern
+## Generate trees for forest biome - CONTIGUOUS REGION GRID PATTERN
 func generate_forest_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
+	var forest_radius = 25.0
 	
-	# Create overlapping grid pattern for dense forest canopy, but ONLY near forest nodes
-	var avg_radius = 2.1  # Average foliage radius
-	var spacing_x = avg_radius * 2.5  # Horizontal spacing
-	var spacing_y = avg_radius * 9.0  # Vertical spacing (balanced)
-	var forest_radius = 50.0  # Generate trees within this radius of forest nodes
+	# Grid spacing - 2x lower density (3.6x instead of 1.8x)
+	var avg_foliage_radius = 2.1
+	var spacing_x = avg_foliage_radius * 2.88  # Horizontal spacing (20% tighter)
+	var spacing_y = avg_foliage_radius * 3.6  # Vertical spacing
 	
-	debug_print("  Forest generation: Received %d nodes" % nodes.size())
-	
-	# Get all mountain node positions to avoid placing trees on them
-	var mountain_positions: Array[Vector2] = []
-	for map_node in map_nodes:
-		if map_node.is_mountain:
-			mountain_positions.append(map_node.position + (map_node.size / 2.0))
-	
-	debug_print("  Forest: Found %d mountain nodes to avoid" % mountain_positions.size())
-	
-	var forest_node_count = 0
-	# For each forest biome node, generate a grid of trees around it
+	# Find all contiguous forest regions
+	var forest_nodes = []
 	for node in nodes:
-		# VERIFY this is actually a forest node
-		if node.biome == null:
-			debug_print("  Forest: Skipping node %d - biome is null" % node.node_index)
+		if node.biome != null and node.biome.biome_name == "forest":
+			forest_nodes.append(node)
+	
+	if forest_nodes.size() == 0:
+		return features
+	
+	# Group forest nodes into connected regions
+	var forest_regions = find_connected_regions(forest_nodes)
+	
+	# For each contiguous forest region, generate unified tree grid
+	for region in forest_regions:
+		if region.size() == 0:
 			continue
 		
-		if node.biome.biome_name != "forest":
-			debug_print("  Forest: Skipping node %d - biome is '%s' not forest" % [node.node_index, node.biome.biome_name])
-			continue
+		# Get bounding box of entire region
+		var min_x = INF
+		var max_x = -INF
+		var min_y = INF
+		var max_y = -INF
 		
-		forest_node_count += 1
-		var node_center = node.position + (node.size / 2.0)
-		var trees_for_this_node = 0
+		var region_centers = []
+		for node in region:
+			var center = node.position + (node.size / 2.0)
+			region_centers.append(center)
+			min_x = min(min_x, center.x)
+			max_x = max(max_x, center.x)
+			min_y = min(min_y, center.y)
+			max_y = max(max_y, center.y)
 		
-		# Create grid around this node
-		var start_x = node_center.x - forest_radius
-		var end_x = node_center.x + forest_radius
-		var start_y = node_center.y - forest_radius
-		var end_y = node_center.y + forest_radius
+		# Expand bounds by forest radius
+		var start_x = min_x - forest_radius
+		var end_x = max_x + forest_radius
+		var start_y = min_y - forest_radius
+		var end_y = max_y + forest_radius
 		
+		# Generate grid across entire region
 		var y = start_y
 		while y <= end_y:
 			var x = start_x
-			# Offset every other row for honeycomb-like pattern
-			if int((y - start_y) / spacing_y) % 2 == 1:
+			# Offset every other row for honeycomb pattern
+			var row = int((y - start_y) / spacing_y)
+			if row % 2 == 1:
 				x += spacing_x * 0.5
 			
 			while x <= end_x:
 				var pos = Vector2(x, y)
-				# Add jitter for organic look
+				
+				# Add jitter for organic look (more vertical variance)
 				pos += Vector2(
-					randf_range(-spacing_x * 0.2, spacing_x * 0.2),
-					randf_range(-spacing_y * 0.2, spacing_y * 0.2)
+					randf_range(-spacing_x * 0.15, spacing_x * 0.15),
+					randf_range(-spacing_y * 0.35, spacing_y * 0.35)  # Increased vertical variance
 				)
 				
-				# Check if within forest radius of this node
-				if pos.distance_to(node_center) > forest_radius:
-					x += spacing_x
-					continue
-				
-				# Check if valid position
-				if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
-					x += spacing_x
-					continue
-				
-				# Avoid placing trees on paths
-				if is_too_close_to_path(pos, connection_lines):
-					x += spacing_x
-					continue
-				
-				# Avoid placing trees near mountains
-				var too_close_to_mountain = false
-				for mountain_pos in mountain_positions:
-					if pos.distance_to(mountain_pos) < 30.0:  # Keep 30 pixel buffer from mountains
-						too_close_to_mountain = true
+				# Check if within radius of ANY node in this region
+				var near_forest = false
+				for center in region_centers:
+					if pos.distance_to(center) <= forest_radius:
+						near_forest = true
 						break
 				
-				if too_close_to_mountain:
+				if not near_forest:
 					x += spacing_x
 					continue
-				
-				# Create tree with randomized properties
-				var radius = randf_range(1.7, 2.55)
-				var vertical_stretch = 1.0 + randf_range(0.0, 1.0)
 				
 				features.append({
 					"type": "tree",
 					"biome": "forest",
 					"data": {
 						"position": pos,
-						"vertical_stretch": vertical_stretch,
-						"foliage_radius": radius,
-						"foliage_color": Color(0.588, 0.482, 0.298),  # Brown/tan to match map
-						"trunk_color": Color(0.4, 0.25, 0.15),
-						"trunk_width": 2.0,
-						"trunk_length": randf_range(1.15, 1.95),
-						"outline_width": 2.0
+						"vertical_stretch": 1.0 + randf_range(0.0, 1.0),
+					"foliage_radius": randf_range(0.85, 1.275),  # 50% smaller
+					"foliage_color": Color(0.75, 0.65, 0.50),  # Lighter brown/tan
+					"trunk_color": Color(0.60, 0.45, 0.35),  # Lighter brown
+					"trunk_width": 1.5,  # 25% thinner
+					"trunk_length": randf_range(1.4375, 2.4375),  # 25% longer
+					"outline_width": 1.0
 					}
 				})
-				trees_for_this_node += 1
 				
 				x += spacing_x
 			y += spacing_y
-		
-		debug_print("  Forest: Node %d generated %d trees" % [node.node_index, trees_for_this_node])
-	
-	debug_print("  Forest: Generated %d trees around %d forest nodes (out of %d total nodes provided)" % [features.size(), forest_node_count, nodes.size()])
 	
 	return features
 
-## Generate trees for plains biome - SPARSE/MEDIUM DENSITY
+## Find connected regions of nodes (flood fill algorithm)
+func find_connected_regions(nodes: Array) -> Array:
+	var regions = []
+	var visited = {}
+	
+	for node in nodes:
+		visited[node] = false
+	
+	for start_node in nodes:
+		if visited[start_node]:
+			continue
+		
+		# Start new region with flood fill
+		var region = []
+		var queue = [start_node]
+		visited[start_node] = true
+		
+		while queue.size() > 0:
+			var current = queue.pop_front()
+			region.append(current)
+			
+			# Check all connections
+			for neighbor in current.connections:
+				if neighbor in nodes and not visited.get(neighbor, true):
+					visited[neighbor] = true
+					queue.append(neighbor)
+		
+		regions.append(region)
+	
+	return regions
+
+## Generate trees for plains biome - DEAD SIMPLE, NO CHECKS
 func generate_plains_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
-	var tree_count = randi_range(30, 60)  # More sparse
-	var attempts = 0
-	var max_attempts = tree_count * 10
+	var plains_radius = 25.0
+	var trees_per_node = 5
 	
-	while features.size() < tree_count and attempts < max_attempts:
-		attempts += 1
-		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
-		
-		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+	# For each plains node, just place 5 trees around it - NO CHECKS
+	for node in nodes:
+		if node.biome == null or node.biome.biome_name != "plains":
 			continue
 		
-		# Avoid placing trees on paths
-		if is_too_close_to_path(pos, connection_lines):
-			continue
+		var node_center = node.position + (node.size / 2.0)
 		
-		features.append({
-			"type": "tree",
-			"biome": "plains",
-			"data": {
-				"position": pos,
-				"vertical_stretch": 1.0 + randf_range(0.1, 0.8),  # Less stretch
-				"foliage_radius": randf_range(1.7, 2.25),  # 56% of original
-				"foliage_color": Color(0.588, 0.482, 0.298),  # Brown/tan
-				"trunk_color": Color(0.4, 0.25, 0.15),
-				"trunk_width": 2.0,
-				"trunk_length": randf_range(1.15, 1.7),  # Shorter trunk
-				"outline_width": 2.0
-			}
-		})
+		for i in range(trees_per_node):
+			# Random position within radius - NO VALIDATION
+			var angle = randf() * TAU
+			var distance = randf_range(0, plains_radius)
+			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
+			
+			features.append({
+				"type": "tree",
+				"biome": "plains",
+				"data": {
+					"position": pos,
+					"vertical_stretch": 1.0 + randf_range(0.1, 0.8),
+				"foliage_radius": randf_range(0.85, 1.125),  # 50% smaller
+			"foliage_color": Color(0.75, 0.65, 0.50),  # Lighter brown/tan
+			"trunk_color": Color(0.60, 0.45, 0.35),  # Lighter brown
+			"trunk_width": 1.5,  # 25% thinner
+			"trunk_length": randf_range(1.4375, 2.125),  # 25% longer
+			"outline_width": 1.0
+				}
+			})
 	
 	return features
 
 ## Generate scraggly trees for swamp biome - VERY SPARSE
 func generate_swamp_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
-	var tree_count = randi_range(10, 25)  # Extra sparse
-	var attempts = 0
-	var max_attempts = tree_count * 10
+	var swamp_radius = 25.0
+	var trees_per_node = 2  # Very sparse
 	
-	while features.size() < tree_count and attempts < max_attempts:
-		attempts += 1
-		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
-		
-		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+	for node in nodes:
+		if node.biome == null or node.biome.biome_name != "swamp":
 			continue
 		
-		# Avoid placing trees on paths
-		if is_too_close_to_path(pos, connection_lines):
-			continue
+		var node_center = node.position + (node.size / 2.0)
 		
-		# Scraggly swamp trees: dark colors, thin trunks, irregular shapes
-		features.append({
-			"type": "tree",
-			"biome": "swamp",
-			"data": {
-				"position": pos,
-				"vertical_stretch": 1.0 + randf_range(-0.2, 0.5),  # Less extreme stretch
-				"foliage_radius": randf_range(1.15, 1.7),  # 56% of original, smaller
-				"foliage_color": Color(0.35, 0.30, 0.22),  # Dark murky brown
-				"trunk_color": Color(0.25, 0.20, 0.15),  # Very dark trunk
-				"trunk_width": 2.0,
-				"trunk_length": randf_range(1.7, 2.8),  # Shorter scraggly trunk
-				"outline_width": 2.0
-			}
-		})
+		for i in range(trees_per_node):
+			var angle = randf() * TAU
+			var distance = randf_range(0, swamp_radius)
+			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
+			
+			features.append({
+				"type": "tree",
+				"biome": "swamp",
+				"data": {
+					"position": pos,
+					"vertical_stretch": 1.0 + randf_range(-0.2, 0.5),
+				"foliage_radius": randf_range(0.575, 0.85),  # 50% smaller
+			"foliage_color": Color(0.55, 0.50, 0.42),  # Lighter murky brown
+			"trunk_color": Color(0.45, 0.40, 0.35),  # Lighter dark brown
+			"trunk_width": 1.5,  # 25% thinner
+			"trunk_length": randf_range(2.125, 3.5),  # 25% longer
+			"outline_width": 1.0
+				}
+			})
 	
 	return features
 
 ## Generate trees around mountain nodes - RADIAL PLACEMENT
 func generate_mountain_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
-	var mountain_positions: Array[Vector2] = []
+	var mountain_radius = 30.0
+	var trees_per_mountain = 5  # Few trees around each mountain
 	
-	# Get all mountain node positions
 	for node in nodes:
-		mountain_positions.append(node.position + (node.size / 2.0))
-	
-	# For each mountain, place trees in a ring around it
-	for i in range(nodes.size()):
-		var mountain_center = mountain_positions[i]
-		var ring_radius = randf_range(40, 60)  # Distance from mountain center
-		var tree_count_per_mountain = randi_range(5, 10)  # Fewer trees per mountain
+		if node.biome == null or node.biome.biome_name != "mountain":
+			continue
 		
-		for j in range(tree_count_per_mountain):
-			# Place trees in a ring
-			var angle = (float(j) / float(tree_count_per_mountain)) * TAU + randf_range(-0.3, 0.3)
-			var offset = Vector2(cos(angle), sin(angle)) * ring_radius
-			var pos = mountain_center + offset
-			
-			# Check if too close to other mountains
-			var too_close_to_other_mountain = false
-			for k in range(mountain_positions.size()):
-				if k != i:
-					if pos.distance_to(mountain_positions[k]) < 35:
-						too_close_to_other_mountain = true
-						break
-			
-			if too_close_to_other_mountain:
-				continue
-			
-			if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
-				continue
-			
-			# Avoid placing trees on paths
-			if is_too_close_to_path(pos, connection_lines):
-				continue
+		var node_center = node.position + (node.size / 2.0)
+		
+		for i in range(trees_per_mountain):
+			var angle = (float(i) / float(trees_per_mountain)) * TAU + randf_range(-0.3, 0.3)
+			var distance = randf_range(20, mountain_radius)
+			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
 			
 			features.append({
 				"type": "tree",
 				"biome": "mountain",
 				"data": {
 					"position": pos,
-					"vertical_stretch": 1.0 + randf_range(0.3, 0.8),  # Less stretch
-					"foliage_radius": randf_range(1.4, 1.95),  # 56% of original
-					"foliage_color": Color(0.50, 0.42, 0.28),  # Slightly darker tan
-					"trunk_color": Color(0.35, 0.22, 0.12),
-					"trunk_width": 2.0,
-					"trunk_length": randf_range(1.15, 1.7),  # Shorter trunk
-					"outline_width": 2.0
+					"vertical_stretch": 1.0 + randf_range(0.3, 0.8),
+				"foliage_radius": randf_range(0.7, 0.975),  # 50% smaller
+			"foliage_color": Color(0.70, 0.62, 0.48),  # Lighter tan
+			"trunk_color": Color(0.55, 0.42, 0.32),  # Lighter brown
+			"trunk_width": 1.5,  # 25% thinner
+			"trunk_length": randf_range(1.4375, 2.125),  # 25% longer
+			"outline_width": 1.0
 				}
 			})
 	
@@ -2575,38 +2573,542 @@ func generate_ash_plains_features(nodes: Array, landmass_polygon: PackedVector2A
 ## Generate dead/dying trees for badlands biome - VERY SPARSE
 func generate_badlands_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
-	var tree_count = randi_range(10, 25)  # Extra sparse
-	var attempts = 0
-	var max_attempts = tree_count * 10
+	var badlands_radius = 25.0
+	var trees_per_node = 2  # Very sparse
 	
-	while features.size() < tree_count and attempts < max_attempts:
-		attempts += 1
-		var pos = Vector2(randf_range(0, size.x), randf_range(0, size.y))
-		
-		if landmass_polygon.size() >= 3 and not Geometry2D.is_point_in_polygon(pos, landmass_polygon):
+	for node in nodes:
+		if node.biome == null or node.biome.biome_name != "badlands":
 			continue
 		
-		# Avoid placing trees on paths
-		if is_too_close_to_path(pos, connection_lines):
-			continue
+		var node_center = node.position + (node.size / 2.0)
 		
-		# Dead badlands trees: grey/brown, small, sparse foliage
-		features.append({
-			"type": "tree",
-			"biome": "badlands",
-			"data": {
-				"position": pos,
-				"vertical_stretch": 1.0 + randf_range(0.0, 0.3),  # Minimal stretch
-				"foliage_radius": randf_range(1.15, 1.6),  # 56% of original, small
-				"foliage_color": Color(0.45, 0.38, 0.30),  # Grey-brown dead color
-				"trunk_color": Color(0.35, 0.28, 0.22),  # Dead grey trunk
-				"trunk_width": 2.0,
-				"trunk_length": randf_range(0.85, 1.4),  # Very short
-				"outline_width": 2.0
-			}
-		})
+		for i in range(trees_per_node):
+			var angle = randf() * TAU
+			var distance = randf_range(0, badlands_radius)
+			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
+			
+			features.append({
+				"type": "tree",
+				"biome": "badlands",
+				"data": {
+					"position": pos,
+					"vertical_stretch": 1.0 + randf_range(0.0, 0.3),
+				"foliage_radius": randf_range(0.575, 0.8),  # 50% smaller
+			"foliage_color": Color(0.65, 0.58, 0.50),  # Lighter grey-brown
+			"trunk_color": Color(0.55, 0.48, 0.42),  # Lighter grey trunk
+			"trunk_width": 1.5,  # 25% thinner
+			"trunk_length": randf_range(1.0625, 1.75),  # 25% longer
+			"outline_width": 1.0
+				}
+			})
 	
 	return features
+
+# ============================================================================
+# STEP 12.9: RIVER GENERATION
+# ============================================================================
+
+var river_id_counter: int = 0
+
+## Main river generation function
+func generate_rivers():
+	rivers.clear()
+	river_id_counter = 0
+	
+	# Phase 1: Identify river sources
+	var river_sources = identify_river_sources()
+	debug_print("  Identified %d river sources" % river_sources.size())
+	
+	if river_sources.size() == 0:
+		debug_print("  No river sources found")
+		return
+	
+	# Phase 2: Find target coast for each source
+	var river_paths = find_target_coast_for_each_source(river_sources)
+	debug_print("  Created %d initial river paths" % river_paths.size())
+	
+	# Phase 3: Detect river interactions
+	var interactions = detect_river_interactions(river_paths, river_merge_distance)
+	debug_print("  Detected %d river interactions" % interactions.size())
+	
+	# Phase 4: Determine merge hierarchy
+	determine_merge_hierarchy(river_paths, interactions)
+	
+	# Phase 5: Build final river network
+	var final_rivers = build_river_network(river_paths)
+	debug_print("  Built %d final river networks" % final_rivers.size())
+	
+	# Phase 6 & 7: Add curves and store
+	rivers = add_river_curves(final_rivers)
+	debug_print("  Generated %d rivers with curves" % rivers.size())
+
+## Phase 1: Identify river sources (mountains)
+func identify_river_sources() -> Array:
+	var sources = []
+	
+	for node in map_nodes:
+		if not node.is_mountain:
+			continue
+		
+		# Each mountain can spawn 0-2 rivers
+		var roll = randf()
+		var num_rivers = 0
+		if roll < 0.3:
+			num_rivers = 0
+		elif roll < 0.8:
+			num_rivers = 1
+		else:
+			num_rivers = 2
+		
+		for i in range(num_rivers):
+			var node_center = node.position + (node.size / 2.0)
+			
+			# Offset source position slightly for multiple rivers from same mountain
+			var offset = Vector2.ZERO
+			if num_rivers > 1:
+				var angle = (float(i) / float(num_rivers)) * TAU
+				offset = Vector2(cos(angle), sin(angle)) * 10.0
+			
+			sources.append({
+				"source_node": node,
+				"source_position": node_center + offset,
+				"id": river_id_counter,
+				"parent_river_id": -1
+			})
+			river_id_counter += 1
+	
+	return sources
+
+## Phase 2: Find target coast node for each source
+func find_target_coast_for_each_source(river_sources: Array) -> Array:
+	var river_paths = []
+	
+	for source in river_sources:
+		# Calculate flow direction based on non-mountain neighbors
+		var flow_direction = calculate_river_flow_direction(source.source_node, source.source_position)
+		
+		# Cast ray in flow direction to find where it intersects the expanded coastline
+		var result = find_expanded_coast_intersection(source.source_position, flow_direction)
+		
+		if result == null:
+			# Fallback to nearest expanded coast point
+			result = find_nearest_expanded_coast_point(source.source_position)
+		
+		if result == null:
+			continue
+		
+		river_paths.append({
+			"river_id": source.id,
+			"source_node": source.source_node,
+			"source_position": source.source_position,
+			"target_coast_node": result.coast_node,
+			"target_position": result.position,
+			"waypoints": [source.source_position, result.position],
+			"merged_into": -1,
+			"merge_point": Vector2.ZERO,
+			"tributaries": []
+		})
+	
+	return river_paths
+
+## Helper: Calculate river flow direction away from mountain range
+func calculate_river_flow_direction(mountain_node: MapNode2D, source_position: Vector2) -> Vector2:
+	# Strategy: Flow toward interior (non-mountain) nodes
+	var flow_direction = Vector2.ZERO
+	var non_mountain_neighbors = []
+	
+	# Find all non-mountain connected nodes
+	for neighbor in mountain_node.connections:
+		if not neighbor.is_mountain:
+			non_mountain_neighbors.append(neighbor)
+	
+	if non_mountain_neighbors.size() > 0:
+		# Calculate average direction toward non-mountain neighbors
+		for neighbor in non_mountain_neighbors:
+			var neighbor_center = neighbor.position + (neighbor.size / 2.0)
+			var direction = (neighbor_center - source_position).normalized()
+			flow_direction += direction
+		
+		flow_direction = flow_direction.normalized()
+	else:
+		# No non-mountain neighbors - flow away from map center
+		var map_center = Vector2(size.x / 2.0, size.y / 2.0)
+		flow_direction = (source_position - map_center).normalized()
+	
+	# Add some randomness for variety
+	var random_angle = randf_range(-0.3, 0.3)  # ±17 degrees
+	flow_direction = flow_direction.rotated(random_angle)
+	
+	return flow_direction
+
+## Helper: Find where ray intersects with expanded coastline
+func find_expanded_coast_intersection(start_pos: Vector2, direction: Vector2):
+	# Cast ray and find closest intersection with expanded coast line segments
+	var ray_length = 2000.0
+	var ray_end = start_pos + direction * ray_length
+	
+	var closest_intersection = null
+	var min_distance = INF
+	
+	# Check intersection with each expanded coast line segment
+	for coast_line in expanded_coast_lines:
+		var seg_a = coast_line[0]
+		var seg_b = coast_line[1]
+		
+		# Check if ray intersects this coast segment
+		var intersection = line_segment_intersection(start_pos, ray_end, seg_a, seg_b)
+		
+		if intersection != null:
+			var distance = start_pos.distance_to(intersection)
+			if distance < min_distance:
+				min_distance = distance
+				closest_intersection = intersection
+		else:
+			# If no intersection, find closest point on segment to ray
+			var closest_on_segment = closest_point_on_line_segment_to_ray(seg_a, seg_b, start_pos, ray_end)
+			var distance = start_pos.distance_to(closest_on_segment)
+			if distance < min_distance:
+				min_distance = distance
+				closest_intersection = closest_on_segment
+	
+	if closest_intersection != null:
+		# Find which coastal node this point is closest to (for reference)
+		var closest_node = null
+		var node_min_dist = INF
+		for coastal_node in coastal_nodes:
+			var expanded_pos = expanded_coast_positions.get(coastal_node.node_index)
+			if expanded_pos != null:
+				var dist = closest_intersection.distance_to(expanded_pos)
+				if dist < node_min_dist:
+					node_min_dist = dist
+					closest_node = coastal_node
+		
+		return {"position": closest_intersection, "coast_node": closest_node}
+	
+	return null
+
+## Helper: Line segment intersection
+func line_segment_intersection(a1: Vector2, a2: Vector2, b1: Vector2, b2: Vector2) -> Variant:
+	var d = (a2 - a1).cross(b2 - b1)
+	if abs(d) < 0.001:
+		return null  # Parallel lines
+	
+	var t = (b1 - a1).cross(b2 - b1) / d
+	var u = (b1 - a1).cross(a2 - a1) / d
+	
+	if t >= 0 and t <= 1 and u >= 0 and u <= 1:
+		return a1 + t * (a2 - a1)
+	
+	return null
+
+## Helper: Find closest point on segment to ray
+func closest_point_on_line_segment_to_ray(seg_a: Vector2, seg_b: Vector2, ray_start: Vector2, ray_end: Vector2) -> Vector2:
+	# Sample points on segment and find closest to ray
+	var min_dist = INF
+	var best_point = seg_a
+	
+	for i in range(11):
+		var t = float(i) / 10.0
+		var point = seg_a + t * (seg_b - seg_a)
+		var closest_on_ray = closest_point_on_line_segment(point, ray_start, ray_end)
+		var dist = point.distance_to(closest_on_ray)
+		
+		if dist < min_dist:
+			min_dist = dist
+			best_point = point
+	
+	return best_point
+
+## Helper: Find nearest expanded coast point (fallback)
+func find_nearest_expanded_coast_point(position: Vector2):
+	var nearest_position = null
+	var nearest_node = null
+	var min_distance = INF
+	
+	for coastal_node in coastal_nodes:
+		var expanded_pos = expanded_coast_positions.get(coastal_node.node_index)
+		if expanded_pos != null:
+			var distance = position.distance_to(expanded_pos)
+			
+			if distance < min_distance:
+				min_distance = distance
+				nearest_position = expanded_pos
+				nearest_node = coastal_node
+	
+	if nearest_position != null:
+		return {"position": nearest_position, "coast_node": nearest_node}
+	
+	return null
+
+## Phase 3: Detect river interactions
+func detect_river_interactions(river_paths: Array, merge_distance_threshold: float) -> Array:
+	var interactions = []
+	
+	for i in range(river_paths.size()):
+		for j in range(i + 1, river_paths.size()):
+			var river_a = river_paths[i]
+			var river_b = river_paths[j]
+			
+			var result = find_closest_point_between_line_segments(
+				river_a.waypoints[0], river_a.waypoints[1],
+				river_b.waypoints[0], river_b.waypoints[1]
+			)
+			
+			if result.distance < merge_distance_threshold:
+				var distance_along_a = river_a.waypoints[0].distance_to(result.point_on_a)
+				var distance_along_b = river_b.waypoints[0].distance_to(result.point_on_b)
+				
+				interactions.append({
+					"river_a_id": river_a.river_id,
+					"river_b_id": river_b.river_id,
+					"merge_point": (result.point_on_a + result.point_on_b) / 2.0,
+					"distance_along_a": distance_along_a,
+					"distance_along_b": distance_along_b,
+					"distance_between": result.distance
+				})
+	
+	return interactions
+
+## Helper: Find closest points between two line segments
+func find_closest_point_between_line_segments(a1: Vector2, a2: Vector2, b1: Vector2, b2: Vector2) -> Dictionary:
+	var min_distance = INF
+	var best_point_a = Vector2.ZERO
+	var best_point_b = Vector2.ZERO
+	
+	# Sample points along line A
+	for t in range(101):
+		var t_norm = float(t) / 100.0
+		var point_on_a = a1 + t_norm * (a2 - a1)
+		var closest_on_b = closest_point_on_line_segment(point_on_a, b1, b2)
+		var distance = point_on_a.distance_to(closest_on_b)
+		
+		if distance < min_distance:
+			min_distance = distance
+			best_point_a = point_on_a
+			best_point_b = closest_on_b
+	
+	return {
+		"distance": min_distance,
+		"point_on_a": best_point_a,
+		"point_on_b": best_point_b
+	}
+
+## Helper: Find closest point on line segment to a point
+func closest_point_on_line_segment(point: Vector2, line_start: Vector2, line_end: Vector2) -> Vector2:
+	var line_vec = line_end - line_start
+	var point_vec = point - line_start
+	var line_len = line_vec.length()
+	
+	if line_len == 0:
+		return line_start
+	
+	var t = point_vec.dot(line_vec) / (line_len * line_len)
+	t = clamp(t, 0.0, 1.0)
+	
+	return line_start + t * line_vec
+
+## Phase 4: Determine merge hierarchy
+func determine_merge_hierarchy(river_paths: Array, interactions: Array):
+	# Sort by distance
+	interactions.sort_custom(func(a, b): return a.distance_between < b.distance_between)
+	
+	for interaction in interactions:
+		var river_a = find_river_by_id(river_paths, interaction.river_a_id)
+		var river_b = find_river_by_id(river_paths, interaction.river_b_id)
+		
+		if river_a == null or river_b == null:
+			continue
+		
+		# Skip if either already merged
+		if river_a.merged_into != -1 or river_b.merged_into != -1:
+			continue
+		
+		# Calculate remaining distances to coast
+		var total_a = river_a.waypoints[0].distance_to(river_a.waypoints[1])
+		var total_b = river_b.waypoints[0].distance_to(river_b.waypoints[1])
+		var remaining_a = total_a - interaction.distance_along_a
+		var remaining_b = total_b - interaction.distance_along_b
+		
+		# River with more remaining distance is upstream (merges into downstream)
+		var upstream_river
+		var downstream_river
+		var merge_distance
+		
+		if remaining_a > remaining_b:
+			upstream_river = river_a
+			downstream_river = river_b
+			merge_distance = interaction.distance_along_b
+		else:
+			upstream_river = river_b
+			downstream_river = river_a
+			merge_distance = interaction.distance_along_a
+		
+		# Record merge
+		upstream_river.merged_into = downstream_river.river_id
+		upstream_river.merge_point = interaction.merge_point
+		downstream_river.tributaries.append({
+			"tributary_river_id": upstream_river.river_id,
+			"merge_point": interaction.merge_point,
+			"merge_distance": merge_distance
+		})
+
+## Helper: Find river by ID
+func find_river_by_id(river_paths: Array, river_id: int):
+	for river in river_paths:
+		if river.river_id == river_id:
+			return river
+	return null
+
+## Phase 5: Build river network
+func build_river_network(river_paths: Array) -> Array:
+	var final_rivers = []
+	
+	for river in river_paths:
+		# Only process rivers that reach the coast
+		if river.merged_into == -1:
+			var segments = build_river_segments_recursive(river, river_paths)
+			final_rivers.append({
+				"river_id": river.river_id,
+				"segments": segments
+			})
+	
+	return final_rivers
+
+## Helper: Recursively build river segments
+func build_river_segments_recursive(river: Dictionary, all_rivers: Array) -> Array:
+	var segments = []
+	var current_waypoints = [river.source_position]
+	
+	# Sort tributaries by merge distance
+	var sorted_tributaries = river.tributaries.duplicate()
+	sorted_tributaries.sort_custom(func(a, b): return a.merge_distance < b.merge_distance)
+	
+	# Add tributary branches
+	for tributary_info in sorted_tributaries:
+		current_waypoints.append(tributary_info.merge_point)
+		
+		var tributary_river = find_river_by_id(all_rivers, tributary_info.tributary_river_id)
+		if tributary_river:
+			var tributary_segments = build_river_segments_recursive(tributary_river, all_rivers)
+			segments.append({
+				"type": "tributary_branch",
+				"segments": tributary_segments,
+				"width": calculate_river_width(tributary_river, all_rivers)
+			})
+	
+	# Add final segment to coast
+	current_waypoints.append(river.target_position)
+	
+	segments.append({
+		"type": "main_channel",
+		"waypoints": current_waypoints,
+		"width": calculate_river_width(river, all_rivers)
+	})
+	
+	return segments
+
+## Phase 6: Calculate river width based on tributaries
+func calculate_river_width(river: Dictionary, all_rivers: Array) -> float:
+	var num_tributaries = count_all_tributaries_recursive(river, all_rivers)
+	var width = river_base_width + (num_tributaries * river_tributary_bonus)
+	return clamp(width, river_base_width, river_max_width)
+
+## Helper: Count all tributaries recursively
+func count_all_tributaries_recursive(river: Dictionary, all_rivers: Array) -> int:
+	var count = river.tributaries.size()
+	
+	for tributary_info in river.tributaries:
+		var tributary_river = find_river_by_id(all_rivers, tributary_info.tributary_river_id)
+		if tributary_river:
+			count += count_all_tributaries_recursive(tributary_river, all_rivers)
+	
+	return count
+
+## Phase 7: Add curves to rivers
+func add_river_curves(final_rivers: Array) -> Array:
+	var curved_rivers = []
+	
+	for river in final_rivers:
+		var curved_segments = add_curves_to_segments(river.segments)
+		curved_rivers.append({
+			"river_id": river.river_id,
+			"segments": curved_segments
+		})
+	
+	return curved_rivers
+
+## Helper: Add curves to segments recursively
+func add_curves_to_segments(segments: Array) -> Array:
+	var curved = []
+	
+	for segment in segments:
+		if segment.type == "main_channel":
+			var curved_waypoints = []
+			var waypoints = segment.waypoints
+			
+			for i in range(waypoints.size() - 1):
+				var start = waypoints[i]
+				var end = waypoints[i + 1]
+				
+				# Generate bezier curve
+				var midpoint = (start + end) / 2.0
+				var direction = (end - start).normalized()
+				var perpendicular = Vector2(-direction.y, direction.x)
+				var curve_amount = randf_range(10.0, 30.0) * (1 if randf() > 0.5 else -1)
+				var control_point = midpoint + perpendicular * curve_amount
+				
+				var curve_points = generate_quadratic_bezier(start, control_point, end, 20)
+				curved_waypoints.append_array(curve_points)
+			
+			curved.append({
+				"type": "main_channel",
+				"waypoints": curved_waypoints,
+				"width": segment.width
+			})
+		elif segment.type == "tributary_branch":
+			curved.append({
+				"type": "tributary_branch",
+				"segments": add_curves_to_segments(segment.segments),
+				"width": segment.width
+			})
+	
+	return curved
+
+## Helper: Generate quadratic bezier curve
+func generate_quadratic_bezier(start: Vector2, control: Vector2, end: Vector2, num_points: int) -> PackedVector2Array:
+	var points = PackedVector2Array()
+	
+	for i in range(num_points + 1):
+		var t = float(i) / float(num_points)
+		var mt = 1.0 - t
+		var point = mt * mt * start + 2.0 * mt * t * control + t * t * end
+		points.append(point)
+	
+	return points
+
+## Render river to static map
+func render_river_to_static_map(river: Dictionary):
+	render_segments_to_static_map(river.segments)
+
+## Helper: Render segments recursively
+func render_segments_to_static_map(segments: Array):
+	for segment in segments:
+		if segment.type == "main_channel":
+			var waypoints = segment.waypoints
+			var width = segment.width * map_resolution_scale
+			
+			for i in range(waypoints.size() - 1):
+				var point_a = waypoints[i] * map_resolution_scale
+				var point_b = waypoints[i + 1] * map_resolution_scale
+				
+				static_map_renderer.add_river_segment({
+					"pos_a": point_a,
+					"pos_b": point_b,
+					"width": width,
+					"color": river_color
+				})
+		elif segment.type == "tributary_branch":
+			render_segments_to_static_map(segment.segments)
 
 # ============================================================================
 # STEP 13: VISUALIZATION
@@ -2656,7 +3158,27 @@ func bake_static_map():
 	}
 	static_map_renderer.set_config(config)
 	
-	# Pass connection lines data
+	# Pass rivers data FIRST (bottom layer under everything)
+	if enable_rivers and rivers.size() > 0:
+		for river in rivers:
+			render_river_to_static_map(river)
+	
+	# Pass feature data (trees, etc.) so they render above rivers
+	if enable_map_features and map_features.size() > 0:
+		for feature in map_features:
+			match feature.type:
+				"tree":
+					# Scale tree data
+					var tree_data = feature.data.duplicate()
+					tree_data["position"] = tree_data["position"] * map_resolution_scale
+					tree_data["foliage_radius"] = tree_data["foliage_radius"] * map_resolution_scale
+					tree_data["trunk_width"] = tree_data["trunk_width"] * map_resolution_scale
+					tree_data["trunk_length"] = tree_data["trunk_length"] * map_resolution_scale
+					tree_data["outline_width"] = tree_data["outline_width"] * map_resolution_scale
+					static_map_renderer.add_tree(tree_data)
+				# Future: add other feature types here
+	
+	# Pass connection lines data (AFTER trees so they render on top)
 	var processed_edges = {}
 	for node in map_nodes:
 		for neighbor in node.connections:
@@ -2762,21 +3284,6 @@ func bake_static_map():
 			}
 			static_map_renderer.add_biome_blob(blob_data)
 	
-	# Pass feature data (trees, etc.) from pre-generated features (scale all properties)
-	if enable_map_features and map_features.size() > 0:
-		for feature in map_features:
-			match feature.type:
-				"tree":
-					# Scale tree data
-					var tree_data = feature.data.duplicate()
-					tree_data["position"] = tree_data["position"] * map_resolution_scale
-					tree_data["foliage_radius"] = tree_data["foliage_radius"] * map_resolution_scale
-					tree_data["trunk_width"] = tree_data["trunk_width"] * map_resolution_scale
-					tree_data["trunk_length"] = tree_data["trunk_length"] * map_resolution_scale
-					tree_data["outline_width"] = tree_data["outline_width"] * map_resolution_scale
-					static_map_renderer.add_tree(tree_data)
-				# Future: add other feature types here
-	
 	# Pass coast ripple lines data
 	if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
 		# For each ripple layer (outermost first)
@@ -2862,7 +3369,8 @@ func bake_static_map():
 	var ripple_line_count = static_map_renderer.coast_ripple_lines_data.size()
 	var coast_line_count = static_map_renderer.expanded_coast_lines_data.size()
 	var tree_count = static_map_renderer.trees_data.size()
-	debug_print("Static map baked successfully: %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d trees, %d coast ripples, %d coast lines" % [processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, tree_count, ripple_line_count, coast_line_count])
+	var river_count = rivers.size()
+	debug_print("Static map baked successfully: %d rivers, %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d trees, %d coast ripples, %d coast lines" % [river_count, processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, tree_count, ripple_line_count, coast_line_count])
 
 # ============================================================================
 # MAP DECORATIONS (Dragons, Octopi, etc.)
@@ -3241,17 +3749,12 @@ func draw_landmass_fill():
 
 func build_coast_polygon() -> PackedVector2Array:
 	# Build a closed polygon by traversing coastal nodes in connection order
-	# This is more reliable than building from line segments
+	# Use the CACHED expanded positions to ensure perfect alignment with coast lines
 	if coastal_nodes.size() == 0 or expanded_coast_lines.size() == 0:
 		return PackedVector2Array()
 	
-	# Get expanded positions for all coastal nodes
-	var expanded_positions: Dictionary = {}
-	for node in coastal_nodes:
-		var node_center = node.position + (node.size / 2.0)
-		var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
-		var expanded_pos = node_center + away_vector * coast_expansion_distance
-		expanded_positions[node.node_index] = expanded_pos
+	# Use the cached expanded_coast_positions that were calculated in generate_expanded_coast()
+	# This guarantees we use the EXACT same positions as the coast lines
 	
 	# Build a graph of coastal connections
 	var coastal_node_connections: Dictionary = {}  # node_index -> Array of connected coastal node indices
@@ -3285,7 +3788,7 @@ func build_coast_polygon() -> PackedVector2Array:
 	var current_node_index = start_node_index
 	
 	while true:
-		var current_pos = expanded_positions.get(current_node_index)
+		var current_pos = expanded_coast_positions.get(current_node_index)
 		if current_pos == null:
 				break
 		
@@ -3305,7 +3808,7 @@ func build_coast_polygon() -> PackedVector2Array:
 			if polygon.size() >= 2:
 				var prev_pos = polygon[polygon.size() - 2]
 				var current_pos_vec = polygon[polygon.size() - 1]
-				var candidate_pos = expanded_positions.get(candidate_index)
+				var candidate_pos = expanded_coast_positions.get(candidate_index)
 				if candidate_pos == null:
 					continue
 				
@@ -3992,6 +4495,27 @@ func _on_node_clicked(node: MapNode2D):
 	debug_node_edges(node)
 
 func _on_node_hovered(node: MapNode2D):
+	
+	var location: Dictionary = {}
+	
+	# Get biome name
+	if node.biome:
+		location["biome"] = node.biome.display_name
+	else:
+		location["biome"] = "Unknown"
+	
+	# Get steps away from player
+	if current_party_node and astar:
+		var path = astar.get_id_path(current_party_node.node_index, node.node_index)
+		location["steps"] = path.size() - 1 if path.size() > 0 else 0
+	else:
+		location["steps"] = 0
+	
+	# Check if visited
+	location["visited"] = node.node_state != MapNode2D.NodeState.UNEXPLORED
+	
+	location_detail_display.location_hovered(location)
+	
 	# Ignore hover when events are paused
 	if events_paused:
 		return
@@ -4007,6 +4531,8 @@ func _on_node_hovered(node: MapNode2D):
 	queue_redraw()
 
 func _on_node_hover_ended(node: MapNode2D):
+	location_detail_display.hide()
+	
 	if hovered_node == node:
 		_clear_hover_preview()
 

@@ -177,7 +177,12 @@ func _build_party_dict() -> Dictionary:
 	party_dict.members = []
 	for member in current_party_members:
 		var member_dict = {
-			"name": member.member_name
+			"name": member.member_name,
+			"level": member.level,
+			"health": member.current_health,
+			"max_health": member.max_health,
+			"experience": member.experience,
+			"stats": member.get_final_stats()
 		}
 		party_dict.members.append(member_dict)
 	
@@ -185,10 +190,20 @@ func _build_party_dict() -> Dictionary:
 	# Accessible as {{party.member1_name}}, {{party.member2_name}}, {{party.member3_name}}
 	if current_party_members.size() > 0:
 		party_dict.member1_name = current_party_members[0].member_name
+		party_dict.member1_level = current_party_members[0].level
+		party_dict.member1_health = current_party_members[0].current_health
 	if current_party_members.size() > 1:
 		party_dict.member2_name = current_party_members[1].member_name
+		party_dict.member2_level = current_party_members[1].level
+		party_dict.member2_health = current_party_members[1].current_health
 	if current_party_members.size() > 2:
 		party_dict.member3_name = current_party_members[2].member_name
+		party_dict.member3_level = current_party_members[2].level
+		party_dict.member3_health = current_party_members[2].current_health
+	
+	# Add party-wide stats
+	party_dict.party_level = _calculate_average_party_level()
+	party_dict.leader_name = current_party_members[0].member_name if current_party_members.size() > 0 else ""
 	
 	# Add reputation (empty for now, can be populated later if needed)
 	party_dict.reputation = {}
@@ -197,6 +212,17 @@ func _build_party_dict() -> Dictionary:
 	party_dict.variables = {}
 	
 	return party_dict
+
+## Calculate average party level
+func _calculate_average_party_level() -> int:
+	if current_party_members.is_empty():
+		return 1
+	
+	var total_level = 0
+	for member in current_party_members:
+		total_level += member.level
+	
+	return int(total_level / current_party_members.size())
 
 # ============================================================================
 # REST SYSTEM
