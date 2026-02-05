@@ -24,6 +24,7 @@ var current_party_members: Array[PartyMember] = []
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 
 func _ready():
+	print("TEST: ", %MapGenerator)
 	# Connect menu signals automatically
 	_connect_menu_signals()
 	

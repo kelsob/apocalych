@@ -29,7 +29,7 @@ script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
 coast_line_color = Color(0.3, 0.1878, 0.096, 1)
 coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
-ripple_base_color = Color(0.54902, 0.45098, 0.321569, 0.517647)
+ripple_base_color = Color(0.54902, 0.45098, 0.321569, 1)
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
 coast_line_width = 1.0
 coastal_water_expansion = 50.0
@@ -39,10 +39,10 @@ ripple_spacing_growth = 1.035
 ripple_base_width = 1.0
 ripple_color_fade = 0.0
 region_count = 9
-enable_biome_blobs = false
 biome_blob_radius = 128.0
 biome_blob_circles = 4
-biome_blob_alpha_max = 0.06
+biome_blob_alpha_max = 0.03
+map_resolution_scale = 4.0
 enable_debug_output = true
 
 [node name="ColorRect" type="ColorRect" parent="."]
@@ -56,46 +56,13 @@ grow_vertical = 2
 color = Color(0.717647, 0.670588, 0.439216, 1)
 
 [node name="MapNodes" type="Control" parent="."]
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="ThereBeDagrons" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(148, 575)
-texture = ExtResource("6_o2kik")
-
-[node name="ThereBeOctopi" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(1108, 135)
-scale = Vector2(1.5, 1.5)
-texture = ExtResource("4_ldstu")
-
-[node name="WavesE" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(1196, 343)
-texture = ExtResource("5_m5rfe")
-
-[node name="WavesW" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(220, 375)
-texture = ExtResource("5_m5rfe")
-
-[node name="WavesNW" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-position = Vector2(316, 183)
-texture = ExtResource("6_p13sx")
-flip_h = true
-
-[node name="WavesSE" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-position = Vector2(1068, 543)
-texture = ExtResource("6_p13sx")
-flip_h = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="MapDetails" type="VBoxContainer" parent="."]
 z_index = 10
@@ -232,23 +199,6 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("7_et537")
 
-[node name="PartyIndicator" type="Sprite2D" parent="."]
-modulate = Color(0.710938, 0, 0, 1)
-z_index = 10
-texture = ExtResource("6_jerfe")
-offset = Vector2(0, 1)
-
-[node name="GameCamera" type="Camera2D" parent="."]
-position = Vector2(640, 360)
-enabled = false
-script = ExtResource("8_n8x2r")
-zoom_min = 1.0
-zoom_max = 2.0
-
-[node name="StaticMapSprite" type="Sprite2D" parent="."]
-z_index = -1
-centered = false
-
 [node name="StaticMapViewport" type="SubViewport" parent="."]
 transparent_bg = true
 
@@ -314,5 +264,60 @@ layout_mode = 2
 
 [node name="CharacterDetails3" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
 layout_mode = 2
+
+[node name="ThereBeDagrons" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(148, 575)
+texture = ExtResource("6_o2kik")
+
+[node name="ThereBeOctopi" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1108, 135)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("4_ldstu")
+
+[node name="WavesE" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1196, 343)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesW" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(220, 375)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesNW" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(316, 183)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
+[node name="WavesSE" type="Sprite2D" parent="."]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(1068, 543)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
+[node name="PartyIndicator" type="Sprite2D" parent="."]
+modulate = Color(0.710938, 0, 0, 1)
+z_index = 10
+scale = Vector2(0.15, 0.15)
+texture = ExtResource("6_jerfe")
+offset = Vector2(0, 1)
+
+[node name="GameCamera" type="Camera2D" parent="."]
+position = Vector2(640, 360)
+enabled = false
+script = ExtResource("8_n8x2r")
+zoom_min = 1.0
+zoom_max = 4.0
+
+[node name="StaticMapSprite" type="Sprite2D" parent="."]
+z_index = -1
+centered = false
 
 [connection signal="pressed" from="CanvasLayer/UI/HBoxContainer/ResetMapButton" to="." method="regenerate_map"]

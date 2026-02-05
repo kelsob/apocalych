@@ -64,7 +64,7 @@ theme_override_constants/separation = 0
 [node name="NameLabel" type="Label" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 12
 text = "Character"
 vertical_alignment = 1
 

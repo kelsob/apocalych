@@ -58,7 +58,10 @@ class_name MapGenerator2D
 @export_group("Lines & Strokes")
 @export var line_width: float = 4.0
 @export var coast_line_width: float = 0.75
-@export var coast_expansion_distance: float = 20.0  # How far to expand coast outward from edges
+@export var coast_expansion_distance: float = 20.0  # Base/average expansion distance (deprecated if using min/max)
+@export var coast_expansion_min: float = 10.0  # Minimum coast expansion distance
+@export var coast_expansion_max: float = 30.0  # Maximum coast expansion distance
+@export var coast_expansion_noise_scale: float = 0.002  # Lower = smoother transitions, Higher = more variation
 @export var horizontal_line_width_multiplier: float = 1.5  # Thicker horizontal lines (1.0 = no change)
 @export var horizontal_line_darken: float = 0.08  # Darken horizontal lines (0.0-1.0)
 @export var trail_line_width: float = 3.0
@@ -220,9 +223,11 @@ var coastal_nodes: Array[MapNode2D] = []
 var coastal_connections: Array = []  # Stored pairs [node_a, node_b] for coastal edges
 var expanded_coast_lines: Array = []  # Array of [pos_a, pos_b] for expanded coast lines
 var expanded_coast_positions: Dictionary = {}  # node_index -> expanded Vector2 position (cached)
+var coast_expansion_factors: Dictionary = {}  # node_index -> expansion factor (0.0-1.0) for variance
 var map_features: Array = []  # Array of feature dictionaries (trees, rocks, etc.)
 var rivers: Array = []  # Array of river dictionaries
 var astar: AStar2D
+var coast_noise: FastNoiseLite  # Noise for spatially coherent coast expansion variance
 
 # Shape noise
 var shape_noise_large: FastNoiseLite
@@ -258,6 +263,13 @@ func _ready():
 	z_index = 1
 	# Load biome resources
 	_load_biome_resources()
+	
+	# Initialize coast expansion noise for spatially coherent variance
+	coast_noise = FastNoiseLite.new()
+	coast_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	coast_noise.frequency = 0.5  # Will be overridden by coast_expansion_noise_scale
+	coast_noise.seed = randi()  # Random seed for variation between maps
+	
 	# Map generation will be triggered manually when game starts
 	
 	# Map UI (canvas layer) only shown when map is displayed, not at launch
@@ -450,6 +462,7 @@ func clear_existing_nodes():
 	coastal_connections.clear()
 	expanded_coast_lines.clear()
 	expanded_coast_positions.clear()
+	coast_expansion_factors.clear()
 	rivers.clear()
 	delaunay_edges.clear()
 	visited_paths.clear()
@@ -1418,6 +1431,16 @@ func generate_expanded_coast():
 	# Validate that all coastal nodes have been processed
 	validate_all_coastal_nodes_processed()
 	
+	# Generate spatially coherent expansion factors using noise
+	coast_expansion_factors.clear()
+	for node in coastal_nodes:
+		var node_center = node.position + (node.size / 2.0)
+		# Sample noise at this position for spatially coherent variance
+		var noise_value = coast_noise.get_noise_2d(node_center.x * coast_expansion_noise_scale, node_center.y * coast_expansion_noise_scale)
+		# Noise returns -1 to 1, normalize to 0 to 1
+		var normalized_noise = (noise_value + 1.0) / 2.0
+		coast_expansion_factors[node.node_index] = normalized_noise
+	
 	# Use away_directions to calculate expanded positions and CACHE them
 	expanded_coast_positions.clear()
 	
@@ -1425,7 +1448,10 @@ func generate_expanded_coast():
 		var node_center = node.position + (node.size / 2.0)
 		# Use the stored away_direction angle
 		var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
-		var expanded_pos = node_center + away_vector * coast_expansion_distance
+		# Get this node's expansion factor and interpolate between min and max
+		var expansion_factor = coast_expansion_factors.get(node.node_index, 0.5)
+		var expansion_distance = lerp(coast_expansion_min, coast_expansion_max, expansion_factor)
+		var expanded_pos = node_center + away_vector * expansion_distance
 		expanded_coast_positions[node.node_index] = expanded_pos
 	
 	# Third pass: create lines between expanded vertices using original connections
@@ -3308,13 +3334,13 @@ func bake_static_map():
 	if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
 		# For each ripple layer (outermost first)
 		for ripple_index in range(ripple_count - 1, -1, -1):
-			# Calculate cumulative distance for this ripple
-			var cumulative_distance = coast_expansion_distance
+			# Calculate additional distance for this ripple (beyond the coast expansion)
+			var additional_ripple_distance = 0.0
 			for i in range(ripple_index + 1):
 				if i == 0:
-					cumulative_distance += ripple_base_spacing
+					additional_ripple_distance += ripple_base_spacing
 				else:
-					cumulative_distance += ripple_base_spacing * pow(ripple_spacing_growth, i)
+					additional_ripple_distance += ripple_base_spacing * pow(ripple_spacing_growth, i)
 			
 			# Calculate width for this ripple
 			var ripple_width = ripple_base_width * pow(ripple_width_decay, ripple_index)
@@ -3330,10 +3356,16 @@ func bake_static_map():
 			)
 			
 			# Generate expanded positions for this ripple distance
+			# Each node uses its own variable expansion distance as the base
 			var ripple_positions: Dictionary = {}
 			for node in coastal_nodes:
 				var node_center = node.position + (node.size / 2.0)
 				var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
+				# Get this node's variable expansion distance
+				var expansion_factor = coast_expansion_factors.get(node.node_index, 0.5)
+				var expansion_distance = lerp(coast_expansion_min, coast_expansion_max, expansion_factor)
+				# Add the additional ripple distance on top
+				var cumulative_distance = expansion_distance + additional_ripple_distance
 				var ripple_pos = node_center + away_vector * cumulative_distance
 				ripple_positions[node.node_index] = ripple_pos
 			
@@ -3706,13 +3738,13 @@ func draw_coast_ripples():
 	
 	# For each ripple layer (outermost first so inner ones draw on top)
 	for ripple_index in range(ripple_count - 1, -1, -1):
-		# Calculate cumulative distance for this ripple
-		var cumulative_distance = coast_expansion_distance
+		# Calculate additional distance for this ripple (beyond the coast expansion)
+		var additional_ripple_distance = 0.0
 		for i in range(ripple_index + 1):
 			if i == 0:
-				cumulative_distance += ripple_base_spacing
+				additional_ripple_distance += ripple_base_spacing
 			else:
-				cumulative_distance += ripple_base_spacing * pow(ripple_spacing_growth, i)
+				additional_ripple_distance += ripple_base_spacing * pow(ripple_spacing_growth, i)
 		
 		# Calculate width for this ripple
 		var ripple_width = ripple_base_width * pow(ripple_width_decay, ripple_index)
@@ -3728,10 +3760,16 @@ func draw_coast_ripples():
 		)
 		
 		# Generate expanded positions for this ripple distance
+		# Each node uses its own variable expansion distance as the base
 		var ripple_positions: Dictionary = {}
 		for node in coastal_nodes:
 			var node_center = node.position + (node.size / 2.0)
 			var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
+			# Get this node's variable expansion distance
+			var expansion_factor = coast_expansion_factors.get(node.node_index, 0.5)
+			var expansion_distance = lerp(coast_expansion_min, coast_expansion_max, expansion_factor)
+			# Add the additional ripple distance on top
+			var cumulative_distance = expansion_distance + additional_ripple_distance
 			var ripple_pos = node_center + away_vector * cumulative_distance
 			ripple_positions[node.node_index] = ripple_pos
 		
@@ -4787,9 +4825,12 @@ func debug_node_away_directions(node: MapNode2D):
 	if node.is_coastal:
 		var node_center = node.position + (node.size / 2.0)
 		var away_vec = Vector2(cos(node.away_direction), sin(node.away_direction))
-		var expanded_pos = node_center + away_vec * coast_expansion_distance
+		var expansion_factor = coast_expansion_factors.get(node.node_index, 0.5)
+		var expansion_distance = lerp(coast_expansion_min, coast_expansion_max, expansion_factor)
+		var expanded_pos = node_center + away_vec * expansion_distance
 		debug_print("  Node %d center: (%.1f, %.1f)" % [node.node_index, node_center.x, node_center.y])
 		debug_print("  Node %d away_vector: (%.3f, %.3f)" % [node.node_index, away_vec.x, away_vec.y])
+		debug_print("  Node %d expansion_factor: %.3f, expansion_distance: %.1f" % [node.node_index, expansion_factor, expansion_distance])
 		debug_print("  Node %d expanded_pos: (%.1f, %.1f)" % [node.node_index, expanded_pos.x, expanded_pos.y])
 	
 	# Analyze which neighbors were used for away_direction calculation
@@ -4871,9 +4912,12 @@ func debug_node_away_directions(node: MapNode2D):
 		
 		if neighbor.is_coastal and neighbor.away_direction != 0.0:
 			var neighbor_away_vec = Vector2(cos(neighbor.away_direction), sin(neighbor.away_direction))
-			var neighbor_expanded_pos = neighbor_center + neighbor_away_vec * coast_expansion_distance
+			var neighbor_expansion_factor = coast_expansion_factors.get(neighbor.node_index, 0.5)
+			var neighbor_expansion_distance = lerp(coast_expansion_min, coast_expansion_max, neighbor_expansion_factor)
+			var neighbor_expanded_pos = neighbor_center + neighbor_away_vec * neighbor_expansion_distance
 			debug_print("      Neighbor %d center: (%.1f, %.1f)" % [neighbor.node_index, neighbor_center.x, neighbor_center.y])
 			debug_print("      Neighbor %d away_vector: (%.3f, %.3f)" % [neighbor.node_index, neighbor_away_vec.x, neighbor_away_vec.y])
+			debug_print("      Neighbor %d expansion_factor: %.3f, distance: %.1f" % [neighbor.node_index, neighbor_expansion_factor, neighbor_expansion_distance])
 			debug_print("      Neighbor %d expanded_pos: (%.1f, %.1f)" % [neighbor.node_index, neighbor_expanded_pos.x, neighbor_expanded_pos.y])
 	
 	debug_print("=== End Away Direction Debug ===\n")

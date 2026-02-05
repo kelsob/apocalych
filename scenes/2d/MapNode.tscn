@@ -15,6 +15,7 @@ mouse_filter = 2
 script = ExtResource("1_r064c")
 
 [node name="BaseSprite" type="Sprite2D" parent="."]
+scale = Vector2(0.1, 0.1)
 texture = ExtResource("2_55e5g")
 
 [node name="MountainSprite" type="Sprite2D" parent="."]
