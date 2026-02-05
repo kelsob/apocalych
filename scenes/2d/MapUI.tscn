@@ -1,0 +1,66 @@
+[gd_scene load_steps=5 format=3 uid="uid://bxpeslf2ec2xb"]
+
+[ext_resource type="Script" uid="uid://dcicsb0rvsjk8" path="res://scripts/MapUI.gd" id="1_xpcuo"]
+[ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="2_ep57f"]
+[ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="3_ik5q6"]
+[ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="4_7q5dy"]
+
+[node name="MapUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_xpcuo")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -92.0
+offset_top = -74.0
+offset_right = 92.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ResetMapButton" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "reset map"
+
+[node name="RestButton" type="Button" parent="HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Rest"
+
+[node name="LocationDetailDisplay" parent="." instance=ExtResource("2_ep57f")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="PartyDetails" type="VBoxContainer" parent="."]
+custom_minimum_size = Vector2(256, 256)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 32.0
+offset_top = -107.0
+offset_right = 288.0
+offset_bottom = 171.0
+grow_vertical = 2
+scale = Vector2(0.8, 0.8)
+script = ExtResource("3_ik5q6")
+
+[node name="CharacterDetails" parent="PartyDetails" instance=ExtResource("4_7q5dy")]
+layout_mode = 2
+
+[node name="CharacterDetails2" parent="PartyDetails" instance=ExtResource("4_7q5dy")]
+layout_mode = 2
+
+[node name="CharacterDetails3" parent="PartyDetails" instance=ExtResource("4_7q5dy")]
+layout_mode = 2

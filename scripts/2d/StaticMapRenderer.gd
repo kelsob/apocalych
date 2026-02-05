@@ -363,14 +363,13 @@ func _draw_expanded_coast_lines():
 
 ## Draw Bezier curve (matches MapGenerator2D curve rendering)
 func _draw_bezier_curve(pos_a: Vector2, pos_b: Vector2, curve_data: Dictionary, color: Color, width: float):
-	var distance = pos_a.distance_to(pos_b)
 	var points: PackedVector2Array = []
 	
 	if curve_data.get("is_s_curve", false):
-		# S-curve: cubic Bezier with two control points
+		# S-curve: cubic Bezier with two control points (fixed segment count for consistent performance)
 		var control1: Vector2 = curve_data.get("control1", (pos_a + pos_b) / 2.0)
 		var control2: Vector2 = curve_data.get("control2", (pos_a + pos_b) / 2.0)
-		var segments = max(12, int(distance / 4.0))
+		var segments = 24
 		
 		for i in range(segments + 1):
 			var t = float(i) / float(segments)
@@ -384,9 +383,9 @@ func _draw_bezier_curve(pos_a: Vector2, pos_b: Vector2, curve_data: Dictionary, 
 			var point = mt3 * pos_a + 3.0 * mt2 * t * control1 + 3.0 * mt * t2 * control2 + t3 * pos_b
 			points.append(point)
 	else:
-		# Single curve: quadratic Bezier with one control point
+		# Single curve: quadratic Bezier with one control point (fixed segment count for consistent performance)
 		var control: Vector2 = curve_data.get("control_point", (pos_a + pos_b) / 2.0)
-		var segments = max(8, int(distance / 5.0))
+		var segments = 16
 		
 		for i in range(segments + 1):
 			var t = float(i) / float(segments)

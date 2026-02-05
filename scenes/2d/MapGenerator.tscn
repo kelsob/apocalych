@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=15 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -12,11 +12,8 @@
 [ext_resource type="Texture2D" uid="uid://dox1js6lhibgr" path="res://assets/map/waves-angled.png" id="6_p13sx"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 [ext_resource type="Script" uid="uid://dpiclq4dhx7e8" path="res://scripts/2d/CameraController2D.gd" id="8_n8x2r"]
+[ext_resource type="PackedScene" uid="uid://c43x5j7j8a6l3" path="res://scenes/testui.tscn" id="8_ug3a7"]
 [ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
-[ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="11_ug3a7"]
-[ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="12_rpxmf"]
-[ext_resource type="Script" uid="uid://dcicsb0rvsjk8" path="res://scripts/UI.gd" id="14_n07c6"]
-[ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="15_mfg10"]
 
 [node name="MapGenerator" type="Control"]
 layout_mode = 3
@@ -42,7 +39,6 @@ region_count = 9
 biome_blob_radius = 128.0
 biome_blob_circles = 4
 biome_blob_alpha_max = 0.03
-map_resolution_scale = 4.0
 enable_debug_output = true
 
 [node name="ColorRect" type="ColorRect" parent="."]
@@ -207,107 +203,7 @@ script = ExtResource("9_bvoid")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="UI" type="Control" parent="CanvasLayer"]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("14_n07c6")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/UI"]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -92.0
-offset_top = -74.0
-offset_right = 92.0
-offset_bottom = -32.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[node name="ResetMapButton" type="Button" parent="CanvasLayer/UI/HBoxContainer"]
-layout_mode = 2
-text = "reset map"
-
-[node name="RestButton" type="Button" parent="CanvasLayer/UI/HBoxContainer"]
-layout_mode = 2
-text = "Rest"
-
-[node name="LocationDetailDisplay" parent="CanvasLayer/UI" instance=ExtResource("11_ug3a7")]
-layout_mode = 1
-
-[node name="PartyDetails" type="VBoxContainer" parent="CanvasLayer/UI"]
-custom_minimum_size = Vector2(256, 256)
-layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 32.0
-offset_top = -107.0
-offset_right = 288.0
-offset_bottom = 171.0
-grow_vertical = 2
-scale = Vector2(0.8, 0.8)
-script = ExtResource("15_mfg10")
-
-[node name="CharacterDetails" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
-[node name="CharacterDetails2" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
-[node name="CharacterDetails3" parent="CanvasLayer/UI/PartyDetails" instance=ExtResource("12_rpxmf")]
-layout_mode = 2
-
-[node name="ThereBeDagrons" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(148, 575)
-texture = ExtResource("6_o2kik")
-
-[node name="ThereBeOctopi" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(1108, 135)
-scale = Vector2(1.5, 1.5)
-texture = ExtResource("4_ldstu")
-
-[node name="WavesE" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(1196, 343)
-texture = ExtResource("5_m5rfe")
-
-[node name="WavesW" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
-position = Vector2(220, 375)
-texture = ExtResource("5_m5rfe")
-
-[node name="WavesNW" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-position = Vector2(316, 183)
-texture = ExtResource("6_p13sx")
-flip_h = true
-
-[node name="WavesSE" type="Sprite2D" parent="."]
-modulate = Color(0.588235, 0.482353, 0.298039, 1)
-position = Vector2(1068, 543)
-texture = ExtResource("6_p13sx")
-flip_h = true
-
-[node name="PartyIndicator" type="Sprite2D" parent="."]
-modulate = Color(0.710938, 0, 0, 1)
-z_index = 10
-scale = Vector2(0.15, 0.15)
-texture = ExtResource("6_jerfe")
-offset = Vector2(0, 1)
+[node name="UI" parent="CanvasLayer" instance=ExtResource("8_ug3a7")]
 
 [node name="GameCamera" type="Camera2D" parent="."]
 position = Vector2(640, 360)
@@ -316,8 +212,52 @@ script = ExtResource("8_n8x2r")
 zoom_min = 1.0
 zoom_max = 4.0
 
-[node name="StaticMapSprite" type="Sprite2D" parent="."]
+[node name="MapSprites" type="Node2D" parent="."]
+
+[node name="PartyIndicator" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.710938, 0, 0, 1)
+z_index = 10
+scale = Vector2(0.15, 0.15)
+texture = ExtResource("6_jerfe")
+offset = Vector2(0, 1)
+
+[node name="ThereBeDagrons" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(148, 575)
+texture = ExtResource("6_o2kik")
+
+[node name="ThereBeOctopi" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1108, 135)
+scale = Vector2(1.5, 1.5)
+texture = ExtResource("4_ldstu")
+
+[node name="WavesE" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(1196, 343)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesW" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+z_index = 10
+position = Vector2(220, 375)
+texture = ExtResource("5_m5rfe")
+
+[node name="WavesNW" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(316, 183)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
+[node name="WavesSE" type="Sprite2D" parent="MapSprites"]
+modulate = Color(0.588235, 0.482353, 0.298039, 1)
+position = Vector2(1068, 543)
+texture = ExtResource("6_p13sx")
+flip_h = true
+
+[node name="StaticMapSprite" type="Sprite2D" parent="MapSprites"]
 z_index = -1
 centered = false
-
-[connection signal="pressed" from="CanvasLayer/UI/HBoxContainer/ResetMapButton" to="." method="regenerate_map"]

@@ -2,13 +2,10 @@ extends Control
 
 ## Main game manager - handles overall game state, menus, and coordination
 ## Central script for game-wide logic
+## UI elements live under UIController (CanvasLayer); Main accesses via ui_controller
 
 @onready var map_generator: MapGenerator2D = $MapGenerator
-@onready var main_menu: MainMenu = $MainMenu
-@onready var party_select_menu: PartySelectMenu = $PartySelectMenu
-@onready var ui_controller: UIController = $GameUI
-@onready var event_window: Control = $EventWindow
-@onready var rest_controller: RestController = $RestController
+@onready var ui_controller: CanvasLayer = $UIController
 
 # Game state
 enum GameState {
@@ -24,7 +21,6 @@ var current_party_members: Array[PartyMember] = []
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 
 func _ready():
-	print("TEST: ", %MapGenerator)
 	# Connect menu signals automatically
 	_connect_menu_signals()
 	
@@ -36,31 +32,34 @@ func _ready():
 	map_generator.map_generation_complete.connect(_on_map_generation_complete)
 	map_generator.party_moved_to_node.connect(_on_party_moved_to_node)
 	map_generator.travel_completed.connect(_on_travel_completed)
-	map_generator.rest_requested.connect(_on_rest_requested)
+	
+	# MapUI emits rest_requested (RestButton is now in MapUI under UIController)
+	ui_controller.map_ui.rest_requested.connect(_on_rest_requested)
 	
 	# Hide and connect rest controller
-	rest_controller.visible = false
-	rest_controller.rest_complete.connect(_on_rest_complete)
+	ui_controller.rest_controller.visible = false
+	ui_controller.rest_controller.rest_complete.connect(_on_rest_complete)
 	
 	# Connect event window signal to update rest button when event closes
-	event_window.event_closed.connect(_on_event_closed)
+	ui_controller.event_window.event_closed.connect(_on_event_closed)
 
 ## Automatically connect all menu signals
 func _connect_menu_signals():
-	main_menu.start_game_pressed.connect(_on_main_menu_start_pressed)
-	main_menu.quit_pressed.connect(_on_main_menu_quit_pressed)
+	ui_controller.main_menu.start_game_pressed.connect(_on_main_menu_start_pressed)
+	ui_controller.main_menu.quit_pressed.connect(_on_main_menu_quit_pressed)
 	
-	party_select_menu.start_game_pressed.connect(_on_party_select_start_pressed)
-	party_select_menu.back_to_main_menu_pressed.connect(_on_party_select_back_pressed)
+	ui_controller.party_select_menu.start_game_pressed.connect(_on_party_select_start_pressed)
+	ui_controller.party_select_menu.back_to_main_menu_pressed.connect(_on_party_select_back_pressed)
 
 ## Show a specific menu and hide others
 func show_menu(state: GameState):
 	current_state = state
 	
-	# Hide all menus
-	main_menu.visible = false
-	party_select_menu.visible = false
+	# Hide all menus and map UI
+	ui_controller.main_menu.visible = false
+	ui_controller.party_select_menu.visible = false
 	map_generator.visible = false
+	ui_controller.map_ui.visible = false
 	
 	# Update UI visibility based on game state
 	ui_controller.update_ui_visibility(state)
@@ -68,11 +67,12 @@ func show_menu(state: GameState):
 	# Show the appropriate menu
 	match state:
 		GameState.MAIN_MENU:
-			main_menu.visible = true
+			ui_controller.main_menu.visible = true
 		GameState.PARTY_SELECT:
-			party_select_menu.visible = true
+			ui_controller.party_select_menu.visible = true
 		GameState.IN_GAME:
 			map_generator.visible = true
+			ui_controller.map_ui.visible = true
 
 ## Signal handlers for MainMenu
 func _on_main_menu_start_pressed():
@@ -107,7 +107,7 @@ func _on_party_select_back_pressed():
 ## Called when map generation is complete
 func _on_map_generation_complete():
 	print("Main: Map generation complete, starting game...")
-	map_generator.initialize_party_ui(current_party_members)
+	ui_controller.map_ui.initialize_party_ui(current_party_members)
 	start_game()
 
 ## Start the game - enables player interaction and begins gameplay loop
@@ -139,7 +139,7 @@ func _show_introductory_event():
 	
 	# Display the event with current node (for rest state effects)
 	var current_node = map_generator.current_party_node
-	event_window.display_event(presented_event, party_dict, current_node)
+	ui_controller.event_window.display_event(presented_event, party_dict, current_node)
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found
@@ -167,7 +167,7 @@ func _launch_node_event(node: MapNode2D):
 	var presented_event = EventManager.present_event(selected_event, party_dict)
 	
 	# Display the event with current node (for rest state effects)
-	event_window.display_event(presented_event, party_dict, node)
+	ui_controller.event_window.display_event(presented_event, party_dict, node)
 
 ## Build party dictionary for event system
 ## This is mainly for text interpolation (like {{party.member1_name}})
@@ -238,7 +238,11 @@ func _on_party_moved_to_node(node: MapNode2D):
 func _on_event_closed():
 	# Update rest button visibility based on current node's rest state
 	var current_node = map_generator.current_party_node
-	map_generator.update_rest_button_visibility(current_node.can_rest_here)
+	if current_node == null:
+		ui_controller.map_ui.update_rest_button_visibility(false)
+		return
+	var has_rested_here = current_node.node_index == map_generator.rested_at_node_index
+	ui_controller.map_ui.update_rest_button_visibility(current_node.can_rest_here and not has_rested_here)
 
 ## Called when travel completes - launch event for the destination node
 func _on_travel_completed(node: MapNode2D):
@@ -260,11 +264,12 @@ func start_rest():
 	
 	print("Main: Starting rest at node %d" % current_node.node_index)
 	
-	# Hide map
+	# Hide map and map UI
 	map_generator.visible = false
+	ui_controller.map_ui.visible = false
 	
 	# Show rest screen
-	rest_controller.start_rest()
+	ui_controller.rest_controller.start_rest()
 
 ## Called when rest is complete - return to map
 func _on_rest_complete():
@@ -273,8 +278,14 @@ func _on_rest_complete():
 	# Mark that the party has rested at the current node
 	map_generator.mark_node_as_rested()
 	
-	# Hide rest screen
-	rest_controller.visible = false
+	# Update rest button (now hidden since we've rested here)
+	var current_node = map_generator.current_party_node
+	if current_node:
+		ui_controller.map_ui.update_rest_button_visibility(false)
 	
-	# Show map
+	# Hide rest screen
+	ui_controller.rest_controller.visible = false
+	
+	# Show map and map UI
 	map_generator.visible = true
+	ui_controller.map_ui.visible = true

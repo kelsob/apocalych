@@ -179,26 +179,23 @@ var visited_paths: Dictionary = {}  # "node1_node2" -> PackedVector2Array (compl
 var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path currently being drawn (in progress)
 
 # Party indicator node (user will instantiate and assign via @onready)
-@onready var party_indicator: Sprite2D = $PartyIndicator
+@onready var party_indicator: Sprite2D = $MapSprites/PartyIndicator
 @onready var mapnodes: Control = $MapNodes
 @onready var world_name_label: Label = $MapDetails/Control/WorldNameLabel
 @onready var game_camera: Camera2D = $GameCamera
 
-# MapControls (child of MapGenerator2D)
-@onready var UI: Control = $CanvasLayer/UI
-@onready var location_detail_display: Control = $CanvasLayer/UI/LocationDetailDisplay
-@onready var rest_button: Button = $CanvasLayer/UI/HBoxContainer/RestButton
+# LocationDetailDisplay and RestButton now live in MapUI under Main's UIController (use unique names)
 
 # Static map rendering (performance optimization)
 @onready var static_map_viewport: SubViewport = $StaticMapViewport
 @onready var static_map_renderer: StaticMapRenderer = $StaticMapViewport/StaticMapRenderer
-@onready var static_map_sprite: Sprite2D = $StaticMapSprite
-@onready var dagron_sprite: Sprite2D = $ThereBeDagrons
-@onready var octopi_sprite: Sprite2D = $ThereBeOctopi
-@onready var waves_east_sprite: Sprite2D = $WavesE
-@onready var waves_west_sprite: Sprite2D = $WavesW
-@onready var waves_northwest_sprite: Sprite2D = $WavesNW
-@onready var waves_southeast_sprite: Sprite2D = $WavesSE
+@onready var static_map_sprite: Sprite2D = $MapSprites/StaticMapSprite
+@onready var dagron_sprite: Sprite2D = $MapSprites/ThereBeDagrons
+@onready var octopi_sprite: Sprite2D = $MapSprites/ThereBeOctopi
+@onready var waves_east_sprite: Sprite2D = $MapSprites/WavesE
+@onready var waves_west_sprite: Sprite2D = $MapSprites/WavesW
+@onready var waves_northwest_sprite: Sprite2D = $MapSprites/WavesNW
+@onready var waves_southeast_sprite: Sprite2D = $MapSprites/WavesSE
 
 @onready var canvas_layer: CanvasLayer = $CanvasLayer
 
@@ -209,7 +206,6 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 signal map_generation_complete
 signal party_moved_to_node(node: MapNode2D)  # Emitted when party moves to a new node
 signal travel_completed(node: MapNode2D)  # Emitted when party finishes traveling to a node
-signal rest_requested()  # Emitted when rest button is pressed
 
 # ============================================================================
 # INTERNAL VARIABLES
@@ -276,9 +272,7 @@ func _ready():
 	if canvas_layer:
 		canvas_layer.visible = false
 	
-	# Connect rest button
-	rest_button.pressed.connect(_on_rest_button_pressed)
-	rest_button.visible = false  # Hidden by default, shown when party can rest
+	# Rest button is now in MapUI under UIController - Main connects to map_ui.rest_requested
 	
 	# Hide decoration sprites initially
 	if dagron_sprite:
@@ -300,9 +294,7 @@ func set_world_name(name: String):
 		world_name_label.text = name
 
 
-## Initialize the map UI (e.g. party detail slots) with the current party. Call when the game starts and the map is displayed.
-func initialize_party_ui(members: Array[PartyMember]) -> void:
-	get_node("CanvasLayer/UI/PartyDetails").initialize_party(members)
+## initialize_party_ui moved to Main - calls ui_controller.map_ui.initialize_party_ui()
 
 
 func generate_map():
@@ -3582,8 +3574,8 @@ func draw_curved_line(pos_a: Vector2, pos_b: Vector2, color: Color, width: float
 		var control1 = pos_a + direction * (distance * 0.33) + perpendicular * base_offset
 		var control2 = pos_a + direction * (distance * 0.67) - perpendicular * base_offset
 		
-		# Cubic Bezier curve (4 points: start, control1, control2, end)
-		var segments = max(12, int(distance / 4.0))
+		# Cubic Bezier curve (4 points: start, control1, control2, end) - fixed segment count for consistent performance
+		var segments = 24
 		var points = PackedVector2Array()
 		
 		for i in range(segments + 1):
@@ -3608,8 +3600,8 @@ func draw_curved_line(pos_a: Vector2, pos_b: Vector2, color: Color, width: float
 		var control_offset = perpendicular * base_offset
 		var control_point = (pos_a + pos_b) / 2.0 + control_offset
 		
-		# Quadratic Bezier curve (3 points: start, control, end)
-		var segments = max(8, int(distance / 5.0))
+		# Quadratic Bezier curve (3 points: start, control, end) - fixed segment count for consistent performance
+		var segments = 16
 		var points = PackedVector2Array()
 		
 		for i in range(segments + 1):
@@ -4198,8 +4190,9 @@ func set_party_position(node: MapNode2D):
 	var node_center = node.position + (node.size / 2.0)
 	party_indicator.global_position = node_center
 	
-	# Hide rest button initially - events will determine if rest is safe
-	rest_button.visible = false
+	# Hide rest button initially - events will determine if rest is safe (RestButton now in MapUI)
+	if has_node("%RestButton"):
+		%RestButton.visible = false
 	
 	# Emit signal so systems can react to party movement
 	party_moved_to_node.emit(node)
@@ -4272,7 +4265,7 @@ func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array
 		var control1 = pos_a + direction * (distance * 0.33) + perpendicular * base_offset
 		var control2 = pos_a + direction * (distance * 0.67) - perpendicular * base_offset
 		
-		var segments = max(12, int(distance / 4.0))
+		var segments = 24  # Fixed for consistent performance
 		
 		for i in range(segments + 1):
 			var t = float(i) / float(segments)
@@ -4290,7 +4283,7 @@ func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array
 		var control_offset = perpendicular * base_offset
 		var control = (pos_a + pos_b) / 2.0 + control_offset
 		
-		var segments = max(8, int(distance / 5.0))
+		var segments = 16  # Fixed for consistent performance
 		
 		for i in range(segments + 1):
 			var t = float(i) / float(segments)
@@ -4490,25 +4483,13 @@ func _finish_party_travel():
 	# Return to idle state
 	map_state = MapState.IDLE
 
-## Called when rest button is pressed
-func _on_rest_button_pressed():
-	rest_requested.emit()
-
-## Update rest button visibility based on whether party can rest at current node
-## can_rest: bool - Whether the party can rest at the current location
-func update_rest_button_visibility(can_rest: bool):
-	# Check if we've already rested at this node in this visit
-	var has_rested_here = (current_party_node != null and current_party_node.node_index == rested_at_node_index)
-	
-	# Rest button is visible only if rest is allowed AND we haven't rested here yet
-	rest_button.visible = can_rest and not has_rested_here
+## Rest button logic moved to MapUI under UIController - Main handles rest_requested and visibility
 
 ## Mark that the party has successfully rested at the current node
 func mark_node_as_rested():
 	if current_party_node:
 		rested_at_node_index = current_party_node.node_index
-		# Update button visibility immediately
-		update_rest_button_visibility(current_party_node.can_rest_here)
+		# Main updates rest button visibility in _on_rest_complete
 
 ## Clear rested node tracking (called when party leaves a node)
 func clear_rested_node():
@@ -4572,7 +4553,8 @@ func _on_node_hovered(node: MapNode2D):
 	# Check if visited
 	location["visited"] = node.node_state != MapNode2D.NodeState.UNEXPLORED
 	
-	location_detail_display.location_hovered(location)
+	if has_node("%LocationDetailDisplay"):
+		%LocationDetailDisplay.location_hovered(location)
 	
 	# Ignore hover when events are paused
 	if events_paused:
@@ -4589,7 +4571,8 @@ func _on_node_hovered(node: MapNode2D):
 	queue_redraw()
 
 func _on_node_hover_ended(node: MapNode2D):
-	location_detail_display.hide()
+	if has_node("%LocationDetailDisplay"):
+		%LocationDetailDisplay.hide()
 	
 	if hovered_node == node:
 		_clear_hover_preview()

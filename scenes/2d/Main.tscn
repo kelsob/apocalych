@@ -1,7 +1,8 @@
-[gd_scene load_steps=18 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=19 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dcvwoi7v48gnx" path="res://scripts/UIContoller.gd" id="3_myh0h"]
 [ext_resource type="Shader" uid="uid://b4r6nxw850pm1" path="res://shaders/painterly_effect.gdshader" id="4_f0bfo"]
 [ext_resource type="Shader" uid="uid://cble155gkncbt" path="res://shaders/gaussian_blur.gdshader" id="5_2dj7u"]
 [ext_resource type="Shader" uid="uid://bvjyqap5w41co" path="res://shaders/edge_fade.gdshader" id="5_voiwj"]
@@ -9,9 +10,9 @@
 [ext_resource type="Shader" uid="uid://dxnnrrvo4hvd1" path="res://shaders/painterly_v2_watercolor.gdshader" id="7_p3fih"]
 [ext_resource type="PackedScene" uid="uid://b6w065e18g03u" path="res://scenes/2d/MainMenu.tscn" id="8_kpsef"]
 [ext_resource type="PackedScene" uid="uid://bjjpm0xn570qo" path="res://scenes/2d/PartySelectMenu.tscn" id="9_mifn2"]
-[ext_resource type="Script" uid="uid://coclurbvq0203" path="res://scripts/2d/UIController.gd" id="10_uicontroller"]
 [ext_resource type="PackedScene" uid="uid://73neomc4wcah" path="res://scenes/2d/EventWindow.tscn" id="11_niih8"]
 [ext_resource type="PackedScene" uid="uid://bdgphw4taxtfq" path="res://scenes/2d/RestController.tscn" id="12_7iead"]
+[ext_resource type="PackedScene" uid="uid://bxpeslf2ec2xb" path="res://scenes/2d/MapUI.tscn" id="13_1lhlm"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
 shader = ExtResource("4_f0bfo")
@@ -71,18 +72,12 @@ landmass_gradient_distance = 50.0
 preview_path_dot_size = 3.0
 party_travel_speed = 50.0
 
-[node name="GameUI" type="Control" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("10_uicontroller")
+[node name="UIController" type="CanvasLayer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3_myh0h")
 
-[node name="ViewportFX" type="Control" parent="GameUI"]
-layout_mode = 1
+[node name="ViewportFX" type="Control" parent="UIController"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -90,7 +85,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PainterlyEffect" type="ColorRect" parent="GameUI/ViewportFX"]
+[node name="PainterlyEffect" type="ColorRect" parent="UIController/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_voiwj")
 layout_mode = 1
@@ -101,7 +96,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PainterlyEffect2" type="ColorRect" parent="GameUI/ViewportFX"]
+[node name="PainterlyEffect2" type="ColorRect" parent="UIController/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_mifn2")
 layout_mode = 1
@@ -112,7 +107,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="EdgeReddeningEffect" type="ColorRect" parent="GameUI/ViewportFX"]
+[node name="EdgeReddeningEffect" type="ColorRect" parent="UIController/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_2dj7u")
 layout_mode = 1
@@ -123,7 +118,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="RadialReddeningEffect" type="ColorRect" parent="GameUI/ViewportFX"]
+[node name="RadialReddeningEffect" type="ColorRect" parent="UIController/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_p3fih")
 layout_mode = 1
@@ -134,7 +129,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="BlurEffect" type="ColorRect" parent="GameUI/ViewportFX"]
+[node name="BlurEffect" type="ColorRect" parent="UIController/ViewportFX"]
 z_index = 99
 material = SubResource("ShaderMaterial_kpsef")
 layout_mode = 1
@@ -145,20 +140,18 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="MainMenu" parent="." instance=ExtResource("8_kpsef")]
+[node name="MainMenu" parent="UIController" instance=ExtResource("8_kpsef")]
 visible = false
-layout_mode = 1
 
-[node name="PartySelectMenu" parent="." instance=ExtResource("9_mifn2")]
+[node name="PartySelectMenu" parent="UIController" instance=ExtResource("9_mifn2")]
 visible = false
-layout_mode = 1
 
-[node name="EventWindow" parent="." instance=ExtResource("11_niih8")]
+[node name="EventWindow" parent="UIController" instance=ExtResource("11_niih8")]
 visible = false
 z_index = 1000
-layout_mode = 1
 
-[node name="RestController" parent="." instance=ExtResource("12_7iead")]
+[node name="RestController" parent="UIController" instance=ExtResource("12_7iead")]
 visible = false
-layout_mode = 1
 mouse_filter = 2
+
+[node name="MapUI" parent="UIController" instance=ExtResource("13_1lhlm")]
