@@ -40,6 +40,7 @@ text = "Rest"
 
 [node name="LocationDetailDisplay" parent="." instance=ExtResource("2_ep57f")]
 unique_name_in_owner = true
+z_index = 100
 layout_mode = 1
 
 [node name="PartyDetails" type="VBoxContainer" parent="."]

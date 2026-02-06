@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=22 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -12,7 +12,10 @@
 [ext_resource type="PackedScene" uid="uid://bjjpm0xn570qo" path="res://scenes/2d/PartySelectMenu.tscn" id="9_mifn2"]
 [ext_resource type="PackedScene" uid="uid://73neomc4wcah" path="res://scenes/2d/EventWindow.tscn" id="11_niih8"]
 [ext_resource type="PackedScene" uid="uid://bdgphw4taxtfq" path="res://scenes/2d/RestController.tscn" id="12_7iead"]
-[ext_resource type="PackedScene" uid="uid://bxpeslf2ec2xb" path="res://scenes/2d/MapUI.tscn" id="13_1lhlm"]
+[ext_resource type="Script" uid="uid://dcicsb0rvsjk8" path="res://scripts/MapUI.gd" id="13_wb52w"]
+[ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="14_ialqc"]
+[ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="15_kabjb"]
+[ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="16_ynnhv"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
 shader = ExtResource("4_f0bfo")
@@ -154,4 +157,63 @@ z_index = 1000
 visible = false
 mouse_filter = 2
 
-[node name="MapUI" parent="UIController" instance=ExtResource("13_1lhlm")]
+[node name="MapUI" type="Control" parent="UIController"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("13_wb52w")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -92.0
+offset_top = -74.0
+offset_right = 92.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ResetMapButton" type="Button" parent="UIController/MapUI/HBoxContainer"]
+layout_mode = 2
+text = "reset map"
+
+[node name="RestButton" type="Button" parent="UIController/MapUI/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Rest"
+
+[node name="LocationDetailDisplay" parent="UIController/MapUI" instance=ExtResource("14_ialqc")]
+unique_name_in_owner = true
+z_index = 100
+layout_mode = 1
+
+[node name="PartyDetails" type="VBoxContainer" parent="UIController/MapUI"]
+custom_minimum_size = Vector2(256, 256)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 32.0
+offset_top = -107.0
+offset_right = 288.0
+offset_bottom = 171.0
+grow_vertical = 2
+scale = Vector2(0.8, 0.8)
+script = ExtResource("15_kabjb")
+
+[node name="CharacterDetails" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
+layout_mode = 2
+
+[node name="CharacterDetails2" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
+layout_mode = 2
+
+[node name="CharacterDetails3" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
+layout_mode = 2

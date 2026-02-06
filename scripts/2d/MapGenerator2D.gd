@@ -44,6 +44,7 @@ class_name MapGenerator2D
 
 @export_group("Colors")
 @export var line_color: Color = Color(0.588, 0.482, 0.298)  # #967b4c - Connection lines
+@export var road_color: Color = Color(0.4, 0.35, 0.25)  # Darker color for roads
 @export var node_base_color: Color = Color(0.635, 0.518, 0.349)  # #a28459 - Node base
 @export var coast_line_color: Color = Color(0.137, 0.055, 0.035)  # #230e09 - Coast outline
 @export var landmass_base_color: Color = Color(0.757, 0.635, 0.467, 1.0)  # #c1a277 - Landmass fill
@@ -57,7 +58,15 @@ class_name MapGenerator2D
 
 @export_group("Lines & Strokes")
 @export var line_width: float = 4.0
+@export var road_width_multiplier: float = 1.5  # Roads are thicker than regular paths
 @export var coast_line_width: float = 0.75
+
+@export_group("Road Extensions")
+@export var coastal_extension_count: int = 2  # How many dead-end roads to extend toward coast
+
+@export_group("Visibility")
+@export var path_visibility_range: int = 0  # How many steps away from party to show paths (0 = only adjacent, 1 = adjacent + their neighbors, etc.)
+
 @export var coast_expansion_distance: float = 20.0  # Base/average expansion distance (deprecated if using min/max)
 @export var coast_expansion_min: float = 10.0  # Minimum coast expansion distance
 @export var coast_expansion_max: float = 30.0  # Maximum coast expansion distance
@@ -223,7 +232,16 @@ var coast_expansion_factors: Dictionary = {}  # node_index -> expansion factor (
 var map_features: Array = []  # Array of feature dictionaries (trees, rocks, etc.)
 var rivers: Array = []  # Array of river dictionaries
 var astar: AStar2D
+
+# Roads and towns
+var road_edges: Dictionary = {}  # key: "nodeA_nodeB" (smaller index first), value: true if road
+var town_nodes: Array[MapNode2D] = []  # All nodes that are towns
+var region_focal_points: Dictionary = {}  # region_id -> Array of focal point nodes
 var coast_noise: FastNoiseLite  # Noise for spatially coherent coast expansion variance
+
+# Secret paths
+var border_edges: Dictionary = {}  # key: "nodeA_nodeB", value: true if border between regions
+var secret_edges: Dictionary = {}  # key: "nodeA_nodeB", value: { is_secret: bool, is_revealed: bool }
 
 # Shape noise
 var shape_noise_large: FastNoiseLite
@@ -369,6 +387,10 @@ func generate_map():
 	debug_print("Step 12: Creating regions...")
 	create_regions()
 	
+	# Step 11.5: Identify border edges (exit paths between regions)
+	debug_print("Step 11.5: Identifying border edges...")
+	identify_border_edges()
+	
 	# Step 12.5: Generate mountains at region boundaries
 	if enable_mountains:
 		debug_print("Step 12.5: Generating mountains at region boundaries...")
@@ -386,7 +408,32 @@ func generate_map():
 	debug_print("Step 12.7: Assigning biomes to nodes...")
 	assign_biomes()
 	
-	# Step 12.8: Generate map features (trees, decorations, etc.)
+	# Step 12.75: Mark exit nodes (nodes connecting to different regions)
+	debug_print("Step 12.75: Marking exit nodes...")
+	mark_exit_nodes()
+	
+	# Step 12.77: Generate towns per region (AFTER marking exits so we can sort by exit distance)
+	debug_print("Step 12.77: Generating towns per region...")
+	generate_towns()
+	
+	# Step 12.78: Assign focal points for each region
+	debug_print("Step 12.78: Assigning regional focal points...")
+	assign_region_focal_points()
+	
+	# Step 12.79: Generate roads connecting regions
+	debug_print("Step 12.79: Generating roads between regions...")
+	generate_roads()
+	
+	# Step 12.795: Extend dead-end roads toward coast
+	if coastal_extension_count > 0:
+		debug_print("Step 12.795: Extending dead-end roads to coast...")
+		extend_deadends_to_coast()
+	
+	# Step 12.8: Identify secret path candidates
+	debug_print("Step 12.8: Identifying secret paths...")
+	identify_secret_path_candidates()
+	
+	# Step 12.85: Generate map features (trees, decorations, etc.)
 	if enable_map_features:
 		debug_print("Step 12.8: Generating map features...")
 		generate_map_features()
@@ -447,6 +494,10 @@ func generate_map():
 func clear_existing_nodes():
 	for node in map_nodes:
 		if is_instance_valid(node):
+			# Reset secret path properties before freeing
+			if node is MapNode2D:
+				node.has_secret_path = false
+				node.secret_path_revealed = false
 			node.queue_free()
 	map_nodes.clear()
 	node_positions.clear()
@@ -459,6 +510,11 @@ func clear_existing_nodes():
 	delaunay_edges.clear()
 	visited_paths.clear()
 	current_travel_path.clear()
+	road_edges.clear()
+	town_nodes.clear()
+	region_focal_points.clear()
+	border_edges.clear()
+	secret_edges.clear()
 	
 	# Hide decoration sprites during regeneration
 	if dagron_sprite:
@@ -1913,6 +1969,44 @@ func colorize_regions(num_regions: int):
 			node.set_region_color(node_base_color)
 
 # ============================================================================
+# STEP 11.5: IDENTIFY BORDER EDGES (EXIT PATHS BETWEEN REGIONS)
+# ============================================================================
+
+## Identify edges that connect different regions (exit paths)
+## These edges will be excluded from secret path candidates
+func identify_border_edges():
+	border_edges.clear()
+	debug_print("SECRET PATH: === IDENTIFYING BORDER EDGES ===")
+	
+	var border_edge_count = 0
+	
+	# Iterate through all edges
+	for node_a in map_nodes:
+		if node_a.is_mountain or node_a.region_id < 0:
+			continue
+			
+		for node_b in node_a.connections:
+			if node_b.is_mountain or node_b.region_id < 0:
+				continue
+			
+			# Only process each edge once (smaller index first)
+			if node_a.node_index >= node_b.node_index:
+				continue
+			
+			# Check if nodes are in different regions
+			if node_a.region_id != node_b.region_id:
+				var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+				border_edges[edge_key] = true
+				border_edge_count += 1
+	
+	debug_print("SECRET PATH:   Identified %d border edges connecting different regions" % border_edge_count)
+
+## Helper function - check if an edge is a border edge
+func is_border_edge(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+	return border_edges.has(edge_key)
+
+# ============================================================================
 # STEP 12.5: GENERATE MOUNTAINS AT REGION BORDERS
 # ============================================================================
 
@@ -2643,6 +2737,791 @@ func generate_badlands_features(nodes: Array, landmass_polygon: PackedVector2Arr
 	return features
 
 # ============================================================================
+# STEP 12.75: TOWN GENERATION
+# ============================================================================
+
+## Generate 0-2 towns per REGION (not biome type)
+func generate_towns():
+	town_nodes.clear()
+	
+	# Group nodes by region_id (exclude mountains and coastal nodes)
+	var region_nodes: Dictionary = {}  # region_id -> Array[MapNode2D]
+	
+	for node in map_nodes:
+		if node.is_mountain or node.is_coastal:
+			continue
+		if node.region_id < 0:
+			continue
+			
+		if not region_nodes.has(node.region_id):
+			region_nodes[node.region_id] = []
+		region_nodes[node.region_id].append(node)
+	
+	# For each region, randomly assign 0-2 towns
+	for region_id in region_nodes.keys():
+		var nodes = region_nodes[region_id]
+		if nodes.size() == 0:
+			continue
+		
+		# Determine number of towns for this region
+		var num_towns = _determine_town_count()
+		
+		# Sort nodes by distance from exit nodes (furthest first)
+		var sorted_nodes = _sort_nodes_by_exit_distance(nodes, region_id)
+		
+		# Select nodes to be towns (with minimum distance constraints)
+		var available_nodes = sorted_nodes.duplicate()
+		var towns_created = []
+		var attempts = 0
+		var max_attempts = available_nodes.size() * 2  # Try twice as many times as there are nodes
+		
+		for i in range(num_towns):
+			var found_valid_town = false
+			
+			while available_nodes.size() > 0 and attempts < max_attempts:
+				attempts += 1
+				
+				# Try nodes in order (furthest from exits first)
+				var candidate_node = available_nodes[0]
+				
+				# Check if this node is at least 5 steps away from all existing towns
+				if _is_valid_town_location(candidate_node, 5):
+					# Valid location - spawn town
+					candidate_node.is_town = true
+					candidate_node.node_type = MapNode2D.NodeType.TOWN
+					town_nodes.append(candidate_node)
+					towns_created.append(candidate_node.node_index)
+					
+					# Debug: show distance from nearest exit
+					var exit_distance = _get_distance_to_nearest_exit(candidate_node, region_id)
+					debug_print("TOWN: ✓ Placed town at node %d (exit distance: %d, attempts: %d)" % [candidate_node.node_index, exit_distance, attempts])
+					
+					found_valid_town = true
+					available_nodes.remove_at(0)
+					break
+				else:
+					# Too close to another town
+					debug_print("TOWN: ✗ Node %d rejected (too close to existing town, exit distance was: %d)" % [candidate_node.node_index, _get_distance_to_nearest_exit(candidate_node, region_id)])
+					available_nodes.remove_at(0)
+			
+			if not found_valid_town:
+				debug_print("TOWN: Region %d: Could not place town %d (no valid locations with min distance)" % [region_id, i + 1])
+				break
+		
+		# Get biome name for debug output
+		var region_biome_name = "Unknown"
+		if nodes.size() > 0 and nodes[0].biome != null:
+			region_biome_name = nodes[0].biome.biome_name
+		
+		if towns_created.size() > 0:
+			debug_print("TOWN: Region %d (%s): Generated %d towns at nodes %s" % [region_id, region_biome_name, towns_created.size(), str(towns_created)])
+		else:
+			debug_print("TOWN: Region %d (%s): No towns generated" % [region_id, region_biome_name])
+	
+	debug_print("TOWN: === Total towns generated: %d ===" % town_nodes.size())
+
+## Determine how many towns a region should have (0-2, mostly 1)
+func _determine_town_count() -> int:
+	var roll = randf()
+	if roll < 0.15:  # 15% chance of 0 towns
+		return 0
+	elif roll < 0.80:  # 65% chance of 1 town
+		return 1
+	else:  # 20% chance of 2 towns
+		return 2
+
+## Check if a node is a valid town location (far enough from existing towns)
+func _is_valid_town_location(candidate: MapNode2D, min_distance: int) -> bool:
+	if not astar:
+		return true  # If no pathfinding, allow it
+	
+	# Check distance to all existing towns
+	for existing_town in town_nodes:
+		var path = astar.get_id_path(candidate.node_index, existing_town.node_index)
+		var distance = path.size() - 1 if path.size() > 0 else 0
+		
+		if distance < min_distance:
+			return false  # Too close to an existing town
+	
+	return true  # Far enough from all towns
+
+## Get distance from a node to the nearest exit node in its region (for debug)
+func _get_distance_to_nearest_exit(node: MapNode2D, region_id: int) -> int:
+	if not astar:
+		return -1
+	
+	var min_distance = 999
+	for exit_node in map_nodes:
+		if exit_node.region_id == region_id and exit_node.is_exit_node:
+			var path = astar.get_id_path(node.node_index, exit_node.node_index)
+			var distance = path.size() - 1 if path.size() > 0 else 999
+			min_distance = mini(min_distance, distance)
+	
+	return min_distance
+
+
+## Sort nodes by their minimum distance to any exit node (furthest first)
+## This prioritizes placing towns away from region borders
+func _sort_nodes_by_exit_distance(nodes: Array, region_id: int) -> Array:
+	if not astar:
+		return nodes  # No pathfinding, return as-is
+	
+	# Find all exit nodes in this region
+	var exit_nodes_in_region: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.region_id == region_id and node.is_exit_node:
+			exit_nodes_in_region.append(node)
+	
+	if exit_nodes_in_region.size() == 0:
+		# No exits in this region, return nodes as-is
+		debug_print("TOWN: Region %d: No exit nodes found (region has %d total nodes)" % [region_id, nodes.size()])
+		return nodes
+	
+	debug_print("TOWN: Region %d: Found %d exit nodes, sorting %d candidate nodes by distance" % [region_id, exit_nodes_in_region.size(), nodes.size()])
+	
+	# Calculate minimum distance to any exit for each node
+	var nodes_with_distances: Array = []
+	for node in nodes:
+		var min_exit_distance = INF
+		
+		# Find closest exit node
+		for exit_node in exit_nodes_in_region:
+			var path = astar.get_id_path(node.node_index, exit_node.node_index)
+			var distance = path.size() - 1 if path.size() > 0 else 999
+			min_exit_distance = mini(min_exit_distance, distance)
+		
+		nodes_with_distances.append([node, min_exit_distance])
+	
+	# Sort by distance (furthest from exits first)
+	nodes_with_distances.sort_custom(func(a, b): return a[1] > b[1])
+	
+	# Debug: show distance range and sample
+	if nodes_with_distances.size() > 0:
+		var max_dist = nodes_with_distances[0][1]
+		var min_dist = nodes_with_distances[nodes_with_distances.size() - 1][1]
+		debug_print("TOWN: Region %d: Distance range: %d (furthest) to %d (closest)" % [region_id, max_dist, min_dist])
+		
+		# Show top 5 furthest nodes
+		var sample_size = mini(5, nodes_with_distances.size())
+		debug_print("TOWN: Top %d furthest nodes from exits:" % sample_size)
+		for i in range(sample_size):
+			var node = nodes_with_distances[i][0]
+			var dist = nodes_with_distances[i][1]
+			debug_print("TOWN:   Node %d: %d steps from exit" % [node.node_index, dist])
+	
+	# Extract just the nodes
+	var sorted_nodes: Array = []
+	for item in nodes_with_distances:
+		sorted_nodes.append(item[0])
+	
+	return sorted_nodes
+
+# ============================================================================
+# STEP 12.77: EXIT NODE MARKING
+# ============================================================================
+
+## Mark nodes that connect to a different region as exit nodes
+func mark_exit_nodes():
+	var exit_node_count = 0
+	
+	for node in map_nodes:
+		if node.is_mountain:
+			continue
+		if node.region_id < 0:
+			continue
+		
+		node.is_exit_node = false
+		
+		# Check all connections
+		for neighbor in node.connections:
+			if neighbor.is_mountain:
+				continue  # Mountains don't count as connections to other regions
+			if neighbor.region_id < 0:
+				continue
+			
+			# If neighbor has different region_id, this is an exit node
+			if neighbor.region_id != node.region_id:
+				node.is_exit_node = true
+				exit_node_count += 1
+				break
+	
+	debug_print("  Marked %d exit nodes" % exit_node_count)
+
+# ============================================================================
+# STEP 12.78: ASSIGN REGIONAL FOCAL POINTS
+# ============================================================================
+
+## Assign 1-2 focal points for each region (towns or central nodes)
+func assign_region_focal_points():
+	region_focal_points.clear()
+	
+	# Group nodes by region
+	var region_nodes: Dictionary = {}
+	for node in map_nodes:
+		if node.is_mountain or node.is_coastal:
+			continue
+		if node.region_id < 0:
+			continue
+		
+		if not region_nodes.has(node.region_id):
+			region_nodes[node.region_id] = []
+		region_nodes[node.region_id].append(node)
+	
+	# For each region, assign focal points
+	for region_id in region_nodes.keys():
+		var nodes = region_nodes[region_id]
+		if nodes.size() == 0:
+			continue
+		
+		var focal_points: Array[MapNode2D] = []
+		
+		# Check if this region has towns
+		var region_towns: Array[MapNode2D] = []
+		for node in nodes:
+			if node.is_town:
+				region_towns.append(node)
+		
+		if region_towns.size() > 0:
+			# Use towns as focal points
+			focal_points = region_towns
+		else:
+			# No towns - pick a central node
+			var central_node = find_most_central_node(nodes)
+			if central_node != null:
+				focal_points.append(central_node)
+		
+		region_focal_points[region_id] = focal_points
+		
+		var biome_name = "Unknown"
+		if nodes.size() > 0 and nodes[0].biome != null:
+			biome_name = nodes[0].biome.biome_name
+		
+		var focal_indices = []
+		for fp in focal_points:
+			focal_indices.append(fp.node_index)
+		
+		debug_print("  Region %d (%s): %d focal points at nodes %s" % [region_id, biome_name, focal_points.size(), str(focal_indices)])
+	
+	debug_print("  Total regions with focal points: %d" % region_focal_points.size())
+
+## Find the most central node in a set of nodes
+func find_most_central_node(nodes: Array) -> MapNode2D:
+	if nodes.size() == 0:
+		return null
+	
+	# Calculate the center position of all nodes
+	var center_pos = Vector2.ZERO
+	for node in nodes:
+		center_pos += node.position + (node.size / 2.0)
+	center_pos /= nodes.size()
+	
+	# Find node closest to center
+	var closest_node = null
+	var min_distance = INF
+	for node in nodes:
+		var node_center = node.position + (node.size / 2.0)
+		var distance = node_center.distance_to(center_pos)
+		if distance < min_distance:
+			min_distance = distance
+			closest_node = node
+	
+	return closest_node
+
+# ============================================================================
+# STEP 12.79: ROAD GENERATION (SIMPLIFIED)
+# ============================================================================
+
+## Generate roads by connecting focal points of adjacent regions
+func generate_roads():
+	road_edges.clear()
+	
+	if region_focal_points.size() == 0:
+		debug_print("  No focal points to connect")
+		return
+	
+	# STEP 1: Connect focal points within each region (if multiple)
+	debug_print("  Connecting focal points within regions...")
+	for region_id in region_focal_points.keys():
+		var focal_points = region_focal_points[region_id]
+		
+		if focal_points.size() > 1:
+			# Connect all focal points to each other
+			for i in range(focal_points.size()):
+				for j in range(i + 1, focal_points.size()):
+					_create_road_path(focal_points[i], focal_points[j])
+			debug_print("    Region %d: Connected %d focal points" % [region_id, focal_points.size()])
+	
+	# STEP 2: Connect focal points across adjacent regions
+	debug_print("  Connecting focal points across regions...")
+	var region_pairs: Dictionary = {}
+	var connections_made = 0
+	
+	for region_a_id in region_focal_points.keys():
+		var focal_points_a = region_focal_points[region_a_id]
+		
+		# Find all adjacent regions
+		var adjacent_regions = _find_adjacent_regions(region_a_id)
+		
+		for region_b_id in adjacent_regions:
+			# Skip if already processed this pair
+			var pair_key = _make_region_pair_key(region_a_id, region_b_id)
+			if region_pairs.has(pair_key):
+				continue
+			region_pairs[pair_key] = true
+			
+			# Get focal points for region B
+			if not region_focal_points.has(region_b_id):
+				continue
+			var focal_points_b = region_focal_points[region_b_id]
+			
+			# Connect EVERY focal point in A to EVERY focal point in B
+			for focal_a in focal_points_a:
+				for focal_b in focal_points_b:
+					_create_road_path(focal_a, focal_b)
+					connections_made += 1
+			
+			debug_print("    Connected %d focal points in Region %d to %d focal points in Region %d" % [focal_points_a.size(), region_a_id, focal_points_b.size(), region_b_id])
+	
+	debug_print("  Total connections: %d" % connections_made)
+	debug_print("  Total road edges: %d" % road_edges.size())
+
+# ============================================================================
+# STEP 12.795: COASTAL ROAD EXTENSIONS
+# ============================================================================
+
+## Extend dead-end roads toward the coast
+func extend_deadends_to_coast():
+	if not astar:
+		debug_print("  Cannot extend roads - AStar not available")
+		return
+	
+	# Find all dead-end nodes (nodes with exactly 1 road connection)
+	var deadends: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.is_mountain or node.is_coastal:
+			continue
+		
+		# Count road connections
+		var road_connection_count = 0
+		for neighbor in node.connections:
+			if is_road(node, neighbor):
+				road_connection_count += 1
+		
+		if road_connection_count == 1:
+			deadends.append(node)
+	
+	debug_print("  Found %d dead-end nodes" % deadends.size())
+	
+	if deadends.size() == 0:
+		return
+	
+	# Shuffle and take up to coastal_extension_count
+	deadends.shuffle()
+	var deadends_to_extend = mini(coastal_extension_count, deadends.size())
+	
+	var extensions_made = 0
+	for i in range(deadends_to_extend):
+		var deadend = deadends[i]
+		
+		# Check if this deadend's region has coastal nodes
+		var coastal_nodes_in_region: Array[MapNode2D] = []
+		for coastal_node in coastal_nodes:
+			if coastal_node.region_id == deadend.region_id:
+				coastal_nodes_in_region.append(coastal_node)
+		
+		if coastal_nodes_in_region.size() == 0:
+			debug_print("    Deadend at node %d: No coastal nodes in region %d" % [deadend.node_index, deadend.region_id])
+			continue
+		
+		# Find closest coastal node to this deadend
+		var closest_coastal = null
+		var min_distance = INF
+		
+		for coastal_node in coastal_nodes_in_region:
+			var path = astar.get_id_path(deadend.node_index, coastal_node.node_index)
+			var distance = path.size() - 1 if path.size() > 0 else 999
+			if distance < min_distance:
+				min_distance = distance
+				closest_coastal = coastal_node
+		
+		if closest_coastal == null:
+			debug_print("    Deadend at node %d: Could not find path to coast" % deadend.node_index)
+			continue
+		
+		# Create road path from deadend to coast
+		_create_road_path(deadend, closest_coastal)
+		extensions_made += 1
+		
+		debug_print("    Extended deadend at node %d to coast node %d (%d steps)" % [deadend.node_index, closest_coastal.node_index, min_distance])
+	
+	debug_print("  Extended %d dead-end roads to coast" % extensions_made)
+	debug_print("  Total road edges after extensions: %d" % road_edges.size())
+
+
+# ============================================================================
+# ROAD HELPER FUNCTIONS
+# ============================================================================
+
+## Find all regions adjacent to the given region
+func _find_adjacent_regions(region_id: int) -> Array[int]:
+	var adjacent: Array[int] = []
+	
+	# Look through all nodes in this region
+	for node in map_nodes:
+		if node.is_mountain:
+			continue
+		if node.region_id != region_id:
+			continue
+		
+		# Check this node's neighbors for different regions
+		for neighbor in node.connections:
+			if neighbor.is_mountain:
+				continue
+			if neighbor.region_id < 0:
+				continue
+			
+			if neighbor.region_id != region_id and neighbor.region_id not in adjacent:
+				adjacent.append(neighbor.region_id)
+	
+	return adjacent
+
+## Create a consistent key for a region pair (for tracking processed pairs)
+func _make_region_pair_key(region_a: int, region_b: int) -> String:
+	# Always put smaller ID first so "1_2" == "2_1"
+	var min_id = mini(region_a, region_b)
+	var max_id = maxi(region_a, region_b)
+	return "%d_%d" % [min_id, max_id]
+
+## Find the N closest nodes to a target node from a list
+func _find_closest_nodes(target: MapNode2D, candidates: Array[MapNode2D], count: int) -> Array[MapNode2D]:
+	if candidates.size() == 0:
+		return []
+	
+	# Calculate distances and sort
+	var distances: Array = []
+	for candidate in candidates:
+		var dist = target.position.distance_to(candidate.position)
+		distances.append([candidate, dist])
+	
+	# Sort by distance
+	distances.sort_custom(func(a, b): return a[1] < b[1])
+	
+	# Return top N
+	var result: Array[MapNode2D] = []
+	for i in range(mini(count, distances.size())):
+		result.append(distances[i][0])
+	return result
+
+## Create a road path between two nodes using AStar pathfinding
+func _create_road_path(from_node: MapNode2D, to_node: MapNode2D):
+	if not astar:
+		push_warning("AStar not initialized, cannot create road")
+		return
+	
+	# Find path using AStar
+	var path_ids = astar.get_id_path(from_node.node_index, to_node.node_index)
+	
+	if path_ids.size() < 2:
+		return  # No valid path
+	
+	# Mark each edge in the path as a road
+	for i in range(path_ids.size() - 1):
+		var node_a_index = path_ids[i]
+		var node_b_index = path_ids[i + 1]
+		
+		# Create edge key (smaller index first for consistency)
+		var edge_key = _make_edge_key(node_a_index, node_b_index)
+		road_edges[edge_key] = true
+
+## Helper: Create consistent edge key from two node indices
+func _make_edge_key(index_a: int, index_b: int) -> String:
+	var min_idx = mini(index_a, index_b)
+	var max_idx = maxi(index_a, index_b)
+	return "%d_%d" % [min_idx, max_idx]
+
+## Helper: Check if an edge is a road
+func is_road(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+	return road_edges.has(edge_key)
+
+
+# ============================================================================
+# STEP 12.8: SECRET PATH IDENTIFICATION
+# ============================================================================
+
+## Identify paths that can be secret (not borders, not connected to towns)
+## Called after generate_towns() and generate_roads()
+func identify_secret_path_candidates():
+	secret_edges.clear()
+	debug_print("SECRET PATH: === IDENTIFYING SECRET PATH CANDIDATES ===")
+	
+	var candidate_count = 0
+	var excluded_border = 0
+	var excluded_town = 0
+	var excluded_road = 0
+	var total_edges = 0
+	
+	# Build set of town node indices for quick lookup
+	var town_indices: Dictionary = {}
+	for town in town_nodes:
+		town_indices[town.node_index] = true
+	
+	# First pass: collect all candidate edges
+	var candidates: Array = []
+	
+	# Iterate through all edges
+	for node_a in map_nodes:
+		if node_a.is_mountain:
+			continue
+			
+		for node_b in node_a.connections:
+			if node_b.is_mountain:
+				continue
+			
+			# Only process each edge once
+			if node_a.node_index >= node_b.node_index:
+				continue
+			
+			total_edges += 1
+			var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+			
+			# EXCLUSION CRITERIA:
+			
+			# 1. Exclude border edges (exit paths)
+			if border_edges.has(edge_key):
+				excluded_border += 1
+				continue
+			
+			# 2. Exclude paths connected to towns
+			if town_indices.has(node_a.node_index) or town_indices.has(node_b.node_index):
+				excluded_town += 1
+				continue
+			
+			# 3. Exclude roads (roads should be visible)
+			if road_edges.has(edge_key):
+				excluded_road += 1
+				continue
+			
+			# This edge is a candidate for being secret!
+			candidates.append(edge_key)
+			candidate_count += 1
+	
+	debug_print("SECRET PATH:   Total edges in graph: %d" % total_edges)
+	debug_print("SECRET PATH:   Found %d secret path candidates" % candidate_count)
+	debug_print("SECRET PATH:     Excluded %d border edges" % excluded_border)
+	debug_print("SECRET PATH:     Excluded %d town-connected paths" % excluded_town)
+	debug_print("SECRET PATH:     Excluded %d roads" % excluded_road)
+	
+	# Second pass: randomly select a subset of candidates to be secret (10-20%)
+	# Ensure each node has at most 1 secret edge
+	var secret_percentage = 0.15  # 15% of candidates become secret
+	var max_secrets = max(int(candidate_count * secret_percentage), 2)  # At least 2 secrets if any candidates exist
+	
+	if candidates.size() == 0:
+		debug_print("SECRET PATH:   No candidates available, no secret paths created")
+		return
+	
+	# Shuffle candidates for random selection
+	candidates.shuffle()
+	
+	# Track which nodes already have a secret edge
+	var nodes_with_secrets: Dictionary = {}
+	var secrets_created = 0
+	var excluded_duplicate_node = 0
+	
+	# Iterate through shuffled candidates and add secrets, ensuring no node has more than 1
+	for edge_key in candidates:
+		if secrets_created >= max_secrets:
+			break  # We've created enough secrets
+		
+		# Parse the edge key to get node indices
+		var parts = edge_key.split("_")
+		var node_a_idx = int(parts[0])
+		var node_b_idx = int(parts[1])
+		
+		# Check if either node already has a secret edge
+		if nodes_with_secrets.has(node_a_idx) or nodes_with_secrets.has(node_b_idx):
+			excluded_duplicate_node += 1
+			continue  # Skip this edge - one of the nodes already has a secret
+		
+		# Mark this edge as secret in the dictionary
+		secret_edges[edge_key] = {
+			"is_secret": true,
+			"is_revealed": false
+		}
+		
+		# Mark both nodes as having a secret edge (in dictionary and on node objects)
+		nodes_with_secrets[node_a_idx] = true
+		nodes_with_secrets[node_b_idx] = true
+		
+		# Set node properties to indicate they have secret paths
+		var node_a = map_nodes[node_a_idx]
+		var node_b = map_nodes[node_b_idx]
+		node_a.has_secret_path = true
+		node_b.has_secret_path = true
+		node_a.secret_path_revealed = false
+		node_b.secret_path_revealed = false
+		
+		secrets_created += 1
+	
+	debug_print("SECRET PATH:   Marked %d paths as secret (%.1f%% of candidates)" % [secret_edges.size(), (float(secret_edges.size()) / candidate_count) * 100.0])
+	debug_print("SECRET PATH:     Excluded %d candidates (node already has secret)" % excluded_duplicate_node)
+
+# ============================================================================
+# SECRET PATH HELPER FUNCTIONS
+# ============================================================================
+
+## Check if edge is secret AND unrevealed
+func is_edge_secret_and_hidden(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+	if not secret_edges.has(edge_key):
+		return false
+	var edge_data = secret_edges[edge_key]
+	return edge_data.is_secret and not edge_data.is_revealed
+
+## Check if edge is secret (regardless of reveal status)
+func is_edge_secret(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+	return secret_edges.has(edge_key) and secret_edges[edge_key].is_secret
+
+## Check if edge has been revealed
+func is_edge_revealed(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
+	if not secret_edges.has(edge_key):
+		return false
+	return secret_edges[edge_key].is_revealed
+
+## Get the secret edge connected to a node (if any)
+## Returns null if node has no secret edge, or the neighbor node if it does
+func get_secret_neighbor(node: MapNode2D) -> MapNode2D:
+	if not node or not node.has_secret_path:
+		return null
+	
+	# Check all connections to find the secret one
+	for neighbor in node.connections:
+		if is_edge_secret(node, neighbor):
+			return neighbor
+	
+	return null
+
+## Check if a node has an unrevealed secret path
+func node_has_unrevealed_secret(node: MapNode2D) -> bool:
+	if not node:
+		return false
+	return node.has_secret_path and not node.secret_path_revealed
+
+## Get all nodes that have secret paths
+func get_nodes_with_secrets() -> Array[MapNode2D]:
+	var result: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.has_secret_path:
+			result.append(node)
+	return result
+
+## Get all nodes that have unrevealed secret paths
+func get_nodes_with_unrevealed_secrets() -> Array[MapNode2D]:
+	var result: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.has_secret_path and not node.secret_path_revealed:
+			result.append(node)
+	return result
+
+## Get count of total secret edges in the map
+func get_secret_edge_count() -> int:
+	return secret_edges.size()
+
+## Get count of unrevealed secret edges
+func get_unrevealed_secret_count() -> int:
+	var count = 0
+	for edge_data in secret_edges.values():
+		if edge_data.is_secret and not edge_data.is_revealed:
+			count += 1
+	return count
+
+## Get count of revealed secret edges
+func get_revealed_secret_count() -> int:
+	var count = 0
+	for edge_data in secret_edges.values():
+		if edge_data.is_secret and edge_data.is_revealed:
+			count += 1
+	return count
+
+## Get all secret edges as an array of [node_a, node_b] pairs
+func get_all_secret_edges() -> Array:
+	var result: Array = []
+	for edge_key in secret_edges.keys():
+		var parts = edge_key.split("_")
+		var node_a_idx = int(parts[0])
+		var node_b_idx = int(parts[1])
+		var node_a = map_nodes[node_a_idx]
+		var node_b = map_nodes[node_b_idx]
+		result.append([node_a, node_b, secret_edges[edge_key]])
+	return result
+
+## Reveal all secret paths connected to a specific node
+## Called by event effects when player discovers secrets
+func reveal_secret_paths_at_node(node: MapNode2D):
+	if not node:
+		push_warning("SECRET PATH: Cannot reveal secrets at null node")
+		return
+	
+	debug_print("SECRET PATH: === REVEALING SECRETS AT NODE %d ===" % node.node_index)
+	debug_print("SECRET PATH:   Node has %d connections" % node.connections.size())
+	debug_print("SECRET PATH:   Total secret edges in map: %d" % secret_edges.size())
+	
+	var revealed_count = 0
+	var checked_count = 0
+	
+	# Check all connections from this node
+	for neighbor in node.connections:
+		checked_count += 1
+		var edge_key = _make_edge_key(node.node_index, neighbor.node_index)
+		debug_print("SECRET PATH:   Checking connection %d -> %d (key: %s)" % [node.node_index, neighbor.node_index, edge_key])
+		
+		# If this edge is a secret and hasn't been revealed
+		if secret_edges.has(edge_key):
+			var edge_data = secret_edges[edge_key]
+			debug_print("SECRET PATH:     Edge IS in secret_edges: is_secret=%s, is_revealed=%s" % [edge_data.is_secret, edge_data.is_revealed])
+			if edge_data.is_secret and not edge_data.is_revealed:
+				# Reveal it in the dictionary!
+				edge_data.is_revealed = true
+				
+				# Update node properties to reflect revelation
+				node.secret_path_revealed = true
+				neighbor.secret_path_revealed = true
+				
+				revealed_count += 1
+				debug_print("SECRET PATH:     ✓ REVEALED secret path: %d <-> %d" % [node.node_index, neighbor.node_index])
+			else:
+				debug_print("SECRET PATH:     Already revealed or not secret")
+		else:
+			debug_print("SECRET PATH:     Edge NOT in secret_edges (normal path)")
+	
+	debug_print("SECRET PATH:   Checked %d connections, revealed %d secrets" % [checked_count, revealed_count])
+	
+	if revealed_count > 0:
+		debug_print("SECRET PATH: ✓✓✓ Revealed %d secret paths at node %d" % [revealed_count, node.node_index])
+		debug_print("SECRET PATH:   Calling update_node_visibility()...")
+		# Update visibility to show newly revealed paths and nodes
+		update_node_visibility()
+		debug_print("SECRET PATH:   Calling queue_redraw()...")
+		queue_redraw()
+		debug_print("SECRET PATH:   Done!")
+	else:
+		debug_print("SECRET PATH: ✗ No secret paths to reveal at node %d" % node.node_index)
+
+## Reveal ALL secret paths at current party location
+func reveal_secret_paths_at_current_location():
+	debug_print("SECRET PATH: reveal_secret_paths_at_current_location() called")
+	if not current_party_node:
+		push_warning("SECRET PATH: Cannot reveal secrets - no current party node")
+		return
+	
+	debug_print("SECRET PATH: Current party node is: %d" % current_party_node.node_index)
+	reveal_secret_paths_at_node(current_party_node)
+
+
+# ============================================================================
 # STEP 12.9: RIVER GENERATION
 # ============================================================================
 
@@ -3153,12 +4032,18 @@ func render_segments_to_static_map(segments: Array):
 # ============================================================================
 
 func visualize_map():
-	# Make nodes visible now that all setup is complete
+	# Make nodes container visible
 	if mapnodes:
 		mapnodes.visible = true
-		# Make each individual node visible too
-		for node in map_nodes:
+	
+	# Hide all nodes by default (they'll be revealed as party explores)
+	# Exception: mountains and towns remain always visible
+	for node in map_nodes:
+		if node.is_mountain or node.is_town:
 			node.visible = true
+		else:
+			node.visible = false
+	
 	queue_redraw()
 
 # ============================================================================
@@ -3216,7 +4101,7 @@ func bake_static_map():
 					static_map_renderer.add_tree(tree_data)
 				# Future: add other feature types here
 	
-	# Pass connection lines data (AFTER trees so they render on top)
+	# Pass connection lines data (ONLY ROADS - regular paths drawn dynamically)
 	var processed_edges = {}
 	for node in map_nodes:
 		for neighbor in node.connections:
@@ -3226,13 +4111,24 @@ func bake_static_map():
 				continue
 			processed_edges[key] = true
 			
+			# Check if this edge is a road
+			var is_road_edge = is_road(node, neighbor)
+			
+			# ONLY bake roads into static layer - regular paths will be drawn dynamically
+			if not is_road_edge:
+				continue
+			
 			# Get positions (center of nodes)
 			var pos_a = node.position + (node.size / 2.0)
 			var pos_b = neighbor.position + (neighbor.size / 2.0)
 			
+			# Use road styling
+			var base_width = line_width * road_width_multiplier
+			var base_color = road_color
+			
 			# Adjust for orientation
-			var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
-			var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
+			var adjusted_width = get_orientation_adjusted_width(base_width, pos_a, pos_b)
+			var adjusted_color = get_orientation_adjusted_color(base_color, pos_a, pos_b)
 			
 			# Build line data (scale positions and widths)
 			var line_data = {
@@ -3395,6 +4291,18 @@ func bake_static_map():
 				"width": adjusted_coast_width * map_resolution_scale
 			}
 			static_map_renderer.add_expanded_coast_line(coast_line_data)
+	
+	# Pass town marker data (scale positions and radii)
+	if town_nodes.size() > 0:
+		for town in town_nodes:
+			var town_center = town.position + (town.size / 2.0)
+			var marker_data = {
+				"position": town_center * map_resolution_scale,
+				"radius": 8.0 * map_resolution_scale,
+				"color": Color(1.0, 0.9, 0.3, 0.8),
+				"center_color": Color(0.8, 0.6, 0.1, 1.0)
+			}
+			static_map_renderer.add_town_marker(marker_data)
 	
 	# Trigger render
 	static_map_renderer.queue_redraw()
@@ -3632,34 +4540,49 @@ func _draw():
 	if enable_biome_blobs and not use_static_rendering:
 		draw_biome_blobs()
 	
-	# Draw connection lines (skip if using static rendering - they're baked into texture)
+	# Draw connection lines dynamically (ONLY visible regular paths, NOT roads)
 	var edges_drawn = 0
-	if not use_static_rendering:
-		var processed_edges = {}
-		
-		for node in map_nodes:
-			for neighbor in node.connections:
-				# Avoid drawing same edge twice
-				var key = str(min(node.node_index, neighbor.node_index)) + "_" + str(max(node.node_index, neighbor.node_index))
-				if processed_edges.has(key):
-					continue
-				processed_edges[key] = true
-				
-				# Control nodes position from top-left, so add half size for center
-				var pos_a = node.position + (node.size / 2.0)
-				var pos_b = neighbor.position + (neighbor.size / 2.0)
-				
-				# All connections use the same color (no special coastal coloring)
-				# Adjust line width and color based on orientation
-				var adjusted_width = get_orientation_adjusted_width(line_width, pos_a, pos_b)
-				var adjusted_color = get_orientation_adjusted_color(line_color, pos_a, pos_b)
-				
-				if use_curved_lines:
-					# Draw smooth Bezier curve with variation
-					draw_curved_line(pos_a, pos_b, adjusted_color, adjusted_width, node, neighbor)
-				else:
-					# Draw straight line
-					draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
+	var processed_edges = {}
+	
+	for node in map_nodes:
+		for neighbor in node.connections:
+			# Avoid drawing same edge twice
+			var key = str(min(node.node_index, neighbor.node_index)) + "_" + str(max(node.node_index, neighbor.node_index))
+			if processed_edges.has(key):
+				continue
+			processed_edges[key] = true
+			
+			# Check if this edge is a road
+			var is_road_edge = is_road(node, neighbor)
+			
+			# Skip roads - they're baked into static layer
+			if is_road_edge:
+				continue
+			
+			# Skip if static rendering is enabled (all roads are baked, regular paths are dynamic)
+			if use_static_rendering:
+				# Check if this path is visible
+				if not is_path_visible(node, neighbor):
+					continue  # Not visible, don't draw
+			
+			# Control nodes position from top-left, so add half size for center
+			var pos_a = node.position + (node.size / 2.0)
+			var pos_b = neighbor.position + (neighbor.size / 2.0)
+			
+			# Use regular path styling
+			var base_width = line_width
+			var base_color = line_color
+			
+			# Adjust line width and color based on orientation
+			var adjusted_width = get_orientation_adjusted_width(base_width, pos_a, pos_b)
+			var adjusted_color = get_orientation_adjusted_color(base_color, pos_a, pos_b)
+			
+			if use_curved_lines:
+				# Draw smooth Bezier curve with variation
+				draw_curved_line(pos_a, pos_b, adjusted_color, adjusted_width, node, neighbor)
+			else:
+				# Draw straight line
+				draw_line(pos_a, pos_b, adjusted_color, adjusted_width)
 	
 	# Draw coastal ripples (skip if using static rendering - they're baked into texture)
 	if enable_coast_ripples and ripple_count > 0 and not use_static_rendering:
@@ -3694,6 +4617,15 @@ func _draw():
 			draw_circle(pos_b, cap_radius, coast_line_color)
 			
 			edges_drawn += 1
+	
+	# Draw town markers (visual indicator for towns)
+	if not use_static_rendering:
+		for town in town_nodes:
+			var town_center = town.position + (town.size / 2.0)
+			var marker_radius = 8.0
+			# Draw a bright circle to mark towns
+			draw_circle(town_center, marker_radius, Color(1.0, 0.9, 0.3, 0.8))  # Golden yellow
+			draw_circle(town_center, marker_radius * 0.6, Color(0.8, 0.6, 0.1, 1.0))  # Darker center
 	
 
 # ============================================================================
@@ -4190,6 +5122,9 @@ func set_party_position(node: MapNode2D):
 	var node_center = node.position + (node.size / 2.0)
 	party_indicator.global_position = node_center
 	
+	# Update node visibility (show current + connected nodes only)
+	update_node_visibility()
+	
 	# Hide rest button initially - events will determine if rest is safe (RestButton now in MapUI)
 	if has_node("%RestButton"):
 		%RestButton.visible = false
@@ -4227,6 +5162,76 @@ func get_party_available_moves() -> Array[MapNode2D]:
 			available.append(neighbor)
 	
 	return available
+
+## Update node visibility based on party position
+## Only shows: current node, connected nodes (non-secret), towns, and mountains
+func update_node_visibility():
+	if not current_party_node:
+		return
+	
+	# Hide all non-mountain, non-town nodes first
+	for node in map_nodes:
+		if node.is_mountain or node.is_town:
+			# Mountains and towns always visible
+			node.visible = true
+		else:
+			# Everything else hidden by default
+			node.visible = false
+	
+	# Show current node
+	current_party_node.visible = true
+	
+	# Show all connected nodes (but ONLY via non-secret paths!)
+	for neighbor in current_party_node.connections:
+		# Check if the path to this neighbor is secret and hidden
+		if is_edge_secret_and_hidden(current_party_node, neighbor):
+			# Don't reveal this neighbor - the path is secret!
+			continue
+		
+		neighbor.visible = true
+	
+	# Request redraw to update path visibility
+	queue_redraw()
+
+## Check if a path between two nodes should be visible
+## A path is visible if at least one end is the current party node (prevents showing paths between adjacent visible nodes)
+func is_path_visible(node_a: MapNode2D, node_b: MapNode2D) -> bool:
+	if not current_party_node:
+		return false
+	
+	# Check if this path is a secret that hasn't been revealed
+	if is_edge_secret_and_hidden(node_a, node_b):
+		return false  # Secret paths are never visible until revealed
+	
+	# Path is visible only if at least one endpoint is the current party node
+	# This prevents showing connections between other visible nodes (like B-C when party is at A)
+	var is_connected_to_party = (node_a == current_party_node or node_b == current_party_node)
+	
+	# Both nodes must still be in visibility range
+	var node_a_in_range = is_node_within_visibility_range(node_a)
+	var node_b_in_range = is_node_within_visibility_range(node_b)
+	
+	return is_connected_to_party and node_a_in_range and node_b_in_range
+
+## Check if a node is within visibility range of the party
+func is_node_within_visibility_range(node: MapNode2D) -> bool:
+	if not current_party_node:
+		return false
+	
+	# Current node is always in range
+	if node == current_party_node:
+		return true
+	
+	# Use AStar to calculate distance
+	if not astar:
+		# Fallback: only show immediately connected nodes
+		return current_party_node.is_connected_to(node)
+	
+	var path = astar.get_id_path(current_party_node.node_index, node.node_index)
+	var distance = path.size() - 1 if path.size() > 0 else 999
+	
+	# Node is in range if distance <= visibility range
+	return distance <= (path_visibility_range + 1)  # +1 because range 0 means "1 step away" (adjacent)
 
 ## Calculate path points along a curve between two nodes
 func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array:
@@ -4553,8 +5558,10 @@ func _on_node_hovered(node: MapNode2D):
 	# Check if visited
 	location["visited"] = node.node_state != MapNode2D.NodeState.UNEXPLORED
 	
-	if has_node("%LocationDetailDisplay"):
-		%LocationDetailDisplay.location_hovered(location)
+	# Check if this is a town
+	location["is_town"] = node.is_town
+	
+	%LocationDetailDisplay.location_hovered(location)
 	
 	# Ignore hover when events are paused
 	if events_paused:
@@ -4571,8 +5578,7 @@ func _on_node_hovered(node: MapNode2D):
 	queue_redraw()
 
 func _on_node_hover_ended(node: MapNode2D):
-	if has_node("%LocationDetailDisplay"):
-		%LocationDetailDisplay.hide()
+	%LocationDetailDisplay.hide()
 	
 	if hovered_node == node:
 		_clear_hover_preview()

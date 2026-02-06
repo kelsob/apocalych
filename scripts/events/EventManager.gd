@@ -15,6 +15,10 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 # Party state reference (will be set by external systems)
 var party_state: Dictionary = {}
 
+# Debug helper
+func debug_print(msg: String):
+	print(msg)
+
 func _ready():
 	# Initialize RNG with a seed (can be set externally for determinism)
 	rng.randomize()
@@ -146,12 +150,68 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
 	
-	# Get all event IDs and randomly select one
-	var event_ids = events.keys()
-	var random_index = rng.randi_range(0, event_ids.size() - 1)
-	var selected_event_id = event_ids[random_index]
+	# FORCE SECRET PATH DISCOVERY EVENT (for testing)
+	# Try to return any secret_path_discovery event
+	for event_id in events.keys():
+		if event_id.begins_with("secret_path_discovery"):
+			debug_print("SECRET PATH: EventManager forcing secret path discovery event: %s" % event_id)
+			return events[event_id]
 	
-	return events.get(selected_event_id, {})
+	# Fallback to normal selection if no secret path events found
+	var party_state_dict = _build_party_state(party)
+	
+	# Step 1: Filter events by biome match and prerequisites
+	var eligible_events: Array = []
+	
+	for event_id in events.keys():
+		var event = events[event_id]
+		
+		# Skip one-shot events that have already been seen
+		if event.get("one_shot", false) and event_id in seen_one_shot_events:
+			continue
+		
+		# Check biome match (if event specifies biomes)
+		if event.has("biomes"):
+			var event_biomes = event.biomes
+			if event_biomes is Array and event_biomes.size() > 0:
+				# Check if current biome is in the event's biome list
+				if biome not in event_biomes:
+					continue  # Biome doesn't match, skip this event
+		
+		# Check prerequisites (if event has them)
+		if event.has("prereqs"):
+			if not condition_passes(event.prereqs, party_state_dict):
+				continue  # Prerequisites not met, skip this event
+		
+		# Event is eligible!
+		var weight = event.get("weight", 1)
+		eligible_events.append({"event": event, "weight": weight})
+	
+	# Step 2: If no eligible events, return empty
+	if eligible_events.is_empty():
+		return {}
+	
+	# Step 3: Weighted random selection
+	var total_weight = 0
+	for item in eligible_events:
+		total_weight += item.weight
+	
+	var random_value = rng.randf_range(0, total_weight)
+	var accumulated_weight = 0
+	
+	for item in eligible_events:
+		accumulated_weight += item.weight
+		if random_value <= accumulated_weight:
+			var selected_event = item.event
+			
+			# Mark one-shot events as seen
+			if selected_event.get("one_shot", false):
+				seen_one_shot_events.append(selected_event.id)
+			
+			return selected_event
+	
+	# Fallback: return first eligible event (shouldn't happen)
+	return eligible_events[0].event
 
 ## Present an event - returns event with filtered choices
 func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
@@ -186,13 +246,18 @@ func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
 
 ## Apply effects from a choice
 func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {}):
+	debug_print("SECRET PATH: EventManager apply_effects() called with %d effects" % effects.size())
+	
 	if not effects is Array:
+		debug_print("SECRET PATH: Effects is not an array!")
 		return
 	
 	for effect in effects:
 		if not effect.has("type"):
-			push_warning("EventManager: Effect missing 'type' field, skipping")
+			push_warning("SECRET PATH: EventManager Effect missing 'type' field, skipping")
 			continue
+		
+		debug_print("SECRET PATH: Processing effect type: %s" % effect.type)
 		
 		match effect.type:
 			"add_tag":
@@ -224,6 +289,9 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 			
 			"set_rest_state":
 				_apply_set_rest_state(effect, node_state)
+			
+			"reveal_secrets":
+				_apply_reveal_secrets(effect, party, node_state)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -401,3 +469,32 @@ func _apply_set_rest_state(effect: Dictionary, node_state: Dictionary):
 	current_node.can_rest_here = allow_rest
 	
 	print("EventManager: Set rest state to %s at node %d" % [allow_rest, current_node.node_index])
+
+func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Dictionary):
+	debug_print("SECRET PATH: === EventManager _apply_reveal_secrets() called ===")
+	
+	# EventManager is an autoload, find Main node first
+	var root = get_tree().root
+	var main = null
+	
+	# Search through root's children for Main
+	for child in root.get_children():
+		if child.name == "Main" or child.is_in_group("main"):
+			main = child
+			break
+	
+	if not main:
+		push_warning("SECRET PATH: EventManager could not find Main node")
+		return
+	
+	debug_print("SECRET PATH: EventManager found Main node")
+	
+	# Access MapGenerator through Main's property
+	if not main.map_generator:
+		push_warning("SECRET PATH: Main node does not have map_generator property")
+		return
+	
+	debug_print("SECRET PATH: EventManager found MapGenerator via Main.map_generator")
+	debug_print("SECRET PATH: EventManager calling reveal_secret_paths_at_current_location()...")
+	main.map_generator.reveal_secret_paths_at_current_location()
+	debug_print("SECRET PATH: EventManager DONE - revealed secret paths at current location")

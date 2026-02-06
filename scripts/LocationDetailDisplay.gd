@@ -9,7 +9,12 @@ func _ready():
 	visible = false
 
 func location_hovered(location):
-	biome_label.text = location.biome
+	# Display biome name with "town" suffix if applicable
+	var biome_text = location.biome
+	if location.get("is_town", false):
+		biome_text += " Town"
+	biome_label.text = biome_text
+	
 	distance_label.text = str(location.steps)
 	visited_label.text = str(location.visited)
 	

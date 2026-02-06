@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=14 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -12,7 +12,6 @@
 [ext_resource type="Texture2D" uid="uid://dox1js6lhibgr" path="res://assets/map/waves-angled.png" id="6_p13sx"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 [ext_resource type="Script" uid="uid://dpiclq4dhx7e8" path="res://scripts/2d/CameraController2D.gd" id="8_n8x2r"]
-[ext_resource type="PackedScene" uid="uid://c43x5j7j8a6l3" path="res://scenes/testui.tscn" id="8_ug3a7"]
 [ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
 
 [node name="MapGenerator" type="Control"]
@@ -24,10 +23,13 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_d6u0w")
 node_scene = ExtResource("2_sdxh4")
+road_color = Color(0.540353, 0.478515, 0.355151, 1)
+node_base_color = Color(0.784852, 0.662272, 0.487773, 1)
 coast_line_color = Color(0.3, 0.1878, 0.096, 1)
 coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
 ripple_base_color = Color(0.54902, 0.45098, 0.321569, 1)
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
+road_width_multiplier = 1.1
 coast_line_width = 1.0
 coastal_water_expansion = 50.0
 coastal_water_radius = 300.0
@@ -200,10 +202,6 @@ transparent_bg = true
 
 [node name="StaticMapRenderer" type="Node2D" parent="StaticMapViewport"]
 script = ExtResource("9_bvoid")
-
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="UI" parent="CanvasLayer" instance=ExtResource("8_ug3a7")]
 
 [node name="GameCamera" type="Camera2D" parent="."]
 position = Vector2(640, 360)

@@ -24,6 +24,7 @@ var coast_ripple_lines_data: Array = []  # Array of ripple line dictionaries
 var expanded_coast_lines_data: Array = []  # Array of expanded coast line dictionaries
 var trees_data: Array = []  # Array of tree dictionaries
 var river_segments_data: Array = []  # Array of river segment dictionaries
+var town_markers_data: Array = []  # Array of town marker dictionaries
 
 # ============================================================================
 # CONFIGURATION (inherited from MapGenerator2D)
@@ -74,6 +75,7 @@ func clear_data():
 	expanded_coast_lines_data.clear()
 	trees_data.clear()
 	river_segments_data.clear()
+	town_markers_data.clear()
 
 # ============================================================================
 # DATA RECEPTION - MapGenerator2D calls these to pass data
@@ -123,6 +125,11 @@ func add_tree(tree_data: Dictionary):
 ## segment_data should contain: { pos_a: Vector2, pos_b: Vector2, width: float, color: Color }
 func add_river_segment(segment_data: Dictionary):
 	river_segments_data.append(segment_data)
+
+## Add a town marker to be drawn
+## marker_data should contain: { position: Vector2, radius: float, color: Color, center_color: Color }
+func add_town_marker(marker_data: Dictionary):
+	town_markers_data.append(marker_data)
 
 ## Set configuration from MapGenerator2D
 func set_config(config: Dictionary):
@@ -360,6 +367,19 @@ func _draw_expanded_coast_lines():
 		var cap_radius = width / 2.0
 		draw_circle(pos_a, cap_radius, color)
 		draw_circle(pos_b, cap_radius, color)
+
+## Draw all town markers that were added
+func _draw_town_markers():
+	for marker_data in town_markers_data:
+		var position: Vector2 = marker_data.get("position", Vector2.ZERO)
+		var radius: float = marker_data.get("radius", 8.0)
+		var color: Color = marker_data.get("color", Color(1.0, 0.9, 0.3, 0.8))
+		var center_color: Color = marker_data.get("center_color", Color(0.8, 0.6, 0.1, 1.0))
+		
+		# Draw outer circle
+		draw_circle(position, radius, color)
+		# Draw inner circle
+		draw_circle(position, radius * 0.6, center_color)
 
 ## Draw Bezier curve (matches MapGenerator2D curve rendering)
 func _draw_bezier_curve(pos_a: Vector2, pos_b: Vector2, curve_data: Dictionary, color: Color, width: float):

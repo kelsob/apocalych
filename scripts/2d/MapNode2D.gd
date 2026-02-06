@@ -44,6 +44,14 @@ var boundary_edge_count: int = 0
 var is_mountain: bool = false
 var biome: Biome = null
 
+# Town and road properties
+var is_town: bool = false  # Whether this node is a town
+var is_exit_node: bool = false  # Whether this node connects to a different biome
+
+# Secret path properties
+var has_secret_path: bool = false  # Whether this node has a secret (unrevealed) path connected to it
+var secret_path_revealed: bool = false  # Whether this node's secret path has been revealed
+
 # Distance metrics
 var distance_to_coast: float = 0.0
 var distance_to_center: float = 0.0
