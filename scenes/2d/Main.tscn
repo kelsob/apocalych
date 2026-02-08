@@ -60,20 +60,6 @@ script = ExtResource("1_main")
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true
 layout_mode = 1
-node_count = 256
-map_size = Vector2(1280, 720)
-poisson_min_distance = 30.0
-shape_noise_enabled = false
-node_base_color = Color(0.461684, 0.368652, 0.233192, 1)
-coast_line_color = Color(0.35, 0.287117, 0.1785, 1)
-landmass_base_color = Color(0.784914, 0.664423, 0.499082, 1)
-mountain_color = Color(0.34902, 0.286275, 0.180392, 1)
-line_width = 1.0
-coast_line_width = 2.0
-horizontal_line_width_multiplier = 1.8
-landmass_gradient_distance = 50.0
-preview_path_dot_size = 3.0
-party_travel_speed = 50.0
 
 [node name="UIController" type="CanvasLayer" parent="."]
 unique_name_in_owner = true

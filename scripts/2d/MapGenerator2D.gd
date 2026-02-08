@@ -130,11 +130,21 @@ class_name MapGenerator2D
 @export_group("Map Features")
 @export var enable_map_features: bool = true
 @export var enable_rivers: bool = false
-@export var river_merge_distance: float = 20.0
-@export var river_base_width: float = 2.0
-@export var river_tributary_bonus: float = 1.5
-@export var river_max_width: float = 8.0
+@export var river_source_width: float = 4.0  # Width at river source (mountain)
+@export var river_end_width: float = 2.0  # Width at river end (coast/lake)
+@export var lake_radius_x: float = 15.0  # Horizontal radius of lake ellipses
+@export var lake_radius_y: float = 10.0  # Vertical radius of lake ellipses (squished)
+@export var river_center_randomness: float = 1.5  # Multiplier of poisson_min_distance for center offset
+@export var river_curve_smoothness: int = 8  # Points to interpolate between each waypoint pair (higher = smoother)
+@export var river_horizontal_width_multiplier: float = 1.5  # Width multiplier for horizontal segments (1.0 = no effect)
+@export var river_noise_amplitude: float = 1.5  # How much rivers wiggle perpendicular to their path (0 = none)
+@export var river_noise_frequency: float = 0.3  # How often the wiggle changes (lower = smoother, higher = more chaotic)
+@export var river_waypoint_randomness: float = 0.8  # Random offset for intermediate waypoints (multiplier of poisson_min_distance)
 @export var feature_debug_output: bool = false  # Print detailed feature generation info
+
+# Legacy river exports (not used in new intelligent river system)
+# @export var river_merge_distance: float = 20.0
+# @export var river_tributary_bonus: float = 1.5
 
 @export_group("Performance")
 @export var use_static_rendering: bool = true  # Bake static elements to texture
@@ -206,7 +216,6 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var waves_northwest_sprite: Sprite2D = $MapSprites/WavesNW
 @onready var waves_southeast_sprite: Sprite2D = $MapSprites/WavesSE
 
-@onready var canvas_layer: CanvasLayer = $CanvasLayer
 
 # ============================================================================
 # SIGNALS
@@ -242,6 +251,10 @@ var coast_noise: FastNoiseLite  # Noise for spatially coherent coast expansion v
 # Secret paths
 var border_edges: Dictionary = {}  # key: "nodeA_nodeB", value: true if border between regions
 var secret_edges: Dictionary = {}  # key: "nodeA_nodeB", value: { is_secret: bool, is_revealed: bool }
+
+# Regions and rivers
+var regions: Dictionary = {}  # region_id -> Region object
+var river_data: Array = []  # Array of river path data for rendering
 
 # Shape noise
 var shape_noise_large: FastNoiseLite
@@ -285,10 +298,6 @@ func _ready():
 	coast_noise.seed = randi()  # Random seed for variation between maps
 	
 	# Map generation will be triggered manually when game starts
-	
-	# Map UI (canvas layer) only shown when map is displayed, not at launch
-	if canvas_layer:
-		canvas_layer.visible = false
 	
 	# Rest button is now in MapUI under UIController - Main connects to map_ui.rest_requested
 	
@@ -400,13 +409,21 @@ func generate_map():
 		debug_print("Step 12.55: Centering mountain nodes...")
 		center_mountain_nodes()
 		
-		# Step 12.6: Disconnect mountain nodes (mountains act as barriers)
-		debug_print("Step 12.6: Disconnecting mountain nodes...")
-		disconnect_mountain_nodes()
+		# Step 12.6: Disconnect ONLY mountain-to-mountain connections (prevent rivers through mountains)
+		debug_print("Step 12.6: Disconnecting inter-mountain connections...")
+		disconnect_inter_mountain_connections()
+		
+		# Step 12.65: Complete region analysis (now that mountains exist)
+		debug_print("Step 12.65: Completing region analysis...")
+		complete_region_analysis()
 	
 	# Step 12.7: Assign biomes to all nodes
 	debug_print("Step 12.7: Assigning biomes to nodes...")
 	assign_biomes()
+	
+	# Step 12.71: Populate region biomes (now that nodes have biomes)
+	debug_print("Step 12.71: Populating region biomes...")
+	populate_region_biomes()
 	
 	# Step 12.75: Mark exit nodes (nodes connecting to different regions)
 	debug_print("Step 12.75: Marking exit nodes...")
@@ -438,10 +455,19 @@ func generate_map():
 		debug_print("Step 12.8: Generating map features...")
 		generate_map_features()
 	
-	# Step 12.9: Generate rivers
+	# Step 12.9: Generate rivers (with mountains still connected)
 	if enable_rivers:
 		debug_print("Step 12.9: Generating rivers...")
 		generate_rivers()
+	else:
+		debug_print("Step 12.9: River generation DISABLED (enable_rivers = false)")
+	
+	# Step 12.91: NOW disconnect mountains (after river generation)
+	if enable_mountains:
+		debug_print("Step 12.91: Disconnecting mountain nodes for pathfinding...")
+		disconnect_mountain_nodes()
+		debug_print("Step 12.92: Disabling mountains in AStar2D...")
+		disable_mountains_in_astar()
 	
 	# Check if regeneration was requested due to errors (BEFORE visualizing)
 	if _regeneration_requested:
@@ -477,10 +503,6 @@ func generate_map():
 	else:
 		debug_print("camera: ERROR - game_camera is null!")
 	
-	# Show map UI now that the map is displayed
-	if canvas_layer:
-		canvas_layer.visible = true
-	
 	# Emit signal that generation is complete
 	map_generation_complete.emit()
 	
@@ -515,6 +537,8 @@ func clear_existing_nodes():
 	region_focal_points.clear()
 	border_edges.clear()
 	secret_edges.clear()
+	regions.clear()
+	river_data.clear()
 	
 	# Hide decoration sprites during regeneration
 	if dagron_sprite:
@@ -1959,6 +1983,9 @@ func create_regions():
 	colorize_regions(region_count)
 	
 	debug_print("  Created %d regions" % region_count)
+	
+	# Create Region objects for intelligent river generation
+	create_region_objects(region_count)
 
 func colorize_regions(num_regions: int):
 	# All nodes get the configured node color (export property)
@@ -1967,6 +1994,277 @@ func colorize_regions(num_regions: int):
 		if not node.is_mountain:  # Mountains keep their color
 			# Coastal nodes also get the node color
 			node.set_region_color(node_base_color)
+
+# ============================================================================
+# STEP 11.25: CREATE REGION OBJECTS & ANALYZE BORDERS
+# ============================================================================
+
+## Create Region objects with full analysis for intelligent river generation
+func create_region_objects(num_regions: int):
+	regions.clear()
+	debug_print("RIVER: === CREATING REGION OBJECTS ===")
+	
+	# Step 1: Create Region objects and assign nodes
+	for i in range(num_regions):
+		var region = Region.new()
+		region.region_id = i
+		# Biome will be set later after assign_biomes() is called
+		region.biome = null
+		regions[i] = region
+	
+	# Collect nodes into their regions
+	for node in map_nodes:
+		if node.region_id >= 0 and node.region_id < num_regions:
+			regions[node.region_id].add_node(node)
+	
+	debug_print("RIVER:   Created %d region objects" % regions.size())
+	
+	# Step 2: Identify borders and adjacent regions
+	identify_region_borders()
+	
+	# Step 3: Mountainous borders - DEFERRED until after mountains are generated
+	# Step 4: Coastal status - DEFERRED until after coast identification
+	# Step 5: Regional centrality - DEFERRED until AStar is built
+	
+	debug_print("RIVER: === REGION OBJECTS CREATED (analysis deferred) ===")
+
+## Complete region analysis after mountains and coasts are established
+func complete_region_analysis():
+	debug_print("RIVER: === COMPLETING REGION ANALYSIS ===")
+	
+	# Step 0: Calculate global interiorness scores (needed for meandering rivers)
+	calculate_global_interiorness_scores()
+	
+	# Step 1: Determine which borders are mountainous (now that mountains exist)
+	identify_mountainous_borders()
+	
+	# Step 2: Identify coastal status (should already be done, but verify)
+	identify_region_coastal_status()
+	
+	# Step 3: Calculate regional centrality (now that AStar is built)
+	calculate_regional_centrality()
+	
+	debug_print("RIVER: === REGION ANALYSIS COMPLETE ===")
+
+## Calculate global interiorness score for each node (average distance to coast)
+## Higher score = more interior, Lower score = closer to coast
+func calculate_global_interiorness_scores():
+	debug_print("RIVER:   Calculating global interiorness scores...")
+	
+	if not astar:
+		debug_print("RIVER:     WARNING: AStar not initialized")
+		return
+	
+	if coastal_nodes.size() == 0:
+		debug_print("RIVER:     WARNING: No coastal nodes found")
+		return
+	
+	var non_mountain_nodes: Array[MapNode2D] = []
+	for node in map_nodes:
+		if not node.is_mountain:
+			non_mountain_nodes.append(node)
+	
+	# Calculate for each non-mountain node
+	for node in non_mountain_nodes:
+		var total_distance = 0
+		var valid_coastal_count = 0
+		
+		# Calculate distance to ALL coastal nodes
+		for coastal_node in coastal_nodes:
+			var path = astar.get_id_path(node.node_index, coastal_node.node_index)
+			if path.size() > 0:
+				total_distance += (path.size() - 1)
+				valid_coastal_count += 1
+		
+		# Average distance to coast = interiorness score
+		if valid_coastal_count > 0:
+			node.graph_interiorness_score = float(total_distance) / float(valid_coastal_count)
+		else:
+			# No path to any coast - very interior
+			node.graph_interiorness_score = 999.0
+	
+	# Coastal nodes should have score of 0
+	for coastal_node in coastal_nodes:
+		coastal_node.graph_interiorness_score = 0.0
+	
+	# Find min and max for debug
+	var min_score = INF
+	var max_score = -INF
+	for node in non_mountain_nodes:
+		min_score = min(min_score, node.graph_interiorness_score)
+		max_score = max(max_score, node.graph_interiorness_score)
+	
+	debug_print("RIVER:     Interiorness scores: min=%.2f, max=%.2f" % [min_score, max_score])
+
+## Populate region biomes from nodes (called after assign_biomes)
+func populate_region_biomes():
+	for region in regions.values():
+		# Get biome from first non-mountain node in region
+		for node in region.nodes:
+			if not node.is_mountain and node.biome != null:
+				region.biome = node.biome
+				break
+		
+		if region.biome:
+			debug_print("  Region %d: Biome = %s" % [region.region_id, region.biome.biome_name])
+		else:
+			debug_print("  Region %d: No biome found (all mountains?)" % region.region_id)
+
+## Identify border nodes and adjacent regions for each region
+func identify_region_borders():
+	debug_print("RIVER:   Analyzing region borders...")
+	
+	for region in regions.values():
+		for node in region.nodes:
+			for neighbor in node.connections:
+				if neighbor.region_id != node.region_id and neighbor.region_id >= 0:
+					# This node is on a border with another region
+					if not region.border_nodes.has(neighbor.region_id):
+						region.border_nodes[neighbor.region_id] = []
+					
+					# Add this node to the border with that region (avoid duplicates)
+					if node not in region.border_nodes[neighbor.region_id]:
+						region.border_nodes[neighbor.region_id].append(node)
+					
+					# Track adjacent region
+					if neighbor.region_id not in region.adjacent_regions:
+						region.adjacent_regions.append(neighbor.region_id)
+	
+	# Debug output
+	for region in regions.values():
+		debug_print("RIVER:     Region %d borders %d other regions" % [region.region_id, region.adjacent_regions.size()])
+
+## Determine which regional borders are mountainous
+func identify_mountainous_borders():
+	debug_print("RIVER:   Identifying mountainous borders...")
+	
+	var total_mountainous = 0
+	
+	for region in regions.values():
+		for adjacent_id in region.adjacent_regions:
+			var border_nodes_with_adjacent = region.border_nodes[adjacent_id]
+			
+			# Check if ANY of these border nodes are mountains
+			var has_mountain = false
+			for border_node in border_nodes_with_adjacent:
+				if border_node.is_mountain:
+					has_mountain = true
+					break
+			
+			region.mountainous_borders[adjacent_id] = has_mountain
+			
+			if has_mountain:
+				total_mountainous += 1
+	
+	debug_print("RIVER:     Found %d mountainous borders total" % total_mountainous)
+
+## Identify which regions are landlocked vs coastal
+func identify_region_coastal_status():
+	debug_print("RIVER:   Identifying coastal regions...")
+	
+	var landlocked_count = 0
+	var coastal_count = 0
+	
+	for region in regions.values():
+		region.is_landlocked = true
+		region.coastal_nodes.clear()
+		
+		for node in region.nodes:
+			if node.is_coastal:
+				region.coastal_nodes.append(node)
+				region.is_landlocked = false
+		
+		if region.is_landlocked:
+			landlocked_count += 1
+		else:
+			coastal_count += 1
+	
+	debug_print("RIVER:     %d coastal regions, %d landlocked regions" % [coastal_count, landlocked_count])
+
+## Calculate regional centrality for each node and find central node per region
+func calculate_regional_centrality():
+	debug_print("RIVER:   Calculating regional centrality...")
+	
+	if not astar:
+		debug_print("RIVER:     WARNING: AStar not initialized, skipping centrality calculation")
+		return
+	
+	for region in regions.values():
+		if region.nodes.size() == 0:
+			continue
+		
+		# Filter to non-coastal, non-mountain nodes for centrality (rivers need interior starting points)
+		var interior_nodes: Array[MapNode2D] = []
+		for node in region.nodes:
+			if not node.is_coastal and not node.is_mountain:
+				interior_nodes.append(node)
+		
+		# Fallback: if no interior nodes, use all non-mountain nodes
+		if interior_nodes.size() == 0:
+			for node in region.nodes:
+				if not node.is_mountain:
+					interior_nodes.append(node)
+		
+		# If still no candidates, use any node
+		if interior_nodes.size() == 0:
+			interior_nodes = region.nodes.duplicate()
+		
+		if interior_nodes.size() == 0:
+			debug_print("RIVER:     Region %d: No nodes available for centrality!" % region.region_id)
+			continue
+		
+		var best_node: MapNode2D = null
+		var best_avg_distance = INF
+		
+		# For each candidate node, calculate average distance to all other nodes in region
+		for node in interior_nodes:
+			var total_distance = 0
+			var valid_paths = 0
+			
+			for other_node in region.nodes:
+				if node == other_node:
+					continue
+				
+				var path = astar.get_id_path(node.node_index, other_node.node_index)
+				if path.size() > 0:
+					total_distance += (path.size() - 1)
+					valid_paths += 1
+			
+			# Calculate average distance
+			var avg_distance = INF
+			if valid_paths > 0:
+				avg_distance = float(total_distance) / float(valid_paths)
+			
+			# Node with minimum average distance is most central
+			if avg_distance < best_avg_distance:
+				best_avg_distance = avg_distance
+				best_node = node
+		
+		region.central_node = best_node
+		
+		if best_node:
+			# Calculate randomized center position for this region (all rivers will converge here)
+			var node_center = best_node.position + (best_node.size / 2.0)
+			var max_offset = poisson_min_distance * river_center_randomness
+			# Use deterministic seed based on region_id for reproducibility
+			var rng = RandomNumberGenerator.new()
+			rng.seed = region.region_id * 12345
+			var random_offset = Vector2(
+				rng.randf_range(-max_offset, max_offset),
+				rng.randf_range(-max_offset, max_offset)
+			)
+			region.randomized_center_position = node_center + random_offset
+			
+			var is_coastal_str = " (COASTAL!)" if best_node.is_coastal else ""
+			debug_print("RIVER:     Region %d: Central node is %d (avg dist: %.1f, interior: %.2f)%s" % [
+				region.region_id, 
+				best_node.node_index, 
+				best_avg_distance,
+				best_node.graph_interiorness_score,
+				is_coastal_str
+			])
+		else:
+			debug_print("RIVER:     Region %d: No central node found!" % region.region_id)
 
 # ============================================================================
 # STEP 11.5: IDENTIFY BORDER EDGES (EXIT PATHS BETWEEN REGIONS)
@@ -2315,23 +2613,64 @@ func center_mountain_nodes():
 # STEP 12.6: DISCONNECT MOUNTAIN NODES
 # ============================================================================
 
+## Disconnect mountain-to-mountain connections (called BEFORE rivers)
+## This allows rivers to start at mountains but prevents them from flowing through mountain ranges
+func disconnect_inter_mountain_connections():
+	var disconnected_count = 0
+	
+	for node in map_nodes:
+		if node.is_mountain:
+			# Remove ONLY connections to OTHER mountains
+			for neighbor in node.connections.duplicate():
+				if neighbor.is_mountain:
+					# Both are mountains - disconnect this edge
+					node.connections.erase(neighbor)
+					neighbor.connections.erase(node)
+					disconnected_count += 1
+	
+	debug_print("  Disconnected %d mountain-to-mountain connections" % (disconnected_count / 2))
+	debug_print("  Mountains can still connect to non-mountain nodes (for river sources)")
+	
+	# Rebuild AStar graph to reflect new topology (no mountain-to-mountain paths)
+	debug_print("  Rebuilding AStar graph with new mountain topology...")
+	build_astar_graph()
+	
+	# Immediately disable ALL mountains in AStar (they'll be enabled temporarily per-river)
+	debug_print("  Disabling all mountains in AStar (will enable per-source during river gen)...")
+	for node in map_nodes:
+		if node.is_mountain:
+			astar.set_point_disabled(node.node_index, true)
+
+## Disconnect ALL mountain connections (called AFTER rivers)
 func disconnect_mountain_nodes():
 	var disconnected_count = 0
 	
 	for node in map_nodes:
 		if node.is_mountain:
-			# Remove all connections from this mountain node
+			# Remove ALL remaining connections from this mountain node
 			for neighbor in node.connections.duplicate():
 				# Remove connection from both sides
 				node.connections.erase(neighbor)
 				neighbor.connections.erase(node)
 				disconnected_count += 1
 	
-	debug_print("  Disconnected %d connections from mountain nodes" % disconnected_count)
+	debug_print("  Disconnected %d remaining mountain connections" % disconnected_count)
+	# NOTE: AStar graph no longer rebuilt here - mountains disabled separately
+
+## Disable mountain nodes in AStar2D pathfinding (called AFTER river generation)
+func disable_mountains_in_astar():
+	if not astar:
+		debug_print("  WARNING: AStar not initialized")
+		return
 	
-	# Rebuild AStar2D graph (exclude mountains)
-	if astar != null:
-		build_astar_graph()
+	var disabled_count = 0
+	
+	for node in map_nodes:
+		if node.is_mountain:
+			astar.set_point_disabled(node.node_index, true)
+			disabled_count += 1
+	
+	debug_print("  Disabled %d mountain nodes in AStar2D (normal pathfinding will avoid them)" % disabled_count)
 
 # ============================================================================
 # STEP 12.7: ASSIGN BIOMES
@@ -3527,74 +3866,628 @@ func reveal_secret_paths_at_current_location():
 
 var river_id_counter: int = 0
 
-## Main river generation function
+## Main river generation function - Intelligent region-based system
 func generate_rivers():
 	rivers.clear()
+	river_data.clear()
 	river_id_counter = 0
 	
-	# Phase 1: Identify river sources
-	var river_sources = identify_river_sources()
-	debug_print("  Identified %d river sources" % river_sources.size())
+	debug_print("RIVER: === GENERATING RIVERS (Region-Based System) ===")
+	
+	# Phase 1: Identify river sources (mountains on mountainous borders)
+	var river_sources = identify_river_sources_intelligent()
+	debug_print("RIVER:   Identified %d river sources" % river_sources.size())
 	
 	if river_sources.size() == 0:
-		debug_print("  No river sources found")
+		debug_print("RIVER:   No river sources found")
 		return
 	
-	# Phase 2: Find target coast for each source
-	var river_paths = find_target_coast_for_each_source(river_sources)
-	debug_print("  Created %d initial river paths" % river_paths.size())
+	# Phase 2: Generate river paths
+	generate_river_paths(river_sources)
 	
-	# Phase 3: Detect river interactions
-	var interactions = detect_river_interactions(river_paths, river_merge_distance)
-	debug_print("  Detected %d river interactions" % interactions.size())
+	# Count tributaries, main channels, and lakes
+	var tributary_count = 0
+	var main_channel_count = 0
+	var lake_count = 0
+	for river in rivers:
+		if river.get("type", "") == "main_channel":
+			main_channel_count += 1
+		else:  # tributary
+			tributary_count += 1
+			if river.get("is_lake_river", false):
+				lake_count += 1
 	
-	# Phase 4: Determine merge hierarchy
-	determine_merge_hierarchy(river_paths, interactions)
-	
-	# Phase 5: Build final river network
-	var final_rivers = build_river_network(river_paths)
-	debug_print("  Built %d final river networks" % final_rivers.size())
-	
-	# Phase 6 & 7: Add curves and store
-	rivers = add_river_curves(final_rivers)
-	debug_print("  Generated %d rivers with curves" % rivers.size())
+	debug_print("RIVER: === RIVER GENERATION COMPLETE ===")
+	debug_print("RIVER:   %d tributaries, %d main channels, %d lakes" % [tributary_count, main_channel_count, lake_count])
 
-## Phase 1: Identify river sources (mountains)
-func identify_river_sources() -> Array:
+## Phase 1: Identify river sources - NEW INTELLIGENT SYSTEM
+## One river per mountainous border
+func identify_river_sources_intelligent() -> Array:
 	var sources = []
 	
-	for node in map_nodes:
-		if not node.is_mountain:
+	debug_print("RIVER:   Analyzing mountainous borders for river sources...")
+	
+	for region in regions.values():
+		var mountainous_border_ids = region.get_mountainous_borders()
+		
+		if mountainous_border_ids.size() == 0:
 			continue
 		
-		# Each mountain can spawn 0-2 rivers
-		var roll = randf()
-		var num_rivers = 0
-		if roll < 0.3:
-			num_rivers = 0
-		elif roll < 0.8:
-			num_rivers = 1
-		else:
-			num_rivers = 2
+		var landlocked_str = " (LANDLOCKED)" if region.is_landlocked else ""
+		debug_print("RIVER:     Region %d has %d mountainous borders%s" % [region.region_id, mountainous_border_ids.size(), landlocked_str])
 		
-		for i in range(num_rivers):
-			var node_center = node.position + (node.size / 2.0)
+		# For each mountainous border, spawn exactly 1 river (100% spawn rate for now)
+		for adjacent_id in mountainous_border_ids:
+			var border_nodes_array = region.get_border_with_region(adjacent_id)
 			
-			# Offset source position slightly for multiple rivers from same mountain
-			var offset = Vector2.ZERO
-			if num_rivers > 1:
-				var angle = (float(i) / float(num_rivers)) * TAU
-				offset = Vector2(cos(angle), sin(angle)) * 10.0
+			# Get only the mountain nodes on this border
+			var mountain_border_nodes: Array[MapNode2D] = []
+			for border_node in border_nodes_array:
+				if border_node.is_mountain:
+					mountain_border_nodes.append(border_node)
+			
+			if mountain_border_nodes.size() == 0:
+				debug_print("RIVER:       No mountain nodes found on border with region %d (this shouldn't happen!)" % adjacent_id)
+				continue
+			
+			# Pick a random mountain node as the river source
+			var source_node = mountain_border_nodes[randi() % mountain_border_nodes.size()]
 			
 			sources.append({
-				"source_node": node,
-				"source_position": node_center + offset,
-				"id": river_id_counter,
-				"parent_river_id": -1
+				"source_node": source_node,
+				"region": region,
+				"border_with": adjacent_id,
+				"id": river_id_counter
 			})
+			
+			debug_print("RIVER:       River %d: Source at node %d (border with region %d)" % [river_id_counter, source_node.node_index, adjacent_id])
 			river_id_counter += 1
 	
 	return sources
+
+## Phase 2: Generate river paths from sources
+func generate_river_paths(river_sources: Array):
+	var regions_needing_main_channel: Dictionary = {}  # Track regions that need center-to-coast channel
+	var tributaries: Array = []  # Store individual source-to-center rivers
+	
+	# PHASE 1: Generate tributary paths (source to center only)
+	for source_data in river_sources:
+		var source_node: MapNode2D = source_data.source_node
+		var region: Region = source_data.region
+		var river_id: int = source_data.id
+		
+		debug_print("RIVER:   Generating tributary %d from node %d" % [river_id, source_node.node_index])
+		
+		var river_path: Array = []
+		
+		# STEP 1: Path from mountain source toward regional center ONLY
+		if region.central_node == null:
+			debug_print("RIVER:     WARNING: Region %d has no central node, skipping tributary" % region.region_id)
+			continue
+		
+		var center_node = region.central_node
+		
+		# Temporarily enable ONLY this source mountain for pathfinding
+		if source_node.is_mountain:
+			astar.set_point_disabled(source_node.node_index, false)
+		
+		var path_to_center = astar.get_id_path(source_node.node_index, center_node.node_index)
+		
+		# Disable the source mountain again
+		if source_node.is_mountain:
+			astar.set_point_disabled(source_node.node_index, true)
+		
+		if path_to_center.size() == 0:
+			debug_print("RIVER:     ✗ REJECTED: No path from source node %d to center node %d" % [source_node.node_index, center_node.node_index])
+			continue
+		
+		# Convert node indices to node references and validate path
+		var hit_coast_early = false
+		var path_invalid = false
+		
+		for i in range(path_to_center.size()):
+			var node_idx = path_to_center[i]
+			var path_node = map_nodes[node_idx]
+			
+			# VALIDATION: Ensure we don't pass through OTHER mountains (only source is allowed)
+			if path_node.is_mountain and i > 0:
+				debug_print("RIVER:     ERROR: Path goes through mountain node %d (not the source!)" % path_node.node_index)
+				path_invalid = true
+				break
+			
+			river_path.append(path_node)
+			
+			# Check if we hit a coastal node before reaching center
+			if river_path.size() > 1 and path_node.is_coastal:
+				hit_coast_early = true
+				debug_print("RIVER:     Hit coast early at node %d (tributary complete)" % path_node.node_index)
+				break
+		
+		# Skip this tributary if path is invalid
+		if path_invalid:
+			debug_print("RIVER:     ✗ REJECTED Tributary %d - path through mountains detected" % river_id)
+			continue
+		
+		debug_print("RIVER:     Tributary path: %d nodes" % river_path.size())
+		
+		# Store tributary data
+		tributaries.append({
+			"id": river_id,
+			"source_node": source_node,
+			"path": river_path,
+			"region": region,
+			"hit_coast_early": hit_coast_early
+		})
+		
+		# Mark this region as needing a main channel (unless tributary already hit coast)
+		if not hit_coast_early and not region.is_landlocked:
+			regions_needing_main_channel[region.region_id] = region
+	
+	# PHASE 2: Generate main channels (center to coast, ONE per region)
+	var main_channels: Array = []
+	for region_id in regions_needing_main_channel.keys():
+		var region: Region = regions_needing_main_channel[region_id]
+		var center_node = region.central_node
+		
+		debug_print("RIVER:   Generating main channel for region %d from center node %d" % [region.region_id, center_node.node_index])
+		
+		var target_coastal = find_central_coastal_node_in_region(region)
+		if target_coastal == null:
+			debug_print("RIVER:     ✗ Could not find coastal node in region %d, skipping main channel" % region.region_id)
+			continue
+		
+		# Check if center is already coastal
+		if center_node == target_coastal:
+			debug_print("RIVER:     Center is already coastal, no main channel needed")
+			continue
+		
+		var path_to_coast = astar.get_id_path(center_node.node_index, target_coastal.node_index)
+		
+		if path_to_coast.size() == 0:
+			debug_print("RIVER:     WARNING: No path from center %d to coast %d" % [center_node.node_index, target_coastal.node_index])
+			continue
+		
+		# Build and validate path
+		var channel_path: Array = []
+		var path_invalid = false
+		for i in range(path_to_coast.size()):
+			var path_node = map_nodes[path_to_coast[i]]
+			
+			# VALIDATION: Ensure we don't pass through mountains
+			if path_node.is_mountain:
+				debug_print("RIVER:     ERROR: Main channel goes through mountain node %d!" % path_node.node_index)
+				path_invalid = true
+				break
+			
+			channel_path.append(path_node)
+		
+		if path_invalid:
+			debug_print("RIVER:     ✗ REJECTED main channel for region %d" % region.region_id)
+			continue
+		
+		debug_print("RIVER:     Main channel: %d nodes" % channel_path.size())
+		
+		# Store main channel
+		main_channels.append({
+			"type": "main_channel",
+			"region": region,
+			"path": channel_path
+		})
+	
+	# PHASE 3: Convert tributaries to renderable format
+	for tributary_data in tributaries:
+		var river_path = tributary_data.path
+		var region = tributary_data.region
+		var river_id = tributary_data.id
+		var trib_source_node = tributary_data.source_node
+		var center_node = region.central_node
+		var hit_coast_early = tributary_data.hit_coast_early
+		
+		# Convert path (nodes) to waypoints (positions) for rendering
+		var waypoints: PackedVector2Array = PackedVector2Array()
+		
+		for i in range(river_path.size()):
+			var path_node = river_path[i]
+			var node_center = path_node.position + (path_node.size / 2.0)
+			
+			# Identify key points that should NOT be randomized
+			var is_first = (i == 0)
+			var is_last = (i == river_path.size() - 1)
+			var is_center = (path_node == center_node)
+			var is_key_point = is_first or is_last or is_center
+			
+			# Special case: if this is the LAST node AND it's coastal (hit coast early), use expanded coast position
+			if is_last and path_node.is_coastal:
+				if expanded_coast_positions.has(path_node.node_index):
+					var expanded_pos = expanded_coast_positions[path_node.node_index]
+					waypoints.append(expanded_pos)
+					debug_print("RIVER:     Tributary extended to expanded coast position")
+				else:
+					waypoints.append(node_center)
+			# Special case: if this is the CENTRAL node, use the pre-calculated randomized center for the region
+			elif is_center:
+				waypoints.append(region.randomized_center_position)
+			# Intermediate points: add randomization (seeded for consistency)
+			elif not is_key_point and river_waypoint_randomness > 0:
+				var max_offset = poisson_min_distance * river_waypoint_randomness
+				# Use deterministic seed based on river_id and node index
+				var rng = RandomNumberGenerator.new()
+				rng.seed = (river_id * 1000 + i)
+				var random_offset = Vector2(
+					rng.randf_range(-max_offset, max_offset),
+					rng.randf_range(-max_offset, max_offset)
+				)
+				waypoints.append(node_center + random_offset)
+			else:
+				waypoints.append(node_center)
+		
+		# Apply curve smoothing to create flowing rivers
+		if river_curve_smoothness > 0:
+			waypoints = smooth_river_waypoints(waypoints)
+		
+		# Apply noise for natural wiggling (use river_id as seed for variation)
+		if river_noise_amplitude > 0:
+			waypoints = apply_river_noise(waypoints, float(river_id) * 10.0)
+		
+		# Calculate tapered widths (source wide, end narrow)
+		var segment_widths: Array[float] = []
+		for i in range(waypoints.size() - 1):
+			var t = float(i) / float(max(1, waypoints.size() - 2))  # 0.0 at source, 1.0 at end
+			var width = lerp(river_source_width, river_end_width, t)
+			segment_widths.append(width)
+		
+		# Store tributary data
+		var river_entry = {
+			"id": river_id,
+			"type": "tributary",
+			"source_node": trib_source_node,
+			"path": river_path,
+			"region": region,
+			"is_lake_river": region.is_landlocked and hit_coast_early == false,
+			# Rendering data
+			"segments": [{
+				"type": "main_channel",
+				"waypoints": waypoints,
+				"width": river_source_width,
+				"segment_widths": segment_widths
+			}],
+			# Lake data (if landlocked and didn't hit coast)
+			"lake_position": waypoints[-1] if (region.is_landlocked and not hit_coast_early and waypoints.size() > 0) else null,
+			"lake_radius_x": lake_radius_x,
+			"lake_radius_y": lake_radius_y
+		}
+		
+		# Debug lake data
+		if region.is_landlocked and not hit_coast_early and waypoints.size() > 0:
+			debug_print("RIVER:     Tributary ends at lake: position=%s, radius_x=%.1f, radius_y=%.1f" % [waypoints[-1], lake_radius_x, lake_radius_y])
+		
+		river_data.append(river_entry)
+		region.rivers.append(river_entry)
+		rivers.append(river_entry)
+		
+		debug_print("RIVER:     ✓ Tributary %d complete: %d nodes, %d waypoints" % [river_id, river_path.size(), waypoints.size()])
+	
+	# PHASE 4: Convert main channels to renderable format
+	for channel_data in main_channels:
+		var channel_path = channel_data.path
+		var region = channel_data.region
+		var center_node = region.central_node
+		
+		# Convert path to waypoints
+		var waypoints: PackedVector2Array = PackedVector2Array()
+		for i in range(channel_path.size()):
+			var path_node = channel_path[i]
+			var node_center = path_node.position + (path_node.size / 2.0)
+			
+			var is_first = (i == 0)
+			var is_last = (i == channel_path.size() - 1)
+			var is_key_point = is_first or is_last
+			
+			# First node should use randomized center position
+			if is_first and path_node == center_node:
+				waypoints.append(region.randomized_center_position)
+			# Last node (coastal) should use expanded coast position
+			elif is_last and path_node.is_coastal:
+				if expanded_coast_positions.has(path_node.node_index):
+					waypoints.append(expanded_coast_positions[path_node.node_index])
+					debug_print("RIVER:     Main channel extended to expanded coast")
+				else:
+					waypoints.append(node_center)
+			# Intermediate points: add randomization (seeded for consistency)
+			elif not is_key_point and river_waypoint_randomness > 0:
+				var max_offset = poisson_min_distance * river_waypoint_randomness
+				# Use deterministic seed based on region_id and node index
+				var rng = RandomNumberGenerator.new()
+				rng.seed = (region.region_id * 10000 + i)
+				var random_offset = Vector2(
+					rng.randf_range(-max_offset, max_offset),
+					rng.randf_range(-max_offset, max_offset)
+				)
+				waypoints.append(node_center + random_offset)
+			else:
+				waypoints.append(node_center)
+		
+		# Apply curve smoothing
+		if river_curve_smoothness > 0:
+			waypoints = smooth_river_waypoints(waypoints)
+		
+		# Apply noise for natural wiggling (use region_id as seed for consistent main channel)
+		if river_noise_amplitude > 0:
+			waypoints = apply_river_noise(waypoints, float(region.region_id) * 100.0)
+		
+		# Calculate tapered widths (maintain end width through main channel)
+		var segment_widths: Array[float] = []
+		for i in range(waypoints.size() - 1):
+			segment_widths.append(river_end_width)  # Main channel stays at end width
+		
+		# Store main channel data
+		var channel_entry = {
+			"id": -1,  # Main channels don't get individual IDs
+			"type": "main_channel",
+			"path": channel_path,
+			"region": region,
+			"is_lake_river": false,
+			# Rendering data
+			"segments": [{
+				"type": "main_channel",
+				"waypoints": waypoints,
+				"width": river_end_width,
+				"segment_widths": segment_widths
+			}],
+			"lake_position": null,
+			"lake_radius_x": 0,
+			"lake_radius_y": 0
+		}
+		
+		river_data.append(channel_entry)
+		region.rivers.append(channel_entry)
+		rivers.append(channel_entry)
+		
+		debug_print("RIVER:     ✓ Main channel complete for region %d: %d nodes, %d waypoints" % [region.region_id, channel_path.size(), waypoints.size()])
+	
+	# Summary
+	debug_print("RIVER: Generated %d tributaries and %d main channels from %d sources" % [tributaries.size(), main_channels.size(), river_sources.size()])
+
+## Helper: Generate smooth Catmull-Rom spline through waypoints
+func smooth_river_waypoints(waypoints: PackedVector2Array) -> PackedVector2Array:
+	if waypoints.size() < 3 or river_curve_smoothness < 1:
+		return waypoints  # Not enough points to smooth or smoothing disabled
+	
+	var smoothed: PackedVector2Array = PackedVector2Array()
+	
+	# Add first point as-is
+	smoothed.append(waypoints[0])
+	
+	# Interpolate between each pair of waypoints
+	for i in range(waypoints.size() - 1):
+		var p0 = waypoints[max(0, i - 1)]          # Previous point (or current if first)
+		var p1 = waypoints[i]                       # Current start point
+		var p2 = waypoints[i + 1]                   # Current end point
+		var p3 = waypoints[min(waypoints.size() - 1, i + 2)]  # Next point (or current end if last)
+		
+		# Generate interpolated points along the curve
+		for j in range(river_curve_smoothness):
+			var t = float(j) / float(river_curve_smoothness)
+			var point = catmull_rom_point(p0, p1, p2, p3, t)
+			smoothed.append(point)
+	
+	# Add final point
+	smoothed.append(waypoints[waypoints.size() - 1])
+	
+	return smoothed
+
+## Helper: Calculate a point on a Catmull-Rom spline
+func catmull_rom_point(p0: Vector2, p1: Vector2, p2: Vector2, p3: Vector2, t: float) -> Vector2:
+	var t2 = t * t
+	var t3 = t2 * t
+	
+	# Catmull-Rom basis functions
+	var v0 = -0.5 * t3 + t2 - 0.5 * t
+	var v1 = 1.5 * t3 - 2.5 * t2 + 1.0
+	var v2 = -1.5 * t3 + 2.0 * t2 + 0.5 * t
+	var v3 = 0.5 * t3 - 0.5 * t2
+	
+	return p0 * v0 + p1 * v1 + p2 * v2 + p3 * v3
+
+## Helper: Apply perpendicular noise to river waypoints for natural wiggling
+func apply_river_noise(waypoints: PackedVector2Array, seed_offset: float = 0.0) -> PackedVector2Array:
+	if waypoints.size() < 2 or river_noise_amplitude <= 0.0:
+		return waypoints  # Not enough points or noise disabled
+	
+	var noisy_waypoints: PackedVector2Array = PackedVector2Array()
+	var accumulated_distance: float = 0.0
+	
+	for i in range(waypoints.size()):
+		var current = waypoints[i]
+		
+		# Keep first and last points fixed to preserve connections
+		if i == 0 or i == waypoints.size() - 1:
+			noisy_waypoints.append(current)
+			if i < waypoints.size() - 1:
+				accumulated_distance += current.distance_to(waypoints[i + 1])
+			continue
+		
+		# Calculate direction perpendicular to river flow
+		var prev = waypoints[i - 1]
+		var next = waypoints[i + 1]
+		var direction = (next - prev).normalized()
+		var perpendicular = Vector2(-direction.y, direction.x)  # Rotate 90 degrees
+		
+		# Calculate noise value using accumulated distance along path
+		var noise_input = accumulated_distance * river_noise_frequency + seed_offset
+		var noise_value = sin(noise_input) * cos(noise_input * 1.7)  # Combine two frequencies for more organic look
+		
+		# Apply noise perpendicular to flow direction
+		var offset = perpendicular * noise_value * river_noise_amplitude
+		noisy_waypoints.append(current + offset)
+		
+		# Accumulate distance for next iteration
+		if i < waypoints.size() - 1:
+			accumulated_distance += current.distance_to(waypoints[i + 1])
+	
+	return noisy_waypoints
+
+## Helper: Find the central coastal node in a region (middle of the coastal array)
+func find_central_coastal_node_in_region(region: Region) -> MapNode2D:
+	if region.coastal_nodes.size() == 0:
+		debug_print("RIVER:       No coastal nodes in region %d" % region.region_id)
+		return null
+	
+	# Filter to only nodes actually in this region
+	var region_coastal_nodes: Array[MapNode2D] = []
+	for coastal_node in region.coastal_nodes:
+		if coastal_node.region_id == region.region_id:
+			region_coastal_nodes.append(coastal_node)
+	
+	if region_coastal_nodes.size() == 0:
+		debug_print("RIVER:       No coastal nodes found in region %d after filtering" % region.region_id)
+		return null
+	
+	# Pick the middle node in the array
+	var middle_index = region_coastal_nodes.size() / 2
+	var central_coastal = region_coastal_nodes[middle_index]
+	
+	debug_print("RIVER:       Selected central coastal node %d (index %d of %d coastal nodes)" % [
+		central_coastal.node_index,
+		middle_index,
+		region_coastal_nodes.size()
+	])
+	
+	return central_coastal
+
+## Intelligent meandering pathfinding: moves toward coast by decreasing interiorness least
+## At each step, picks the neighbor that decreases interiorness the LEAST (stays inland longest)
+func find_meandering_path_to_coast(start_node: MapNode2D, region: Region) -> Array[MapNode2D]:
+	var path: Array[MapNode2D] = [start_node]
+	var current_node = start_node
+	var visited: Dictionary = {start_node.node_index: true}
+	var max_steps = 100  # Safety limit to prevent infinite loops
+	var steps = 0
+	
+	debug_print("RIVER:       Meandering pathfinding from node %d (interiorness: %.2f)" % [current_node.node_index, current_node.graph_interiorness_score])
+	
+	# Special case: if starting node is already coastal, we're done
+	if current_node.is_coastal:
+		debug_print("RIVER:       Start node is already coastal, path complete")
+		return path
+	
+	while not current_node.is_coastal and steps < max_steps:
+		steps += 1
+		
+		# Find all valid neighbors (connected, in same region, not visited, not mountains)
+		var valid_neighbors: Array = []
+		for neighbor in current_node.connections:
+			if neighbor.is_mountain:
+				continue
+			# Allow moving to adjacent regions if headed toward coast
+			# (rivers can flow between regions naturally)
+			if visited.has(neighbor.node_index):
+				continue
+			
+			# Calculate interiorness change
+			var current_interiorness = current_node.graph_interiorness_score
+			var neighbor_interiorness = neighbor.graph_interiorness_score
+			var delta = neighbor_interiorness - current_interiorness
+			
+			# MUST decrease interiorness (move toward coast)
+			# But pick the one that decreases LEAST (meanders)
+			if delta < 0:  # Strict decrease required
+				valid_neighbors.append({
+					"node": neighbor,
+					"delta": delta
+				})
+		
+		if valid_neighbors.size() == 0:
+			# No valid moves that decrease interiorness
+			# As fallback, allow ANY non-visited neighbor (desperation move)
+			debug_print("RIVER:         No decreasing neighbors, trying any neighbor...")
+			for neighbor in current_node.connections:
+				if neighbor.is_mountain:
+					continue
+				if visited.has(neighbor.node_index):
+					continue
+				
+				var delta = neighbor.graph_interiorness_score - current_node.graph_interiorness_score
+				valid_neighbors.append({
+					"node": neighbor,
+					"delta": delta
+				})
+			
+			if valid_neighbors.size() == 0:
+				debug_print("RIVER:       Stuck at node %d (no unvisited neighbors)" % current_node.node_index)
+				break
+		
+		# Sort by delta (ascending) - pick the SMALLEST decrease (stay interior longest)
+		# Or if all increase, pick smallest increase
+		valid_neighbors.sort_custom(func(a, b): return a.delta < b.delta)
+		
+		# Pick the neighbor with smallest change
+		var best_choice = valid_neighbors[0]
+		var next_node = best_choice.node
+		
+		debug_print("RIVER:         Step %d: Node %d → %d (interior: %.2f → %.2f, Δ: %.3f)" % [
+			steps, 
+			current_node.node_index, 
+			next_node.node_index,
+			current_node.graph_interiorness_score,
+			next_node.graph_interiorness_score,
+			best_choice.delta
+		])
+		
+		# Move to next node
+		path.append(next_node)
+		visited[next_node.node_index] = true
+		current_node = next_node
+	
+	if current_node.is_coastal:
+		debug_print("RIVER:       ✓ Reached coast at node %d after %d steps" % [current_node.node_index, steps])
+	else:
+		debug_print("RIVER:       ✗ Failed to reach coast (stopped at node %d after %d steps)" % [current_node.node_index, steps])
+	
+	return path
+
+## Helper: Find nearest coastal node within the same region (LEGACY)
+func find_nearest_coastal_node_in_region(from_node: MapNode2D, region: Region) -> MapNode2D:
+	if region.coastal_nodes.size() == 0:
+		debug_print("RIVER:       No coastal nodes in region %d" % region.region_id)
+		return null
+	
+	var min_distance = INF
+	var nearest = null
+	
+	debug_print("RIVER:       Searching %d coastal nodes in region %d" % [region.coastal_nodes.size(), region.region_id])
+	
+	for coastal_node in region.coastal_nodes:
+		# Verify this coastal node is actually in the same region
+		if coastal_node.region_id != region.region_id:
+			debug_print("RIVER:         Skipping coastal node %d (different region: %d)" % [coastal_node.node_index, coastal_node.region_id])
+			continue
+		
+		var path = astar.get_id_path(from_node.node_index, coastal_node.node_index)
+		var distance = path.size()
+		
+		if distance > 0 and distance < min_distance:
+			min_distance = distance
+			nearest = coastal_node
+			debug_print("RIVER:         Coastal node %d: distance=%d (current best)" % [coastal_node.node_index, distance])
+	
+	if nearest:
+		debug_print("RIVER:       Selected coastal node %d (distance: %d)" % [nearest.node_index, min_distance])
+	else:
+		debug_print("RIVER:       WARNING: No reachable coastal node found in region!")
+	
+	return nearest
+
+## Lake generation for landlocked rivers - Draws filled ellipse
+func trigger_lake_generation_placeholder(region: Region, center_node: MapNode2D):
+	debug_print("RIVER:     Region %d is LANDLOCKED - generating lake ellipse at node %d" % [region.region_id, center_node.node_index])
+
+# ============================================================================
+# LEGACY RIVER GENERATION CODE (NOT USED - Kept for reference)
+# ============================================================================
+# The functions below are from the old river generation system
+# They are NOT used by the new intelligent region-based system
+# Can be removed once new system is fully tested and polished
 
 ## Phase 2: Find target coast node for each source
 func find_target_coast_for_each_source(river_sources: Array) -> Array:
@@ -3924,11 +4817,11 @@ func build_river_segments_recursive(river: Dictionary, all_rivers: Array) -> Arr
 	
 	return segments
 
-## Phase 6: Calculate river width based on tributaries
+## Phase 6: Calculate river width based on tributaries (LEGACY - not used)
 func calculate_river_width(river: Dictionary, all_rivers: Array) -> float:
 	var num_tributaries = count_all_tributaries_recursive(river, all_rivers)
-	var width = river_base_width + (num_tributaries * river_tributary_bonus)
-	return clamp(width, river_base_width, river_max_width)
+	var width = river_source_width + (num_tributaries)
+	return clamp(width, river_end_width, river_source_width)
 
 ## Helper: Count all tributaries recursively
 func count_all_tributaries_recursive(river: Dictionary, all_rivers: Array) -> int:
@@ -4005,18 +4898,68 @@ func generate_quadratic_bezier(start: Vector2, control: Vector2, end: Vector2, n
 
 ## Render river to static map
 func render_river_to_static_map(river: Dictionary):
+	var river_id = river.get("id", -1)
+	var is_lake = river.get("is_lake_river", false)
+	
+	debug_print("RIVER:   Rendering river %d (lake_river: %s)" % [river_id, is_lake])
+	
 	render_segments_to_static_map(river.segments)
+	
+	# Draw lake ellipse if this is a landlocked river
+	if river.get("is_lake_river", false) and river.get("lake_position") != null:
+		var lake_pos = river.lake_position * map_resolution_scale
+		var lake_rad_x = river.get("lake_radius_x", lake_radius_x) * map_resolution_scale
+		var lake_rad_y = river.get("lake_radius_y", lake_radius_y) * map_resolution_scale
+		
+		debug_print("RIVER:     Drawing lake ellipse at %s (rx: %.1f, ry: %.1f)" % [lake_pos, lake_rad_x, lake_rad_y])
+		
+		# Draw filled ellipse by creating concentric ellipse outlines
+		var layers = 8  # Number of concentric layers to fill
+		var segments_added = 0
+		for layer in range(layers):
+			var t = 1.0 - (float(layer) / float(layers))  # 1.0 at edge, 0.0 at center
+			var rad_x = lake_rad_x * t
+			var rad_y = lake_rad_y * t
+			
+			var circle_segments = 24
+			for i in range(circle_segments):
+				var angle1 = (float(i) / circle_segments) * TAU
+				var angle2 = (float(i + 1) / circle_segments) * TAU
+				var point_a = lake_pos + Vector2(cos(angle1) * rad_x, sin(angle1) * rad_y)
+				var point_b = lake_pos + Vector2(cos(angle2) * rad_x, sin(angle2) * rad_y)
+				
+				static_map_renderer.add_river_segment({
+					"pos_a": point_a,
+					"pos_b": point_b,
+					"width": max(lake_rad_x, lake_rad_y) * 0.15,  # Thick lines to fill
+					"color": river_color
+				})
+				segments_added += 1
+		
+		debug_print("RIVER:     Lake rendered with %d segments (%d layers)" % [segments_added, layers])
 
 ## Helper: Render segments recursively
 func render_segments_to_static_map(segments: Array):
 	for segment in segments:
 		if segment.type == "main_channel":
 			var waypoints = segment.waypoints
-			var width = segment.width * map_resolution_scale
+			var segment_widths = segment.get("segment_widths", [])
 			
 			for i in range(waypoints.size() - 1):
 				var point_a = waypoints[i] * map_resolution_scale
 				var point_b = waypoints[i + 1] * map_resolution_scale
+				
+				# Use tapered width if available, otherwise use base width
+				var width = segment.width * map_resolution_scale
+				if segment_widths.size() > i:
+					width = segment_widths[i] * map_resolution_scale
+				
+				# Apply horizontal width multiplier based on segment angle
+				if river_horizontal_width_multiplier != 1.0:
+					var direction = (point_b - point_a).normalized()
+					var horizontal_factor = abs(direction.x)  # 1.0 for horizontal, 0.0 for vertical
+					var width_multiplier = lerp(1.0, river_horizontal_width_multiplier, horizontal_factor)
+					width *= width_multiplier
 				
 				static_map_renderer.add_river_segment({
 					"pos_a": point_a,
