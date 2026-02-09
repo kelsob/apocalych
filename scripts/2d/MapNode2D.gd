@@ -42,6 +42,7 @@ var is_pivot_node: bool = false
 var coastal_loop_id: int = -1
 var boundary_edge_count: int = 0
 var is_mountain: bool = false
+var has_river: bool = false  # Whether this node is part of a river path
 var biome: Biome = null
 
 # Town and road properties

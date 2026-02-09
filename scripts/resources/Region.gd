@@ -21,6 +21,10 @@ var coastal_nodes: Array[MapNode2D] = []
 
 # River information (populated during generation)
 var rivers: Array = []  # River data spawned in this region
+var average_interiorness: float = 0.0  # Average graph_interiorness_score of nodes in region
+
+# Triangle centers for decoration placement
+var triangle_centers: Array[Vector2] = []  # Centers of triangles fully within this region
 
 func _init():
 	pass

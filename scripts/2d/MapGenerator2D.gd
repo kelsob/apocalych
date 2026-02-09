@@ -64,6 +64,14 @@ class_name MapGenerator2D
 @export_group("Road Extensions")
 @export var coastal_extension_count: int = 2  # How many dead-end roads to extend toward coast
 
+@export_group("Road Spawn Rates by Biome")
+@export_range(0.0, 1.0) var road_spawn_rate_forest: float = 0.7  # 70% spawn rate in forests
+@export_range(0.0, 1.0) var road_spawn_rate_plains: float = 1.0  # 100% spawn rate in plains
+@export_range(0.0, 1.0) var road_spawn_rate_swamp: float = 0.0  # 0% spawn rate in swamps
+@export_range(0.0, 1.0) var road_spawn_rate_mountain: float = 0.3  # 30% spawn rate in mountains
+@export_range(0.0, 1.0) var road_spawn_rate_badlands: float = 0.5  # 50% spawn rate in badlands
+@export_range(0.0, 1.0) var road_spawn_rate_ash_plains: float = 0.4  # 40% spawn rate in ash plains
+
 @export_group("Visibility")
 @export var path_visibility_range: int = 0  # How many steps away from party to show paths (0 = only adjacent, 1 = adjacent + their neighbors, etc.)
 
@@ -140,6 +148,20 @@ class_name MapGenerator2D
 @export var river_noise_amplitude: float = 1.5  # How much rivers wiggle perpendicular to their path (0 = none)
 @export var river_noise_frequency: float = 0.3  # How often the wiggle changes (lower = smoother, higher = more chaotic)
 @export var river_waypoint_randomness: float = 0.8  # Random offset for intermediate waypoints (multiplier of poisson_min_distance)
+@export var river_simplify_distance: float = 5.0  # Merge waypoints closer than this distance (0 = disabled)
+
+@export_group("River Spawn Rates by Biome")
+@export_range(0.0, 1.0) var river_spawn_rate_forest: float = 1.0  # 100% spawn rate in forests
+@export_range(0.0, 1.0) var river_spawn_rate_plains: float = 0.8  # 80% spawn rate in plains
+@export_range(0.0, 1.0) var river_spawn_rate_swamp: float = 1.0  # 100% spawn rate in swamps
+@export_range(0.0, 1.0) var river_spawn_rate_mountain: float = 0.5  # 50% spawn rate in mountains
+@export_range(0.0, 1.0) var river_spawn_rate_badlands: float = 0.3  # 30% spawn rate in badlands
+@export_range(0.0, 1.0) var river_spawn_rate_ash_plains: float = 0.0  # 0% spawn rate in ash plains
+
+@export_group("Inter-Region River Connections")
+@export_range(0.0, 1.0) var inter_region_river_chance: float = 0.3  # Chance for non-mountainous borders to spawn connecting rivers
+
+@export_group("General")
 @export var feature_debug_output: bool = false  # Print detailed feature generation info
 
 # Legacy river exports (not used in new intelligent river system)
@@ -255,6 +277,10 @@ var secret_edges: Dictionary = {}  # key: "nodeA_nodeB", value: { is_secret: boo
 # Regions and rivers
 var regions: Dictionary = {}  # region_id -> Region object
 var river_data: Array = []  # Array of river path data for rendering
+
+# Triangle centers for decoration placement
+var border_triangle_centers: Array[Dictionary] = []  # Triangles spanning 2 regions: { center: Vector2, regions: [id1, id2] }
+var triple_border_triangle_centers: Array[Dictionary] = []  # Triangles spanning 3 regions: { center: Vector2, regions: [id1, id2, id3] }
 
 # Shape noise
 var shape_noise_large: FastNoiseLite
@@ -445,6 +471,10 @@ func generate_map():
 	if coastal_extension_count > 0:
 		debug_print("Step 12.795: Extending dead-end roads to coast...")
 		extend_deadends_to_coast()
+	
+	# Step 12.797: Identify and categorize triangle centers for decoration placement
+	debug_print("Step 12.797: Identifying triangle centers...")
+	identify_triangle_centers()
 	
 	# Step 12.8: Identify secret path candidates
 	debug_print("Step 12.8: Identifying secret paths...")
@@ -2035,6 +2065,9 @@ func complete_region_analysis():
 	# Step 0: Calculate global interiorness scores (needed for meandering rivers)
 	calculate_global_interiorness_scores()
 	
+	# Step 0.5: Calculate regional interiorness (average of node scores)
+	calculate_regional_interiorness()
+	
 	# Step 1: Determine which borders are mountainous (now that mountains exist)
 	identify_mountainous_borders()
 	
@@ -2095,6 +2128,27 @@ func calculate_global_interiorness_scores():
 		max_score = max(max_score, node.graph_interiorness_score)
 	
 	debug_print("RIVER:     Interiorness scores: min=%.2f, max=%.2f" % [min_score, max_score])
+
+## Calculate average interiorness for each region
+func calculate_regional_interiorness():
+	debug_print("RIVER:   Calculating regional interiorness...")
+	
+	for region in regions.values():
+		var total_interiorness = 0.0
+		var node_count = 0
+		
+		# Average interiorness of non-mountain nodes
+		for node in region.nodes:
+			if not node.is_mountain:
+				total_interiorness += node.graph_interiorness_score
+				node_count += 1
+		
+		if node_count > 0:
+			region.average_interiorness = total_interiorness / node_count
+		else:
+			region.average_interiorness = 0.0
+		
+		debug_print("RIVER:     Region %d: avg interiorness = %.2f" % [region.region_id, region.average_interiorness])
 
 ## Populate region biomes from nodes (called after assign_biomes)
 func populate_region_biomes():
@@ -3378,25 +3432,49 @@ func generate_roads():
 		debug_print("  No focal points to connect")
 		return
 	
-	# STEP 1: Connect focal points within each region (if multiple)
+	# STEP 1: Connect focal points within each region (if multiple), respecting biome spawn rates
 	debug_print("  Connecting focal points within regions...")
 	for region_id in region_focal_points.keys():
 		var focal_points = region_focal_points[region_id]
+		
+		# Check if this region can have roads based on biome
+		if not regions.has(region_id):
+			continue
+		
+		var region = regions[region_id]
+		var spawn_rate = get_road_spawn_rate_for_biome(region.biome)
+		
+		# Skip if spawn rate is 0 or fails random check
+		if spawn_rate <= 0.0:
+			debug_print("    Region %d (biome: %s) has 0%% road spawn rate, skipping" % [region_id, region.biome.biome_name if region.biome else "NONE"])
+			continue
+		
+		if randf() > spawn_rate:
+			debug_print("    Region %d (biome: %s) failed road spawn rate check" % [region_id, region.biome.biome_name if region.biome else "NONE"])
+			continue
 		
 		if focal_points.size() > 1:
 			# Connect all focal points to each other
 			for i in range(focal_points.size()):
 				for j in range(i + 1, focal_points.size()):
 					_create_road_path(focal_points[i], focal_points[j])
-			debug_print("    Region %d: Connected %d focal points" % [region_id, focal_points.size()])
+			debug_print("    Region %d (biome: %s, spawn rate: %.0f%%): Connected %d focal points" % [region_id, region.biome.biome_name if region.biome else "NONE", spawn_rate * 100, focal_points.size()])
 	
-	# STEP 2: Connect focal points across adjacent regions
+	# STEP 2: Connect focal points across adjacent regions (respecting biome spawn rates)
 	debug_print("  Connecting focal points across regions...")
 	var region_pairs: Dictionary = {}
 	var connections_made = 0
 	
 	for region_a_id in region_focal_points.keys():
 		var focal_points_a = region_focal_points[region_a_id]
+		
+		# Check if region A can have roads
+		if not regions.has(region_a_id):
+			continue
+		var region_a = regions[region_a_id]
+		var spawn_rate_a = get_road_spawn_rate_for_biome(region_a.biome)
+		if spawn_rate_a <= 0.0:
+			continue
 		
 		# Find all adjacent regions
 		var adjacent_regions = _find_adjacent_regions(region_a_id)
@@ -3408,10 +3486,24 @@ func generate_roads():
 				continue
 			region_pairs[pair_key] = true
 			
+			# Check if region B can have roads
+			if not regions.has(region_b_id):
+				continue
+			var region_b = regions[region_b_id]
+			var spawn_rate_b = get_road_spawn_rate_for_biome(region_b.biome)
+			if spawn_rate_b <= 0.0:
+				continue
+			
 			# Get focal points for region B
 			if not region_focal_points.has(region_b_id):
 				continue
 			var focal_points_b = region_focal_points[region_b_id]
+			
+			# Calculate connection probability (average of both regions' spawn rates)
+			var connection_rate = (spawn_rate_a + spawn_rate_b) / 2.0
+			if randf() > connection_rate:
+				debug_print("    Skipped connection between Region %d and %d (failed spawn rate check)" % [region_a_id, region_b_id])
+				continue
 			
 			# Connect EVERY focal point in A to EVERY focal point in B
 			for focal_a in focal_points_a:
@@ -3524,6 +3616,27 @@ func _find_adjacent_regions(region_id: int) -> Array[int]:
 	
 	return adjacent
 
+## Helper: Get road spawn rate for a given biome
+func get_road_spawn_rate_for_biome(biome: Biome) -> float:
+	if biome == null:
+		return 0.5  # Default 50% for regions without biome
+	
+	# Match biome to spawn rate
+	if biome == biome_forest:
+		return road_spawn_rate_forest
+	elif biome == biome_plains:
+		return road_spawn_rate_plains
+	elif biome == biome_swamp:
+		return road_spawn_rate_swamp
+	elif biome == biome_mountain:
+		return road_spawn_rate_mountain
+	elif biome == biome_badlands:
+		return road_spawn_rate_badlands
+	elif biome == biome_ash_plains:
+		return road_spawn_rate_ash_plains
+	else:
+		return 0.5  # Unknown biome, default 50%
+
 ## Create a consistent key for a region pair (for tracking processed pairs)
 func _make_region_pair_key(region_a: int, region_b: int) -> String:
 	# Always put smaller ID first so "1_2" == "2_1"
@@ -3582,6 +3695,97 @@ func _make_edge_key(index_a: int, index_b: int) -> String:
 func is_road(node_a: MapNode2D, node_b: MapNode2D) -> bool:
 	var edge_key = _make_edge_key(node_a.node_index, node_b.node_index)
 	return road_edges.has(edge_key)
+
+
+# ============================================================================
+# STEP 12.797: TRIANGLE CENTER IDENTIFICATION
+# ============================================================================
+
+## Identify all triangles in the graph and categorize by region ownership
+func identify_triangle_centers():
+	debug_print("TRIANGLES: === IDENTIFYING TRIANGLE CENTERS ===")
+	
+	# Clear existing data
+	border_triangle_centers.clear()
+	triple_border_triangle_centers.clear()
+	for region in regions.values():
+		region.triangle_centers.clear()
+	
+	var triangles_found: Dictionary = {}  # Track found triangles to avoid duplicates
+	var internal_count = 0
+	var border_count = 0
+	var triple_border_count = 0
+	
+	# For each node, check all pairs of its neighbors
+	for node in map_nodes:
+		if node.connections.size() < 2:
+			continue  # Need at least 2 neighbors to form a triangle
+		
+		# Check all pairs of neighbors
+		for i in range(node.connections.size()):
+			for j in range(i + 1, node.connections.size()):
+				var neighbor_a = node.connections[i]
+				var neighbor_b = node.connections[j]
+				
+				# Check if neighbor_a and neighbor_b are connected (forming a triangle)
+				if neighbor_a.is_connected_to(neighbor_b):
+					# Found a triangle: node, neighbor_a, neighbor_b
+					# Create sorted key to avoid duplicates
+					var indices = [node.node_index, neighbor_a.node_index, neighbor_b.node_index]
+					indices.sort()
+					var triangle_key = "%d_%d_%d" % [indices[0], indices[1], indices[2]]
+					
+					if triangles_found.has(triangle_key):
+						continue  # Already processed this triangle
+					triangles_found[triangle_key] = true
+					
+					# Calculate center of triangle
+					var center = (node.position + neighbor_a.position + neighbor_b.position) / 3.0
+					# Add half node size to get actual center in world space
+					var node_offset = node.size / 2.0
+					center += node_offset
+					
+					# Categorize by regions
+					var region_ids = [node.region_id, neighbor_a.region_id, neighbor_b.region_id]
+					var unique_regions: Array[int] = []
+					for rid in region_ids:
+						if rid >= 0 and rid not in unique_regions:
+							unique_regions.append(rid)
+					
+					if unique_regions.size() == 1:
+						# Internal triangle - belongs to single region
+						if regions.has(unique_regions[0]):
+							regions[unique_regions[0]].triangle_centers.append(center)
+							internal_count += 1
+					elif unique_regions.size() == 2:
+						# Border triangle - spans 2 regions
+						unique_regions.sort()
+						border_triangle_centers.append({
+							"center": center,
+							"regions": unique_regions
+						})
+						border_count += 1
+					elif unique_regions.size() == 3:
+						# Triple border triangle - spans 3 regions
+						unique_regions.sort()
+						triple_border_triangle_centers.append({
+							"center": center,
+							"regions": unique_regions
+						})
+						triple_border_count += 1
+	
+	# Debug output
+	debug_print("TRIANGLES: Found %d total triangles" % triangles_found.size())
+	debug_print("TRIANGLES:   %d internal (single region)" % internal_count)
+	debug_print("TRIANGLES:   %d border (2 regions)" % border_count)
+	debug_print("TRIANGLES:   %d triple-border (3 regions)" % triple_border_count)
+	
+	# Per-region breakdown
+	for region in regions.values():
+		if region.triangle_centers.size() > 0:
+			debug_print("TRIANGLES:   Region %d: %d internal triangles" % [region.region_id, region.triangle_centers.size()])
+	
+	debug_print("TRIANGLES: === TRIANGLE IDENTIFICATION COMPLETE ===")
 
 
 # ============================================================================
@@ -3878,32 +4082,292 @@ func generate_rivers():
 	var river_sources = identify_river_sources_intelligent()
 	debug_print("RIVER:   Identified %d river sources" % river_sources.size())
 	
-	if river_sources.size() == 0:
-		debug_print("RIVER:   No river sources found")
+	# Phase 1.5: Identify inter-region connections (non-mountainous borders)
+	var inter_region_connections = identify_inter_region_connections()
+	debug_print("RIVER:   Identified %d inter-region connections" % inter_region_connections.size())
+	
+	if river_sources.size() == 0 and inter_region_connections.size() == 0:
+		debug_print("RIVER:   No river sources or connections found")
 		return
 	
-	# Phase 2: Generate river paths
+	# Phase 2: Generate river paths from mountain sources
 	generate_river_paths(river_sources)
 	
-	# Count tributaries, main channels, and lakes
+	# Phase 3: Generate inter-region connector rivers
+	generate_inter_region_rivers(inter_region_connections)
+	
+	# Phase 4: Mark all nodes that are part of river paths
+	mark_river_nodes()
+	
+	# Count tributaries, main channels, connectors, and lakes
 	var tributary_count = 0
 	var main_channel_count = 0
+	var connector_count = 0
 	var lake_count = 0
 	for river in rivers:
-		if river.get("type", "") == "main_channel":
+		var river_type = river.get("type", "")
+		if river_type == "main_channel":
 			main_channel_count += 1
+		elif river_type == "inter_region_connector":
+			connector_count += 1
 		else:  # tributary
 			tributary_count += 1
 			if river.get("is_lake_river", false):
 				lake_count += 1
 	
 	debug_print("RIVER: === RIVER GENERATION COMPLETE ===")
-	debug_print("RIVER:   %d tributaries, %d main channels, %d lakes" % [tributary_count, main_channel_count, lake_count])
+	debug_print("RIVER:   %d tributaries, %d main channels, %d inter-region connectors, %d lakes" % [tributary_count, main_channel_count, connector_count, lake_count])
+
+## Mark all nodes that are part of river paths
+func mark_river_nodes():
+	debug_print("RIVER:   Marking nodes with rivers...")
+	
+	# First, clear all river flags
+	for node in map_nodes:
+		node.has_river = false
+	
+	var river_node_count = 0
+	
+	# Mark all nodes in river paths
+	for river in rivers:
+		if river.has("path") and river.path is Array:
+			for path_node in river.path:
+				if path_node is MapNode2D and not path_node.has_river:
+					path_node.has_river = true
+					river_node_count += 1
+	
+	debug_print("RIVER:     Marked %d nodes as river nodes" % river_node_count)
+
+## Helper: Get river spawn rate for a given biome
+func get_river_spawn_rate_for_biome(biome: Biome) -> float:
+	if biome == null:
+		return 0.5  # Default 50% for regions without biome
+	
+	# Match biome to spawn rate
+	if biome == biome_forest:
+		return river_spawn_rate_forest
+	elif biome == biome_plains:
+		return river_spawn_rate_plains
+	elif biome == biome_swamp:
+		return river_spawn_rate_swamp
+	elif biome == biome_mountain:
+		return river_spawn_rate_mountain
+	elif biome == biome_badlands:
+		return river_spawn_rate_badlands
+	elif biome == biome_ash_plains:
+		return river_spawn_rate_ash_plains
+	else:
+		return 0.5  # Unknown biome, default 50%
+
+## Identify inter-region river connections (non-mountainous borders)
+func identify_inter_region_connections() -> Array:
+	var connections = []
+	var processed_pairs: Dictionary = {}  # Track which region pairs we've already checked
+	
+	debug_print("RIVER:   Analyzing non-mountainous borders for inter-region connections...")
+	
+	for region_a in regions.values():
+		# Skip if region A can't spawn rivers
+		var spawn_rate_a = get_river_spawn_rate_for_biome(region_a.biome)
+		if spawn_rate_a <= 0.0:
+			continue
+		
+		for adjacent_id in region_a.adjacent_regions:
+			# Create unique pair key (sorted so A-B and B-A are the same)
+			var pair_key = ""
+			if region_a.region_id < adjacent_id:
+				pair_key = "%d_%d" % [region_a.region_id, adjacent_id]
+			else:
+				pair_key = "%d_%d" % [adjacent_id, region_a.region_id]
+			
+			# Skip if already processed this pair
+			if processed_pairs.has(pair_key):
+				continue
+			processed_pairs[pair_key] = true
+			
+			var region_b = regions[adjacent_id]
+			
+			# Skip if region B can't spawn rivers
+			var spawn_rate_b = get_river_spawn_rate_for_biome(region_b.biome)
+			if spawn_rate_b <= 0.0:
+				continue
+			
+			# Check if border is NON-mountainous
+			if region_a.is_border_mountainous(adjacent_id):
+				continue  # Skip mountainous borders
+			
+			# Roll chance for connection
+			if randf() > inter_region_river_chance:
+				continue
+			
+			# Determine which region is more interior (higher interiorness flows to lower)
+			var source_region: Region
+			var target_region: Region
+			
+			if region_a.average_interiorness > region_b.average_interiorness:
+				source_region = region_a
+				target_region = region_b
+			else:
+				source_region = region_b
+				target_region = region_a
+			
+			# Get border nodes
+			var border_nodes = region_a.get_border_with_region(adjacent_id)
+			
+			# Store connection data
+			connections.append({
+				"source_region": source_region,
+				"target_region": target_region,
+				"border_nodes": border_nodes
+			})
+			
+			debug_print("RIVER:     Connection: Region %d (interior %.2f) -> Region %d (interior %.2f)" % [
+				source_region.region_id,
+				source_region.average_interiorness,
+				target_region.region_id,
+				target_region.average_interiorness
+			])
+	
+	return connections
+
+## Generate inter-region connector rivers
+func generate_inter_region_rivers(connections: Array):
+	if connections.size() == 0:
+		return
+	
+	debug_print("RIVER:   Generating %d inter-region connector rivers..." % connections.size())
+	
+	for connection in connections:
+		var source_region: Region = connection.source_region
+		var target_region: Region = connection.target_region
+		var border_nodes: Array = connection.border_nodes
+		
+		# Find best border crossing point (non-mountain, preferably central)
+		var crossing_node = find_best_border_crossing(border_nodes)
+		
+		if crossing_node == null:
+			debug_print("RIVER:     No valid crossing found for connection %d -> %d" % [source_region.region_id, target_region.region_id])
+			continue
+		
+		# Path from source center to crossing point
+		var path_to_border = astar.get_id_path(source_region.central_node.node_index, crossing_node.node_index)
+		
+		# Path from crossing point to target center
+		var path_from_border = astar.get_id_path(crossing_node.node_index, target_region.central_node.node_index)
+		
+		if path_to_border.size() == 0 or path_from_border.size() == 0:
+			debug_print("RIVER:     No valid path for connection %d -> %d" % [source_region.region_id, target_region.region_id])
+			continue
+		
+		# Combine paths (avoid duplicate crossing node)
+		var full_path: Array = []
+		for node_idx in path_to_border:
+			full_path.append(map_nodes[node_idx])
+		for i in range(1, path_from_border.size()):  # Skip first (duplicate crossing)
+			full_path.append(map_nodes[path_from_border[i]])
+		
+		# Convert to waypoints
+		var waypoints: PackedVector2Array = PackedVector2Array()
+		for i in range(full_path.size()):
+			var path_node = full_path[i]
+			var node_center = path_node.position + (path_node.size / 2.0)
+			
+			var is_first = (i == 0)
+			var is_last = (i == full_path.size() - 1)
+			
+			# First node: use source region's randomized center
+			if is_first:
+				waypoints.append(source_region.randomized_center_position)
+			# Last node: use target region's randomized center
+			elif is_last:
+				waypoints.append(target_region.randomized_center_position)
+			# Add slight randomization to intermediate points
+			elif river_waypoint_randomness > 0:
+				var max_offset = poisson_min_distance * river_waypoint_randomness
+				var rng = RandomNumberGenerator.new()
+				rng.seed = (source_region.region_id * 10000 + target_region.region_id * 100 + i)
+				var random_offset = Vector2(
+					rng.randf_range(-max_offset, max_offset),
+					rng.randf_range(-max_offset, max_offset)
+				)
+				waypoints.append(node_center + random_offset)
+			else:
+				waypoints.append(node_center)
+		
+		# Apply simplification passes
+		if river_simplify_distance > 0:
+			waypoints = simplify_river_waypoints(waypoints)
+		waypoints = simplify_river_path_shortcuts(waypoints)
+		
+		# Add curvature to short rivers
+		if waypoints.size() == 2:
+			waypoints = add_curvature_to_short_rivers(waypoints, source_region.region_id * 100 + target_region.region_id)
+		
+		# Apply smoothing
+		if river_curve_smoothness > 0:
+			waypoints = smooth_river_waypoints(waypoints)
+		
+		# Apply noise
+		if river_noise_amplitude > 0:
+			waypoints = apply_river_noise(waypoints, float(source_region.region_id + target_region.region_id) * 50.0)
+		
+		# Calculate widths (constant width for connectors)
+		var segment_widths: Array[float] = []
+		for i in range(waypoints.size() - 1):
+			segment_widths.append(river_end_width)  # Use end width (thinner)
+		
+		# Store river data
+		var river_entry = {
+			"id": river_id_counter,
+			"type": "inter_region_connector",
+			"source_region": source_region,
+			"target_region": target_region,
+			"path": full_path,
+			"crossing_node": crossing_node,
+			"is_lake_river": false,
+			# Rendering data
+			"segments": [{
+				"type": "inter_region_connector",
+				"waypoints": waypoints,
+				"width": river_end_width,
+				"segment_widths": segment_widths
+			}],
+			"lake_position": null,
+			"lake_radius_x": 0,
+			"lake_radius_y": 0
+		}
+		
+		river_data.append(river_entry)
+		source_region.rivers.append(river_entry)
+		rivers.append(river_entry)
+		river_id_counter += 1
+		
+		debug_print("RIVER:     ✓ Inter-region connector %d: Region %d -> %d (%d waypoints)" % [
+			river_entry.id,
+			source_region.region_id,
+			target_region.region_id,
+			waypoints.size()
+		])
+
+## Helper: Find best border crossing point for inter-region rivers
+func find_best_border_crossing(border_nodes: Array) -> MapNode2D:
+	# Filter to non-mountain nodes
+	var valid_nodes: Array[MapNode2D] = []
+	for node in border_nodes:
+		if not node.is_mountain:
+			valid_nodes.append(node)
+	
+	if valid_nodes.size() == 0:
+		return null  # No valid crossing point
+	
+	# Pick middle node (spatially central)
+	return valid_nodes[valid_nodes.size() / 2]
 
 ## Phase 1: Identify river sources - NEW INTELLIGENT SYSTEM
-## One river per mountainous border
+## One river per mountainous border (with biome-based spawn rates)
 func identify_river_sources_intelligent() -> Array:
 	var sources = []
+	var used_sources: Dictionary = {}  # Track (mountain_node, target_region) pairs to prevent duplicates
 	
 	debug_print("RIVER:   Analyzing mountainous borders for river sources...")
 	
@@ -3913,11 +4377,24 @@ func identify_river_sources_intelligent() -> Array:
 		if mountainous_border_ids.size() == 0:
 			continue
 		
-		var landlocked_str = " (LANDLOCKED)" if region.is_landlocked else ""
-		debug_print("RIVER:     Region %d has %d mountainous borders%s" % [region.region_id, mountainous_border_ids.size(), landlocked_str])
+		# Check biome and get spawn rate
+		var spawn_rate = get_river_spawn_rate_for_biome(region.biome)
 		
-		# For each mountainous border, spawn exactly 1 river (100% spawn rate for now)
+		# Skip this region entirely if spawn rate is 0
+		if spawn_rate <= 0.0:
+			debug_print("RIVER:     Region %d (biome: %s) has 0%% river spawn rate, skipping" % [region.region_id, region.biome.biome_name if region.biome else "NONE"])
+			continue
+		
+		var landlocked_str = " (LANDLOCKED)" if region.is_landlocked else ""
+		debug_print("RIVER:     Region %d has %d mountainous borders%s (biome: %s, spawn rate: %.0f%%)" % [region.region_id, mountainous_border_ids.size(), landlocked_str, region.biome.biome_name if region.biome else "NONE", spawn_rate * 100])
+		
+		# For each mountainous border, potentially spawn a river based on biome spawn rate
 		for adjacent_id in mountainous_border_ids:
+			# Random chance check based on biome spawn rate
+			if randf() > spawn_rate:
+				debug_print("RIVER:       Skipping border with region %d (failed spawn rate check)" % adjacent_id)
+				continue
+			
 			var border_nodes_array = region.get_border_with_region(adjacent_id)
 			
 			# Get only the mountain nodes on this border
@@ -3930,8 +4407,27 @@ func identify_river_sources_intelligent() -> Array:
 				debug_print("RIVER:       No mountain nodes found on border with region %d (this shouldn't happen!)" % adjacent_id)
 				continue
 			
-			# Pick a random mountain node as the river source
-			var source_node = mountain_border_nodes[randi() % mountain_border_nodes.size()]
+			# Pick a random mountain node as the river source, but ensure uniqueness
+			var source_node: MapNode2D = null
+			var attempts = 0
+			var max_attempts = mountain_border_nodes.size() * 2
+			
+			while attempts < max_attempts:
+				var candidate = mountain_border_nodes[randi() % mountain_border_nodes.size()]
+				var key = "%d_%d" % [candidate.node_index, region.region_id]
+				
+				# Check if this (mountain, region) pair has already been used
+				if not used_sources.has(key):
+					source_node = candidate
+					used_sources[key] = true
+					break
+				
+				attempts += 1
+			
+			# If we couldn't find a unique source, skip this river
+			if source_node == null:
+				debug_print("RIVER:       Could not find unique mountain source on border with region %d (all mountains already used)" % adjacent_id)
+				continue
 			
 			sources.append({
 				"source_node": source_node,
@@ -4121,6 +4617,17 @@ func generate_river_paths(river_sources: Array):
 			else:
 				waypoints.append(node_center)
 		
+		# Simplify path by merging nearby waypoints (before smoothing)
+		if river_simplify_distance > 0:
+			waypoints = simplify_river_waypoints(waypoints)
+		
+		# Simplify path by removing zigzags (shortcut to closer downstream points)
+		waypoints = simplify_river_path_shortcuts(waypoints)
+		
+		# Add curvature to short rivers (2 waypoints only)
+		if waypoints.size() == 2:
+			waypoints = add_curvature_to_short_rivers(waypoints, river_id)
+		
 		# Apply curve smoothing to create flowing rivers
 		if river_curve_smoothness > 0:
 			waypoints = smooth_river_waypoints(waypoints)
@@ -4207,6 +4714,17 @@ func generate_river_paths(river_sources: Array):
 			else:
 				waypoints.append(node_center)
 		
+		# Simplify path by merging nearby waypoints (before smoothing)
+		if river_simplify_distance > 0:
+			waypoints = simplify_river_waypoints(waypoints)
+		
+		# Simplify path by removing zigzags (shortcut to closer downstream points)
+		waypoints = simplify_river_path_shortcuts(waypoints)
+		
+		# Add curvature to short rivers (2 waypoints only)
+		if waypoints.size() == 2:
+			waypoints = add_curvature_to_short_rivers(waypoints, region.region_id * 1000)
+		
 		# Apply curve smoothing
 		if river_curve_smoothness > 0:
 			waypoints = smooth_river_waypoints(waypoints)
@@ -4247,6 +4765,122 @@ func generate_river_paths(river_sources: Array):
 	
 	# Summary
 	debug_print("RIVER: Generated %d tributaries and %d main channels from %d sources" % [tributaries.size(), main_channels.size(), river_sources.size()])
+
+## Helper: Simplify river waypoints by merging nearby points
+func simplify_river_waypoints(waypoints: PackedVector2Array) -> PackedVector2Array:
+	if waypoints.size() < 2 or river_simplify_distance <= 0.0:
+		return waypoints  # Not enough points or simplification disabled
+	
+	var simplified: PackedVector2Array = PackedVector2Array()
+	var threshold_sq = river_simplify_distance * river_simplify_distance  # Use squared distance for faster comparison
+	
+	# Always keep the first point
+	simplified.append(waypoints[0])
+	
+	# Process remaining points
+	for i in range(1, waypoints.size()):
+		var current_point = waypoints[i]
+		var should_add = true
+		
+		# Check if this point is too close to the last added point
+		if simplified.size() > 0:
+			var last_point = simplified[simplified.size() - 1]
+			var dist_sq = current_point.distance_squared_to(last_point)
+			
+			if dist_sq < threshold_sq:
+				# Too close - skip this point (or merge it with the last one)
+				should_add = false
+				
+				# Special handling: if this is the last point, we still want to keep it
+				# So we replace the previous point with an average
+				if i == waypoints.size() - 1:
+					var merged = (last_point + current_point) / 2.0
+					simplified[simplified.size() - 1] = merged
+		
+		if should_add:
+			simplified.append(current_point)
+	
+	return simplified
+
+## Helper: Simplify river path by removing unnecessary zigzags (shortcut to closer downstream points)
+func simplify_river_path_shortcuts(waypoints: PackedVector2Array) -> PackedVector2Array:
+	if waypoints.size() < 3:
+		return waypoints  # Need at least 3 points to create shortcuts
+	
+	var simplified: PackedVector2Array = PackedVector2Array()
+	var current_idx = 0
+	
+	while current_idx < waypoints.size():
+		var current_point = waypoints[current_idx]
+		simplified.append(current_point)
+		
+		# If this is the last point, we're done
+		if current_idx >= waypoints.size() - 1:
+			break
+		
+		# Check if any point further down the path is closer than the immediate next point
+		var next_idx = current_idx + 1
+		var next_point = waypoints[next_idx]
+		var next_dist = current_point.distance_to(next_point)
+		
+		var best_jump_idx = next_idx
+		var best_jump_dist = next_dist
+		
+		# Check all points at least 2 positions ahead (skip immediate neighbor)
+		for check_idx in range(current_idx + 2, waypoints.size()):
+			var check_point = waypoints[check_idx]
+			var check_dist = current_point.distance_to(check_point)
+			
+			# If this point is closer, it's a potential shortcut
+			if check_dist < best_jump_dist:
+				best_jump_idx = check_idx
+				best_jump_dist = check_dist
+		
+		# Jump to the closest reachable point (could be immediate neighbor or a shortcut)
+		current_idx = best_jump_idx
+	
+	return simplified
+
+## Helper: Add curvature to short river segments (2 waypoints) by inserting intermediate points
+func add_curvature_to_short_rivers(waypoints: PackedVector2Array, seed: int = 0) -> PackedVector2Array:
+	if waypoints.size() != 2:
+		return waypoints  # Only process rivers with exactly 2 waypoints
+	
+	var start = waypoints[0]
+	var end = waypoints[1]
+	var curved: PackedVector2Array = PackedVector2Array()
+	
+	# Calculate direction and perpendicular
+	var direction = (end - start).normalized()
+	var perpendicular = Vector2(-direction.y, direction.x)  # Rotate 90 degrees
+	var distance = start.distance_to(end)
+	
+	# Use seed for consistent randomization
+	var rng = RandomNumberGenerator.new()
+	rng.seed = seed
+	
+	# Add start point
+	curved.append(start)
+	
+	# Add 1-2 intermediate points with perpendicular offset for curvature
+	var num_intermediate = 2  # Add 2 points for a nice curve
+	
+	for i in range(1, num_intermediate + 1):
+		var t = float(i) / float(num_intermediate + 1)
+		var midpoint = start.lerp(end, t)
+		
+		# Add perpendicular offset (largest in the middle, tapering toward ends)
+		var curve_strength = sin(t * PI)  # 0 at ends, 1.0 at middle
+		var max_offset = distance * 0.15  # 15% of river length
+		var random_side = rng.randf_range(-1.0, 1.0)  # Random direction
+		var offset = perpendicular * random_side * max_offset * curve_strength
+		
+		curved.append(midpoint + offset)
+	
+	# Add end point
+	curved.append(end)
+	
+	return curved
 
 ## Helper: Generate smooth Catmull-Rom spline through waypoints
 func smooth_river_waypoints(waypoints: PackedVector2Array) -> PackedVector2Array:
