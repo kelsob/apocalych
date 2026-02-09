@@ -2813,22 +2813,53 @@ func generate_map_features():
 	
 	# Generate features for each biome type
 	var feature_counts: Dictionary = {}
+	var removed_counts: Dictionary = {}
 	for biome_name in nodes_by_biome:
 		var biome_nodes = nodes_by_biome[biome_name]
 		debug_print("  Processing biome '%s' with %d nodes" % [biome_name, biome_nodes.size()])
 		var features = generate_features_for_biome(biome_name, biome_nodes, landmass_polygon, connection_lines)
-		map_features.append_array(features)
-		feature_counts[biome_name] = features.size()
-		debug_print("  Biome '%s' generated %d features" % [biome_name, features.size()])
+		
+		# Filter out features that are outside the landmass bounds
+		var valid_features = []
+		var removed_count = 0
+		for feature in features:
+			if feature.has("data") and feature.data.has("position"):
+				var pos = feature.data.position
+				if is_point_in_landmass(pos, landmass_polygon):
+					valid_features.append(feature)
+				else:
+					removed_count += 1
+			else:
+				# Keep features without position data (shouldn't happen, but safe)
+				valid_features.append(feature)
+		
+		map_features.append_array(valid_features)
+		feature_counts[biome_name] = valid_features.size()
+		removed_counts[biome_name] = removed_count
+		
+		if removed_count > 0:
+			debug_print("  Biome '%s' generated %d features (%d removed outside landmass)" % [biome_name, valid_features.size(), removed_count])
+		else:
+			debug_print("  Biome '%s' generated %d features" % [biome_name, valid_features.size()])
 	
 	# Print summary
+	var total_removed = 0
+	for biome_name in removed_counts:
+		total_removed += removed_counts[biome_name]
+	
 	if feature_debug_output:
 		debug_print("  Feature generation complete:")
 		for biome_name in feature_counts:
 			debug_print("    %s: %d features" % [biome_name, feature_counts[biome_name]])
-		debug_print("  Total features: %d" % map_features.size())
+		if total_removed > 0:
+			debug_print("  Total features: %d (%d removed outside landmass)" % [map_features.size(), total_removed])
+		else:
+			debug_print("  Total features: %d" % map_features.size())
 	else:
-		debug_print("  Generated %d total features" % map_features.size())
+		if total_removed > 0:
+			debug_print("  Generated %d total features (%d removed outside landmass)" % [map_features.size(), total_removed])
+		else:
+			debug_print("  Generated %d total features" % map_features.size())
 
 ## Check if a position is too close to any connection line (path)
 func is_too_close_to_path(pos: Vector2, connection_lines: Array, min_distance: float = 5.0) -> bool:
@@ -2840,6 +2871,14 @@ func is_too_close_to_path(pos: Vector2, connection_lines: Array, min_distance: f
 		if distance < min_distance:
 			return true
 	return false
+
+## Check if a point is inside the landmass polygon
+func is_point_in_landmass(point: Vector2, landmass_polygon: PackedVector2Array) -> bool:
+	if landmass_polygon.size() < 3:
+		return false  # Invalid polygon
+	
+	# Use Godot's built-in polygon point test
+	return Geometry2D.is_point_in_polygon(point, landmass_polygon)
 
 ## Generate features for a specific biome type
 func generate_features_for_biome(biome_name: String, biome_nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
