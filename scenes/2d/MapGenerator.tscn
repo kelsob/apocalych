@@ -56,7 +56,7 @@ river_noise_amplitude = 2.5
 river_noise_frequency = 10.0
 river_waypoint_randomness = 1.0
 river_simplify_distance = 50.0
-inter_region_river_chance = 1.0
+inter_region_river_chance = 0.0
 enable_debug_output = true
 party_travel_speed = 50.0
 
