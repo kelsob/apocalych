@@ -4835,28 +4835,29 @@ func generate_landlocked_rivers_and_lake(region: Region, source_list: Array):
 		if not path_data.reaches_center and path_data.path.size() >= 2:
 			var last_node: MapNode2D = path_data.path[path_data.path.size() - 1]
 			junction_node_indices[last_node.node_index] = true
-	# Lake position: where the primary river will actually end (after smooth/noise). Use this so primary and lake match.
-	var lake_position_vec: Vector2 = center_node.position + (center_node.size / 2.0)
-	if region.randomized_center_position != Vector2.ZERO:
-		lake_position_vec = region.randomized_center_position
-	# Primary force-connects to lake position so the river ends where we draw the lake
-	var lake_adjusted: Dictionary = { center_node.node_index: lake_position_vec }
-	# Build primary first (the one path that reaches center), then tributaries with adjusted junction positions
+	
+	# Build primary first (the one path that reaches center)
 	var primary_entry = null
 	var primary_path_data = null
 	for path_data in paths:
 		if path_data.reaches_center and path_data.path.size() >= 2:
 			primary_path_data = path_data
 			break
+	
 	if primary_path_data != null:
 		var path_nodes: Array = primary_path_data.path
 		var river_id: int = primary_path_data.source_data.id
-		primary_entry = _build_river_entry_from_path(path_nodes, river_id, region, false, true, junction_node_indices, lake_adjusted)
+		
+		# Build river with normal processing (randomization, smoothing, noise, etc.)
+		primary_entry = _build_river_entry_from_path(path_nodes, river_id, region, false, true, junction_node_indices, {})
 		primary_entry.is_lake_river = true
-		# Lake spawns at the primary's actual endpoint (last waypoint after processing)
-		primary_entry.lake_position = primary_entry.segments[0].waypoints[primary_entry.segments[0].waypoints.size() - 1]
+		
+		# SIMPLE: Lake spawns exactly at the tip of the river (last waypoint after all processing)
+		var final_waypoints = primary_entry.segments[0].waypoints
+		primary_entry.lake_position = final_waypoints[final_waypoints.size() - 1]
 		primary_entry.lake_radius_x = lake_radius_x
 		primary_entry.lake_radius_y = lake_radius_y
+		
 		river_data.append(primary_entry)
 		region.rivers.append(primary_entry)
 		rivers.append(primary_entry)
@@ -4898,11 +4899,14 @@ func generate_landlocked_rivers_and_lake(region: Region, source_list: Array):
 			var entry = _build_river_entry_from_path(fallback_path, fallback_id, region, false, reaches_center, {}, {})
 			entry.is_lake_river = reaches_center
 			if reaches_center:
-				entry.lake_position = lake_position_vec
+				# SIMPLE: Lake at the tip of the river
+				var final_waypoints = entry.segments[0].waypoints
+				entry.lake_position = final_waypoints[final_waypoints.size() - 1]
 				entry.lake_radius_x = lake_radius_x
 				entry.lake_radius_y = lake_radius_y
 			river_data.append(entry)
 			region.rivers.append(entry)
+			rivers.append(entry)
 			debug_print("RIVER:     ✓ Landlocked river %d: %d nodes" % [fallback_id, fallback_path.size()])
 
 ## Build a river entry (path -> waypoints, segments) for the global rivers list.
