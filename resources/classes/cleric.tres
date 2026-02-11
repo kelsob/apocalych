@@ -1,6 +1,12 @@
-[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://ch3xq313hycom"]
+[gd_resource type="Resource" script_class="Class" load_steps=8 format=3 uid="uid://ch3xq313hycom"]
 
 [ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1_rmvkm"]
+[ext_resource type="Resource" path="res://resources/abilities/cleric/heal.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/cleric/holy_smite.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/cleric/prayer.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/cleric/haste.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/abilities/cleric/silence.tres" id="6"]
 
 [resource]
 script = ExtResource("1_class")
@@ -15,3 +21,4 @@ stat_modifiers = {
 "strength": 0,
 "wisdom": 3
 }
+abilities = Array[ExtResource("1_rmvkm")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

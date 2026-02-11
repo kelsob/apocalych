@@ -1,0 +1,43 @@
+[
+	{
+		"id": "test_combat_event_01",
+		"title": "Bandit Attack!",
+		"biomes": ["plains", "forest", "mountain", "swamp", "coast", "badlands", "ash_plains"],
+		"weight": 100,
+		"one_shot": false,
+		"prereqs": {},
+		"text": "A group of bandits emerges from the shadows, weapons drawn! Prepare for combat!",
+		"choices": [
+			{
+				"id": "fight_bandits",
+				"text": "Stand and fight!",
+				"condition": {},
+				"effects": [
+					{ "type": "start_combat", "encounter_id": "test_fight" }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "fight_ambush",
+				"text": "Face the ambush!",
+				"condition": {},
+				"effects": [
+					{ "type": "start_combat", "encounter_id": "bandit_ambush" }
+				],
+				"next_event": null,
+				"weight": 1
+			},
+			{
+				"id": "fight_cultists",
+				"text": "Interrupt the dark ritual!",
+				"condition": {},
+				"effects": [
+					{ "type": "start_combat", "encounter_id": "cultist_ritual" }
+				],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+]

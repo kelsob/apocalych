@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/bandit_rogue.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "test_fight"
+encounter_name = "Test Combat"
+description = "A simple test encounter with a single bandit rogue."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 5
+bonus_gold = 5
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

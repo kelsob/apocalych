@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="StatusEffect" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/StatusEffect.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+status_name = "Shielded"
+status_id = "shielded"
+description = "Magical barrier absorbing damage."
+status_type = 4
+base_duration = 3
+stack_behavior = 0
+stat_modifiers = {}
+tick_damage = 0.0
+tick_heal = 0.0
+tick_ap_restore = 0.0
+shield_amount = 20.0
+prevents_actions = false
+prevents_movement = false
+prevents_casting = false
+grants_uninterruptible = false
+is_dispellable = true

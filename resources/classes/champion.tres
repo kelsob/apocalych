@@ -1,6 +1,12 @@
-[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://cypun2vxr3yw6"]
+[gd_resource type="Resource" script_class="Class" load_steps=8 format=3 uid="uid://cypun2vxr3yw6"]
 
 [ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1_hrl4r"]
+[ext_resource type="Resource" path="res://resources/abilities/champion/shield_bash.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/champion/defensive_stance.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/champion/heroic_strike.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/champion/shield_wall.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/abilities/champion/interrupt_strike.tres" id="6"]
 
 [resource]
 script = ExtResource("1_class")
@@ -15,3 +21,4 @@ stat_modifiers = {
 "strength": 3,
 "wisdom": 0
 }
+abilities = Array[ExtResource("1_hrl4r")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

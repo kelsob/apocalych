@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/shared/basic_attack.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Bandit Rogue"
+enemy_id = "bandit_rogue"
+description = "A quick and nimble bandit. Fast but fragile."
+max_health = 18
+base_stats = {
+"charisma": 9,
+"constitution": 9,
+"dexterity": 14,
+"intelligence": 9,
+"strength": 10,
+"wisdom": 9
+}
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2")])
+ai_behavior = "Aggressive"
+xp_reward = 18
+gold_reward = 8
+loot_table = {}

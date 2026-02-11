@@ -20,6 +20,7 @@ config/icon="res://assets/icons/icon.svg"
 PartyController="*res://scripts/autoloads/PartyController.gd"
 TagManager="*res://scripts/autoloads/TagManager.gd"
 EventManager="*res://scripts/events/EventManager.gd"
+CombatController="*res://scripts/autoloads/CombatController.gd"
 
 [display]
 

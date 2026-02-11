@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/shared/dark_bolt.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Dark Cultist"
+enemy_id = "dark_cultist"
+description = "A caster of dark magic. Fragile but dangerous from range."
+max_health = 16
+base_stats = {
+"charisma": 10,
+"constitution": 8,
+"dexterity": 9,
+"intelligence": 13,
+"strength": 8,
+"wisdom": 10
+}
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2")])
+ai_behavior = "Defensive"
+xp_reward = 22
+gold_reward = 12
+loot_table = {}

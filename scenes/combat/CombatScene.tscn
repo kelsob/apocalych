@@ -1,0 +1,85 @@
+[gd_scene load_steps=2 format=3 uid="uid://cvjrahf76ssj5"]
+
+[ext_resource type="Script" uid="uid://6u6iw0lnjdwi" path="res://scripts/combat/CombatScene.gd" id="1_cetgp"]
+
+[node name="CombatScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cetgp")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="CurrentTurnLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TurnOrderPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer"]
+layout_mode = 2
+text = "Turn Order"
+horizontal_alignment = 1
+
+[node name="TurnOrderDisplay" type="VBoxContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="CombatAreaPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
+layout_mode = 2
+
+[node name="PlayerPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel"]
+layout_mode = 2
+text = "Party"
+horizontal_alignment = 1
+
+[node name="EnemyPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel"]
+layout_mode = 2
+text = "Enemies"
+horizontal_alignment = 1
+
+[node name="CombatPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PartyPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AbilityPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/CombatPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CombatLogContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/CombatPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="CombatLogLabel" type="RichTextLabel" parent="MarginContainer/VBoxContainer/CombatPanel/CombatLogContainer"]
+layout_mode = 2
+scroll_following = true

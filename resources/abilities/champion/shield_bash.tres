@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=6 format=3 uid="uid://q3mw7dtuufkn"]
+
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" uid="uid://cdbjgamc1l6o3" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+[ext_resource type="Resource" path="res://resources/statuses/stunned.tres" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 0
+potency = 8.0
+stat_scaling = {
+"strength": 1.0
+}
+target_count = 1
+dispel_count = 1
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("2")
+effect_type = 2
+potency = 0.0
+stat_scaling = {}
+target_count = 1
+status_to_apply = ExtResource("3")
+dispel_count = 1
+
+[resource]
+script = ExtResource("1")
+ability_name = "Shield Bash"
+ability_id = "champion_shield_bash"
+description = "Slam your shield into an enemy, dealing damage and stunning them."
+ap_cost = 2
+base_cast_time = 0
+ability_type = 0
+targeting_type = 2
+requires_target = true
+effects = Array[ExtResource("2")]([SubResource("1"), SubResource("2")])
+can_be_interrupted = true

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=5 format=3 uid="uid://bgg5orkiyfngv"]
+
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" uid="uid://cdbjgamc1l6o3" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+[ext_resource type="Resource" path="res://resources/statuses/regenerating.tres" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 2
+potency = 0.0
+stat_scaling = {}
+target_count = 999
+status_to_apply = ExtResource("3")
+dispel_count = 1
+
+[resource]
+script = ExtResource("1")
+ability_name = "Prayer"
+ability_id = "cleric_prayer"
+description = "Channel divine healing to your entire party, healing each turn for 3 turns. Can be interrupted."
+ap_cost = 3
+base_cast_time = 3
+ability_type = 2
+targeting_type = 3
+requires_target = false
+effects = Array[ExtResource("2")]([SubResource("1")])
+can_be_interrupted = true

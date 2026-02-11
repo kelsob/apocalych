@@ -1,6 +1,12 @@
-[gd_resource type="Resource" script_class="Class" load_steps=2 format=3 uid="uid://cqaljqmw1hk2a"]
+[gd_resource type="Resource" script_class="Class" load_steps=8 format=3 uid="uid://cqaljqmw1hk2a"]
 
 [ext_resource type="Script" uid="uid://cxgivwk7ofw1k" path="res://scripts/resources/Class.gd" id="1_class"]
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1_oqwrl"]
+[ext_resource type="Resource" path="res://resources/abilities/wizard/arcane_blast.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/wizard/fireball.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/wizard/mana_shield.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/wizard/slow_time.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/abilities/wizard/arcane_missiles.tres" id="6"]
 
 [resource]
 script = ExtResource("1_class")
@@ -15,3 +21,4 @@ stat_modifiers = {
 "strength": -1,
 "wisdom": 1
 }
+abilities = Array[ExtResource("1_oqwrl")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])

@@ -150,11 +150,11 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
 	
-	# FORCE SECRET PATH DISCOVERY EVENT (for testing)
-	# Try to return any secret_path_discovery event
+	# FORCE TEST COMBAT EVENT (for testing combat system)
+	# Try to return test combat event
 	for event_id in events.keys():
-		if event_id.begins_with("secret_path_discovery"):
-			debug_print("SECRET PATH: EventManager forcing secret path discovery event: %s" % event_id)
+		if event_id.begins_with("test_combat_event"):
+			print("COMBAT TEST: EventManager forcing test combat event: %s" % event_id)
 			return events[event_id]
 	
 	# Fallback to normal selection if no secret path events found
@@ -441,8 +441,48 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 		push_warning("EventManager: start_combat effect missing 'encounter_id' field")
 		return
 	
-	# TODO: Connect to combat system
-	print("EventManager: Would start combat encounter %s" % effect.encounter_id)
+	# Load encounter resource
+	var encounter_path = "res://resources/encounters/%s.tres" % effect.encounter_id
+	var encounter = load(encounter_path) as CombatEncounter
+	
+	if not encounter:
+		push_error("EventManager: Could not load encounter: " + encounter_path)
+		return
+	
+	# Get Main node to access party members
+	var root = get_tree().root
+	var main = null
+	
+	for child in root.get_children():
+		if child.name == "Main" or child.is_in_group("main"):
+			main = child
+			break
+	
+	if not main:
+		push_error("EventManager: Could not find Main node for combat")
+		return
+	
+	# Close event window if open
+	var event_window = main.ui_controller.event_window
+	if event_window.visible:
+		event_window.visible = false
+	
+	# Hide main map and UI during combat
+	main.map_generator.visible = false
+	main.ui_controller.map_ui.visible = false
+	
+	# Load and show combat scene
+	var combat_scene_path = "res://scenes/combat/CombatScene.tscn"
+	if not ResourceLoader.exists(combat_scene_path):
+		push_error("EventManager: Combat scene not found at: " + combat_scene_path)
+		push_error("  Please create the combat scene first (see COMBAT_SETUP_GUIDE.md)")
+		return
+	
+	var combat_scene = load(combat_scene_path).instantiate()
+	get_tree().root.add_child(combat_scene)
+	
+	# Start combat via CombatController
+	CombatController.start_combat_from_encounter(encounter, main.current_party_members)
 
 func _apply_script_hook(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	if not effect.has("hook_name"):
