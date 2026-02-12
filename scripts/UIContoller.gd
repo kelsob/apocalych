@@ -5,7 +5,7 @@ extends CanvasLayer
 
 @onready var viewport_fx: Control = $ViewportFX
 @onready var main_menu: MainMenu = $MainMenu
-@onready var party_select_menu: PartySelectMenu = $PartySelectMenu
+@onready var party_select_menu: Control = $PartySelectMenu
 @onready var event_window: EventWindow = $EventWindow
 @onready var rest_controller: RestController = $RestController
 @onready var map_ui: Control = $MapUI

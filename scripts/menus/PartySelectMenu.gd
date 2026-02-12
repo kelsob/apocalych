@@ -118,12 +118,95 @@ func _on_randomize_world_name_pressed():
 func _on_world_name_changed(new_text: String):
 	world_name = new_text
 
-## Randomize all three characters
+## Randomize all three characters (FOR TESTING: defaults to Champion/Wizard/Cleric)
 func randomize_all_characters():
-	var character_selects = [character_select_1, character_select_2, character_select_3]
-	for char_select in character_selects:
-		if char_select:
-			char_select.randomize_character()
+	# FOR TESTING: Set default party composition
+	# Character 1: Champion
+	if character_select_1 and character_select_1.available_classes.size() > 0:
+		var champion_class = _find_class_by_name("Champion")
+		if champion_class:
+			character_select_1.selected_class = champion_class
+			if character_select_1.class_option_button:
+				var class_index = character_select_1.available_classes.find(champion_class) + 1
+				character_select_1.class_option_button.selected = class_index
+		
+		# Randomize race and name
+		if character_select_1.available_races.size() > 0:
+			character_select_1.selected_race = character_select_1.available_races[randi() % character_select_1.available_races.size()]
+			if character_select_1.race_option_button:
+				var race_index = character_select_1.available_races.find(character_select_1.selected_race) + 1
+				character_select_1.race_option_button.selected = race_index
+			
+			# Random name
+			if character_select_1.selected_race:
+				var race_key = character_select_1.selected_race.race_name.to_lower()
+				if character_select_1.race_names.has(race_key):
+					character_select_1.character_name = character_select_1.race_names[race_key][randi() % character_select_1.race_names[race_key].size()]
+					if character_select_1.name_input:
+						character_select_1.name_input.text = character_select_1.character_name
+		
+		character_select_1.character_data_changed.emit(character_select_1)
+	
+	# Character 2: Wizard
+	if character_select_2 and character_select_2.available_classes.size() > 0:
+		var wizard_class = _find_class_by_name("Wizard")
+		if wizard_class:
+			character_select_2.selected_class = wizard_class
+			if character_select_2.class_option_button:
+				var class_index = character_select_2.available_classes.find(wizard_class) + 1
+				character_select_2.class_option_button.selected = class_index
+		
+		# Randomize race and name
+		if character_select_2.available_races.size() > 0:
+			character_select_2.selected_race = character_select_2.available_races[randi() % character_select_2.available_races.size()]
+			if character_select_2.race_option_button:
+				var race_index = character_select_2.available_races.find(character_select_2.selected_race) + 1
+				character_select_2.race_option_button.selected = race_index
+			
+			# Random name
+			if character_select_2.selected_race:
+				var race_key = character_select_2.selected_race.race_name.to_lower()
+				if character_select_2.race_names.has(race_key):
+					character_select_2.character_name = character_select_2.race_names[race_key][randi() % character_select_2.race_names[race_key].size()]
+					if character_select_2.name_input:
+						character_select_2.name_input.text = character_select_2.character_name
+		
+		character_select_2.character_data_changed.emit(character_select_2)
+	
+	# Character 3: Cleric
+	if character_select_3 and character_select_3.available_classes.size() > 0:
+		var cleric_class = _find_class_by_name("Cleric")
+		if cleric_class:
+			character_select_3.selected_class = cleric_class
+			if character_select_3.class_option_button:
+				var class_index = character_select_3.available_classes.find(cleric_class) + 1
+				character_select_3.class_option_button.selected = class_index
+		
+		# Randomize race and name
+		if character_select_3.available_races.size() > 0:
+			character_select_3.selected_race = character_select_3.available_races[randi() % character_select_3.available_races.size()]
+			if character_select_3.race_option_button:
+				var race_index = character_select_3.available_races.find(character_select_3.selected_race) + 1
+				character_select_3.race_option_button.selected = race_index
+			
+			# Random name
+			if character_select_3.selected_race:
+				var race_key = character_select_3.selected_race.race_name.to_lower()
+				if character_select_3.race_names.has(race_key):
+					character_select_3.character_name = character_select_3.race_names[race_key][randi() % character_select_3.race_names[race_key].size()]
+					if character_select_3.name_input:
+						character_select_3.name_input.text = character_select_3.character_name
+		
+		character_select_3.character_data_changed.emit(character_select_3)
+
+## Find a class by name
+func _find_class_by_name(target_class_name: String) -> Class:
+	# Check first character select's available classes
+	if character_select_1 and character_select_1.available_classes:
+		for cls in character_select_1.available_classes:
+			if cls.name == target_class_name:
+				return cls
+	return null
 
 ## Randomize world name
 func randomize_world_name():

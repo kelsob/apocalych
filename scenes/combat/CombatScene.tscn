@@ -36,7 +36,13 @@ layout_mode = 2
 text = "Turn Order"
 horizontal_alignment = 1
 
-[node name="TurnOrderDisplay" type="VBoxContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+draw_focus_border = true
+vertical_scroll_mode = 0
+
+[node name="TurnOrderDisplay" type="HBoxContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer/ScrollContainer"]
 layout_mode = 2
 
 [node name="CombatAreaPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
@@ -76,10 +82,16 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatPanel/AbilityPanel"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
 [node name="CombatLogContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/CombatPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="CombatLogLabel" type="RichTextLabel" parent="MarginContainer/VBoxContainer/CombatPanel/CombatLogContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 scroll_following = true

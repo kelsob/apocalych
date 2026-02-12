@@ -71,17 +71,20 @@ func _load_abilities_from_class(class_resource: Class):
 	abilities = class_resource.abilities.duplicate()
 
 ## Start a turn for this combatant
-func start_turn():
+## Returns status effect processing results
+func start_turn() -> Dictionary:
 	turn_count += 1
 	
-	# Tick status effects
-	combatant_stats.tick_statuses()
+	# Process status effects FIRST (poison damages, regen heals, etc.)
+	var status_results = combatant_stats.process_status_effects()
 	
-	# Regenerate AP
+	# Regenerate AP (even if stunned)
 	combatant_stats.regenerate_ap()
 	
 	# Emit signal
 	turn_started.emit()
+	
+	return status_results
 
 ## Cast an ability at target(s)
 func cast_ability(ability: Ability, targets: Array) -> bool:

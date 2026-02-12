@@ -189,31 +189,96 @@ func remove_status(status_id: String):
 			stats_changed.emit()
 			return
 
-## Tick all active statuses (called at start of turn)
-func tick_statuses():
-	var expired_statuses: Array[String] = []
+## Process all status effects at the start of a turn
+## Returns a dictionary with information about what happened
+func process_status_effects() -> Dictionary:
+	var result = {
+		"can_act": true,
+		"can_cast": true,
+		"total_damage": 0.0,
+		"total_heal": 0.0,
+		"effects_triggered": [],
+		"statuses_expired": [],
+		"control_statuses_consumed": []  # Control effects that prevented action
+	}
 	
+	var expired_statuses: Array[String] = []
+	var prevented_action: bool = false
+	
+	# FIRST: Check if any control effects would prevent action BEFORE processing
+	# We need to know this before we decrement/remove them
+	print("DEBUG: Processing %d active statuses" % active_statuses.size())
+	for status in active_statuses:
+		if status.prevents_actions:
+			print("DEBUG: Found prevents_actions status: %s (duration: %d)" % [status.status_name, status.remaining_duration])
+			prevented_action = true
+			result.control_statuses_consumed.append(status.status_name)
+			result.effects_triggered.append({
+				"status": status.status_name,
+				"type": "prevented_action",
+				"amount": 0
+			})
+	
+	# SECOND: Process all status ticks (decrements duration, applies effects)
 	for status in active_statuses:
 		var tick_result = status.process_tick()
 		
-		# Apply tick effects
+		# Apply tick damage (poison, DoTs, etc.)
 		if tick_result.damage > 0:
 			take_damage(tick_result.damage)
+			result.total_damage += tick_result.damage
+			result.effects_triggered.append({
+				"status": status.status_name,
+				"type": "damage",
+				"amount": tick_result.damage
+			})
+		
+		# Apply tick healing (regen, HoTs, etc.)
 		if tick_result.heal > 0:
 			heal(tick_result.heal)
+			result.total_heal += tick_result.heal
+			result.effects_triggered.append({
+				"status": status.status_name,
+				"type": "heal",
+				"amount": tick_result.heal
+			})
+		
+		# Apply AP restoration
 		if tick_result.ap_restore > 0:
 			var old_ap = current_ap
 			current_ap = min(max_ap, current_ap + int(tick_result.ap_restore))
 			if current_ap != old_ap:
 				ap_changed.emit(old_ap, current_ap)
+				result.effects_triggered.append({
+					"status": status.status_name,
+					"type": "ap_restore",
+					"amount": current_ap - old_ap
+				})
 		
-		# Mark expired statuses
+		# Mark expired statuses (durations were decremented in process_tick)
 		if status.is_expired():
 			expired_statuses.append(status.status_id)
+			# Track non-control status expirations for "wore off" messages
+			if not (status.prevents_actions or status.prevents_casting or status.prevents_movement):
+				result.statuses_expired.append(status.status_name)
 	
-	# Remove expired statuses
+	# THIRD: Remove ALL expired statuses
 	for status_id in expired_statuses:
 		remove_status(status_id)
+	
+	# FOURTH: Set final can_act state (after removals)
+	result.can_act = not prevented_action
+	result.can_cast = can_cast()
+	
+	print("DEBUG: Result - can_act: %s, prevented_action: %s" % [result.can_act, prevented_action])
+	print("DEBUG: control_statuses_consumed: %s" % str(result.control_statuses_consumed))
+	print("DEBUG: statuses_expired: %s" % str(result.statuses_expired))
+	
+	return result
+
+## Tick all active statuses (called at start of turn) - DEPRECATED, use process_status_effects()
+func tick_statuses():
+	process_status_effects()
 
 ## Check if combatant can act (not stunned/incapacitated)
 func can_act() -> bool:

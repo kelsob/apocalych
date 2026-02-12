@@ -479,7 +479,16 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 		return
 	
 	var combat_scene = load(combat_scene_path).instantiate()
-	get_tree().root.add_child(combat_scene)
+	print("EventManager: Combat scene instantiated")
+	
+	# Add combat scene to UIController CanvasLayer so it locks to camera
+	main.ui_controller.add_child(combat_scene)
+	print("EventManager: Combat scene added to UIController")
+	
+	# Wait one frame to ensure scene is fully in tree
+	await get_tree().process_frame
+	
+	print("EventManager: Starting combat with %d party members" % main.current_party_members.size())
 	
 	# Start combat via CombatController
 	CombatController.start_combat_from_encounter(encounter, main.current_party_members)

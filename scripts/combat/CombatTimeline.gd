@@ -144,12 +144,61 @@ func interrupt_casts(combatant: CombatantData):
 			active_casts.remove_at(i)
 
 ## Get preview of upcoming turns (for UI display)
+## Simulates future turns without modifying the actual queue
 func get_turn_preview(count: int = 10) -> Array[TurnEvent]:
 	var preview: Array[TurnEvent] = []
-	var preview_count = min(count, turn_queue.size())
 	
-	for i in range(preview_count):
-		preview.append(turn_queue[i])
+	# Start with current queue
+	var simulated_queue = turn_queue.duplicate()
+	
+	# Track next turn time for each combatant
+	var combatant_next_times: Dictionary = {}
+	for combatant in combatants:
+		if not combatant.is_dead:
+			combatant_next_times[combatant] = combatant.next_turn_time
+	
+	# Generate turns until we have enough
+	while preview.size() < count:
+		if simulated_queue.is_empty():
+			# Queue is empty, need to generate more turns
+			# Find the combatant with the earliest next turn time
+			var earliest_combatant: CombatantData = null
+			var earliest_time: float = INF
+			
+			for combatant in combatant_next_times:
+				if not combatant.is_dead:
+					var next_time = combatant_next_times[combatant]
+					if next_time < earliest_time:
+						earliest_time = next_time
+						earliest_combatant = combatant
+			
+			if earliest_combatant == null:
+				break  # No more combatants
+			
+			# Create turn event for this combatant
+			var turn_event = TurnEvent.new(earliest_combatant, earliest_time, 0)
+			simulated_queue.append(turn_event)
+			
+			# Schedule their next turn
+			var speed = earliest_combatant.get_effective_speed()
+			combatant_next_times[earliest_combatant] = earliest_time + (1.0 / speed)
+		
+		# Sort simulated queue by time
+		simulated_queue.sort_custom(func(a, b): return a.turn_time < b.turn_time)
+		
+		# Take the next turn from simulated queue
+		if not simulated_queue.is_empty():
+			var next_turn = simulated_queue.pop_front()
+			preview.append(next_turn)
+			
+			# Schedule this combatant's next turn in the simulation
+			if not next_turn.combatant.is_dead:
+				var speed = next_turn.combatant.get_effective_speed()
+				var next_time = next_turn.turn_time + (1.0 / speed)
+				
+				# Insert the next turn for this combatant into simulated queue
+				var new_turn = TurnEvent.new(next_turn.combatant, next_time, 0)
+				simulated_queue.append(new_turn)
 	
 	return preview
 

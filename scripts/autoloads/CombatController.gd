@@ -6,7 +6,7 @@ extends Node
 # Signals for combat events
 signal combat_started(player_combatants: Array, enemy_combatants: Array)
 signal combat_ended(victory: bool, rewards: Dictionary)
-signal turn_started(combatant: CombatantData, turn_number: int)
+signal turn_started(combatant: CombatantData, turn_number: int, status_results: Dictionary)
 signal turn_ended(combatant: CombatantData)
 signal ability_queued(caster: CombatantData, ability: Ability, targets: Array)
 signal ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array)
@@ -92,23 +92,31 @@ func _advance_to_next_turn():
 	
 	current_turn_combatant = turn_event.combatant
 	
-	# Start turn for combatant
-	current_turn_combatant.start_turn()
+	# Start turn for combatant (processes status effects, regenerates AP)
+	var status_results = current_turn_combatant.start_turn()
 	
 	# Process any active casts for this combatant
 	var completed_casts = combat_timeline.process_cast_ticks(current_turn_combatant)
 	for cast in completed_casts:
 		_resolve_ability_cast(cast)
 	
-	# Emit signal
-	turn_started.emit(current_turn_combatant, turn_event.turn_number)
+	# Emit signal with status results
+	turn_started.emit(current_turn_combatant, turn_event.turn_number, status_results)
+	
+	# Check if combatant can act after processing status effects
+	if not status_results.can_act:
+		print("%s cannot act (stunned/incapacitated), skipping turn" % current_turn_combatant.display_name)
+		# Give a moment for the log to display status effects
+		await get_tree().create_timer(1.0).timeout
+		_end_current_turn()
+		return
 	
 	# If player turn, wait for input
 	if current_turn_combatant.is_player:
 		waiting_for_player_input = true
 		print("Player turn: %s (AP: %d/%d)" % [current_turn_combatant.display_name, current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
 	else:
-		# AI turn - execute immediately (placeholder for now)
+		# AI turn - execute immediately
 		_execute_ai_turn()
 
 ## Player executes an action (called by UI)
@@ -138,6 +146,17 @@ func player_end_turn():
 	
 	print("Player ended turn: %s" % current_turn_combatant.display_name)
 	_end_current_turn()
+
+## Attempt to flee from combat (called by UI)
+func attempt_flee() -> bool:
+	if not waiting_for_player_input:
+		return false
+	
+	# TODO: Implement flee chance calculation
+	# Could be based on party speed vs enemy speed, luck stat, etc.
+	# For now, just always fail
+	print("Flee attempt failed (not yet implemented)")
+	return false
 
 ## Execute ability cast
 func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Array) -> bool:
@@ -286,13 +305,63 @@ func get_valid_targets(caster: CombatantData, ability: Ability) -> Array:
 	
 	return valid_targets
 
-## Execute AI turn (placeholder - will implement proper AI later)
+## Execute AI turn
 func _execute_ai_turn():
-	print("AI turn: %s" % current_turn_combatant.display_name)
-	# TODO: Implement AI decision-making
-	# For now, just end turn
+	print("AI turn: %s (AP: %d/%d)" % [current_turn_combatant.display_name, current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
+	
+	# Small delay for readability
 	await get_tree().create_timer(0.5).timeout
-	_end_current_turn()
+	
+	# Note: can_act check is now done in _advance_to_next_turn after status processing
+	
+	# Get available abilities
+	var available_abilities = []
+	if current_turn_combatant.abilities:
+		for ability in current_turn_combatant.abilities:
+			# Check if enemy has enough AP to cast this ability
+			var ap_cost = ability.get_modified_ap_cost()
+			if current_turn_combatant.combatant_stats.current_ap >= ap_cost:
+				available_abilities.append(ability)
+	
+	# If no abilities available, end turn
+	if available_abilities.is_empty():
+		print("  -> No usable abilities, ending turn")
+		_end_current_turn()
+		return
+	
+	# Simple AI: Pick first available ability
+	var chosen_ability = available_abilities[0]
+	
+	# Get valid targets
+	var valid_targets = get_valid_targets(current_turn_combatant, chosen_ability)
+	
+	if valid_targets.is_empty():
+		print("  -> No valid targets for %s, ending turn" % chosen_ability.ability_name)
+		_end_current_turn()
+		return
+	
+	# Select targets based on targeting type
+	var selected_targets = []
+	match chosen_ability.targeting_type:
+		Ability.TargetingType.SELF:
+			selected_targets = [current_turn_combatant]
+		
+		Ability.TargetingType.SINGLE_ENEMY, Ability.TargetingType.SINGLE_ALLY:
+			# Simple AI: Pick first valid target
+			selected_targets = [valid_targets[0]]
+		
+		Ability.TargetingType.ALL_ALLIES, Ability.TargetingType.ALL_ENEMIES, Ability.TargetingType.ALL_COMBATANTS:
+			# AoE - use all valid targets
+			selected_targets = valid_targets
+	
+	# Execute the ability
+	if _execute_ability_cast(current_turn_combatant, chosen_ability, selected_targets):
+		# End turn after successful cast
+		_end_current_turn()
+	else:
+		# If cast failed, end turn anyway
+		print("  -> Cast failed, ending turn")
+		_end_current_turn()
 
 ## End the current turn
 func _end_current_turn():
