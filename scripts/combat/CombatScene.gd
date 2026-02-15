@@ -22,6 +22,11 @@ var combat_ability_option_scene: PackedScene = preload("res://scenes/combat/Comb
 var current_player_combatant: CombatantData = null
 var selected_ability: Ability = null
 
+# Targeting state: ability always goes through targeting (except SELF)
+var is_targeting: bool = false
+var pending_ability: Ability = null
+var valid_targets: Array = []  # Array of CombatantData
+
 # Cached references
 var combatant_sprites: Dictionary = {}  # CombatantData -> CombatCharacterSprite
 var combatant_info_panels: Dictionary = {}  # CombatantData -> CharacterCombatInformationPanel
@@ -38,6 +43,9 @@ func _ready():
 		push_error("CombatScene: turn_order_display is null!")
 	if not party_info_panel:
 		push_error("CombatScene: party_info_panel is null!")
+	
+	# Cancel targeting on ESC
+	set_process_unhandled_input(true)
 	
 	# Connect to CombatController signals
 	CombatController.combat_started.connect(_on_combat_started)
@@ -304,6 +312,7 @@ func _clear_ability_panel():
 		child.queue_free()
 	ability_buttons.clear()
 	selected_ability = null
+	_exit_targeting()
 
 ## Update ability button states (enable/disable based on AP)
 func _update_ability_button_states():
@@ -367,28 +376,53 @@ func _update_combatant_info_panel(combatant: CombatantData):
 func _update_combatant_health_display(combatant: CombatantData):
 	_update_combatant_info_panel(combatant)
 
-## Called when ability button pressed
+## Called when ability button pressed - enter targeting; never auto-fire
 func _on_ability_button_pressed(ability: Ability):
 	selected_ability = ability
-	_log_message("Selected: %s" % ability.ability_name)
+	_log_message("Selected: %s — choose a target" % ability.ability_name)
 	
-	# Auto-target based on ability type
-	var targets = _auto_select_targets(ability)
-	
-	if targets.size() > 0:
-		# Execute ability
-		CombatController.player_cast_ability(ability, targets)
+	# SELF: no targeting UI, execute immediately
+	if ability.targeting_type == Ability.TargetingType.SELF:
+		CombatController.player_cast_ability(ability, [current_player_combatant])
 		selected_ability = null
-	else:
+		return
+	
+	var targets = CombatController.get_valid_targets(current_player_combatant, ability)
+	if targets.is_empty():
 		_log_message("  No valid targets!")
+		selected_ability = null
+		return
+	
+	# Enter targeting mode: require explicit selection
+	_enter_targeting(ability, targets)
 
 ## Called when combatant clicked (for targeting)
 func _on_combatant_clicked(combatant: CombatantData):
-	if selected_ability and current_player_combatant:
-		# Manual targeting
-		var targets = [combatant]
-		CombatController.player_cast_ability(selected_ability, targets)
-		selected_ability = null
+	if not is_targeting or not pending_ability or not current_player_combatant:
+		return
+	if combatant not in valid_targets:
+		return
+	
+	# Build selected targets: single = [combatant], AOE = full valid list (one click = confirm team)
+	var selected: Array = []
+	match pending_ability.targeting_type:
+		Ability.TargetingType.SINGLE_ALLY, Ability.TargetingType.SINGLE_ENEMY:
+			selected = [combatant]
+		Ability.TargetingType.ALL_ALLIES, Ability.TargetingType.ALL_ENEMIES, Ability.TargetingType.ALL_COMBATANTS:
+			selected = valid_targets.duplicate()
+		_:
+			selected = [combatant]
+	
+	# Show selected visual on clicked combatant (and for AOE, on all valid targets)
+	if combatant_sprites.has(combatant):
+		combatant_sprites[combatant].set_selected(true)
+	for t in selected:
+		if t != combatant and combatant_sprites.has(t):
+			combatant_sprites[t].set_selected(true)
+	
+	CombatController.player_cast_ability(pending_ability, selected)
+	_exit_targeting()
+	selected_ability = null
 
 ## Called when Pass Turn button pressed
 func _on_pass_turn_pressed():
@@ -413,12 +447,45 @@ func _attempt_flee():
 		# Could end turn on failed flee attempt
 		# CombatController.player_end_turn()
 
-## Auto-select targets for an ability
-func _auto_select_targets(ability: Ability) -> Array:
-	if not current_player_combatant:
-		return []
-	
-	return CombatController.get_valid_targets(current_player_combatant, ability)
+## Enter targeting mode: show valid targets, enable only their buttons
+func _enter_targeting(ability: Ability, targets: Array):
+	is_targeting = true
+	pending_ability = ability
+	valid_targets = targets
+	for c in combatant_sprites:
+		var sprite_node: CombatCharacterSprite = combatant_sprites[c]
+		var valid: bool = c in valid_targets
+		if sprite_node:
+			sprite_node.set_valid_target(valid)
+			sprite_node.set_selected(false)
+	for c in combatant_clickable_areas:
+		var btn: Button = combatant_clickable_areas[c]
+		if btn:
+			btn.disabled = (c not in valid_targets)
+
+## Exit targeting mode: clear visuals and re-enable all living combatant buttons
+func _exit_targeting():
+	if not is_targeting:
+		return
+	is_targeting = false
+	pending_ability = null
+	valid_targets.clear()
+	for c in combatant_sprites:
+		var sprite_node: CombatCharacterSprite = combatant_sprites[c]
+		if sprite_node:
+			sprite_node.clear_targeting_state()
+	for c in combatant_clickable_areas:
+		var btn: Button = combatant_clickable_areas[c]
+		if btn:
+			# Re-enable only if combatant is still targetable (e.g. not dead)
+			btn.disabled = false
+
+func _unhandled_input(event: InputEvent):
+	if is_targeting and event.is_action_pressed("ui_cancel"):
+		_exit_targeting()
+		_log_message("Targeting cancelled.")
+		selected_ability = null
+		get_viewport().set_input_as_handled()
 
 ## Log a message to combat log
 func _log_message(message: String):

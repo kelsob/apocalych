@@ -329,8 +329,8 @@ func _execute_ai_turn():
 		_end_current_turn()
 		return
 	
-	# Simple AI: Pick first available ability
-	var chosen_ability = available_abilities[0]
+	# Pick random available ability (refine algorithm later)
+	var chosen_ability = available_abilities[randi() % available_abilities.size()]
 	
 	# Get valid targets
 	var valid_targets = get_valid_targets(current_turn_combatant, chosen_ability)
@@ -347,8 +347,8 @@ func _execute_ai_turn():
 			selected_targets = [current_turn_combatant]
 		
 		Ability.TargetingType.SINGLE_ENEMY, Ability.TargetingType.SINGLE_ALLY:
-			# Simple AI: Pick first valid target
-			selected_targets = [valid_targets[0]]
+			# Pick random valid target
+			selected_targets = [valid_targets[randi() % valid_targets.size()]]
 		
 		Ability.TargetingType.ALL_ALLIES, Ability.TargetingType.ALL_ENEMIES, Ability.TargetingType.ALL_COMBATANTS:
 			# AoE - use all valid targets

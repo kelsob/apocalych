@@ -1,8 +1,10 @@
-[gd_resource type="Resource" script_class="Enemy" load_steps=4 format=3 uid="uid://cbms6sho2qov4"]
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3 uid="uid://cbms6sho2qov4"]
 
 [ext_resource type="Script" uid="uid://ctiy0bsk0onba" path="res://scripts/combat/resources/Enemy.gd" id="1"]
 [ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1_1gn2h"]
 [ext_resource type="Resource" uid="uid://4xnc13glc0tf" path="res://resources/abilities/shared/basic_attack.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/shared/quick_stab.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/shared/backstab.tres" id="4"]
 
 [resource]
 script = ExtResource("1")
@@ -18,7 +20,7 @@ base_stats = {
 "strength": 10,
 "wisdom": 9
 }
-abilities = Array[ExtResource("1_1gn2h")]([ExtResource("2")])
+abilities = Array[ExtResource("1_1gn2h")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
 ai_behavior = "Aggressive"
 xp_reward = 18
 gold_reward = 8

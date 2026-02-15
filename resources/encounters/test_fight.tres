@@ -7,8 +7,8 @@
 script = ExtResource("1")
 encounter_id = "test_fight"
 encounter_name = "Test Combat"
-description = "A simple test encounter with a single bandit rogue."
-enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2")])
+description = "A simple test encounter with two bandit rogues."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("2")])
 environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
 bonus_xp = 5
 bonus_gold = 5

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="Ability" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="Ability" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
@@ -6,22 +6,21 @@
 [sub_resource type="Resource" id="1"]
 script = ExtResource("2")
 effect_type = 0
-potency = 4.5
+potency = 1.25
 stat_scaling = {
-"strength": 1.5
+"dexterity": 0.8
 }
 target_count = 1
-status_to_apply = null
 dispel_count = 1
 
 [resource]
 script = ExtResource("1")
-ability_name = "Power Attack"
-ability_id = "power_attack"
-description = "A heavy, powerful strike that takes time to wind up."
-ap_cost = 3
-base_cast_time = 2
-ability_type = 1
+ability_name = "Quick Stab"
+ability_id = "quick_stab"
+description = "A fast, light strike. Low cost, low damage."
+ap_cost = 1
+base_cast_time = 0
+ability_type = 0
 targeting_type = 2
 requires_target = true
 effects = Array[Resource("res://scripts/combat/resources/AbilityEffect.gd")]([SubResource("1")])
