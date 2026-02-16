@@ -204,10 +204,11 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 				var potency = effect.calculate_final_potency(caster_stats)
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
-						target.take_damage(potency, caster)
-						effects_applied.append({"type": "damage", "target": target, "amount": potency})
-						combatant_damaged.emit(target, potency, caster)
-						print("  -> %s takes %.1f damage" % [target.display_name, potency])
+						var damage_result = target.take_damage(potency, caster)
+						var actual_damage = damage_result.damage_dealt
+						effects_applied.append({"type": "damage", "target": target, "amount": actual_damage})
+						combatant_damaged.emit(target, actual_damage, caster)
+						print("  -> %s takes %d damage" % [target.display_name, actual_damage])
 			
 			AbilityEffect.EffectType.HEAL:
 				var potency = effect.calculate_final_potency(caster_stats)

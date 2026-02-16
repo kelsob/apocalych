@@ -8,9 +8,9 @@ extends Control
 @onready var turn_order_display: HBoxContainer = $MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer/ScrollContainer/TurnOrderDisplay
 @onready var combat_area_player_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel
 @onready var combat_area_enemy_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel
-@onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel
+@onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/VBoxContainer
 @onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/VBoxContainer
-@onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogContainer/CombatLogLabel
+@onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/CombatLogContainer/CombatLogLabel
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
@@ -115,9 +115,9 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	for effect in status_results.get("effects_triggered", []):
 		match effect.type:
 			"damage":
-				_log_message("  %s takes %.0f damage from %s" % [combatant.display_name, effect.amount, effect.status])
+				_log_message("  %s takes %d damage from %s" % [combatant.display_name, effect.amount, effect.status])
 			"heal":
-				_log_message("  %s heals %.0f from %s" % [combatant.display_name, effect.amount, effect.status])
+				_log_message("  %s heals %d from %s" % [combatant.display_name, effect.amount, effect.status])
 	
 	# Update turn order display
 	_update_turn_order_display()
@@ -161,20 +161,20 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 	# Single-target damage - combine into one message
 	if damage_effects.size() == 1 and heal_effects.is_empty() and status_effects.is_empty():
 		var effect = damage_effects[0]
-		_log_message("%s attacked %s with %s and dealt %.0f damage" % [
+		_log_message("%s attacked %s with %s and dealt %d damage" % [
 			caster.display_name,
 			effect.target.display_name,
 			ability.ability_name,
-			effect.amount
+			int(effect.amount)
 		])
 	# Single-target heal - combine into one message
 	elif heal_effects.size() == 1 and damage_effects.is_empty() and status_effects.is_empty():
 		var effect = heal_effects[0]
-		_log_message("%s healed %s with %s for %.0f health" % [
+		_log_message("%s healed %s with %s for %d health" % [
 			caster.display_name,
 			effect.target.display_name,
 			ability.ability_name,
-			effect.amount
+			int(effect.amount)
 		])
 	# Multi-target or mixed effects - show ability first, then individual effects
 	else:
@@ -182,11 +182,11 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 		
 		# Show damage to each target
 		for effect in damage_effects:
-			_log_message("  → %s takes %.0f damage" % [effect.target.display_name, effect.amount])
+			_log_message("  → %s takes %d damage" % [effect.target.display_name, int(effect.amount)])
 		
 		# Show healing to each target
 		for effect in heal_effects:
-			_log_message("  → %s heals %.0f" % [effect.target.display_name, effect.amount])
+			_log_message("  → %s heals %d" % [effect.target.display_name, int(effect.amount)])
 		
 		# Show status effects applied
 		for effect in status_effects:

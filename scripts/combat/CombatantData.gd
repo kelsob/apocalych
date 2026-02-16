@@ -107,12 +107,15 @@ func cast_ability(ability: Ability, targets: Array) -> bool:
 	return true
 
 ## Take damage from a source
-func take_damage(amount: float, source_combatant: CombatantData = null):
-	var survived = combatant_stats.take_damage(amount)
+func take_damage(amount: float, source_combatant: CombatantData = null) -> Dictionary:
+	var damage_result = combatant_stats.take_damage(amount)
 	took_damage.emit(amount, source_combatant)
 	
-	if not survived:
+	if not damage_result.alive:
 		is_dead = true
+		died.emit()
+	
+	return damage_result
 
 ## Sync combat state back to source (called after combat ends)
 func sync_back_to_source():

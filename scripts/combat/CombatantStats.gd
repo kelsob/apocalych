@@ -117,32 +117,43 @@ func spend_ap(amount: int) -> bool:
 		return true
 	return false
 
-## Take damage (returns true if still alive)
-func take_damage(amount: float) -> bool:
+## Take damage (returns dictionary with actual damage dealt and if alive)
+func take_damage(amount: float) -> Dictionary:
 	# Check for shield statuses first
 	var remaining_damage = amount
+	var damage_absorbed = 0.0
 	
 	for status in active_statuses:
 		if status.status_type == StatusEffect.StatusType.SHIELD and status.current_shield_amount > 0:
 			if status.current_shield_amount >= remaining_damage:
 				status.current_shield_amount -= remaining_damage
+				damage_absorbed += remaining_damage
 				remaining_damage = 0
 				break
 			else:
+				damage_absorbed += status.current_shield_amount
 				remaining_damage -= status.current_shield_amount
 				status.current_shield_amount = 0
+	
+	var actual_health_damage = 0
 	
 	# Apply remaining damage to health
 	if remaining_damage > 0:
 		var old_health = current_health
-		current_health = max(0, current_health - int(remaining_damage))
+		actual_health_damage = int(remaining_damage)
+		current_health = max(0, current_health - actual_health_damage)
 		health_changed.emit(old_health, current_health)
-		
-		if current_health <= 0:
-			died.emit()
-			return false
 	
-	return true
+	var is_alive = current_health > 0
+	if not is_alive:
+		died.emit()
+	
+	return {
+		"alive": is_alive,
+		"damage_dealt": actual_health_damage + damage_absorbed,
+		"damage_to_health": actual_health_damage,
+		"damage_to_shield": damage_absorbed
+	}
 
 ## Heal (capped at max health)
 func heal(amount: float):
@@ -225,12 +236,13 @@ func process_status_effects() -> Dictionary:
 		
 		# Apply tick damage (poison, DoTs, etc.)
 		if tick_result.damage > 0:
-			take_damage(tick_result.damage)
-			result.total_damage += tick_result.damage
+			var damage_result = take_damage(tick_result.damage)
+			var actual_damage = damage_result.damage_dealt
+			result.total_damage += actual_damage
 			result.effects_triggered.append({
 				"status": status.status_name,
 				"type": "damage",
-				"amount": tick_result.damage
+				"amount": actual_damage
 			})
 		
 		# Apply tick healing (regen, HoTs, etc.)
