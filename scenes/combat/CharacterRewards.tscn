@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3 uid="uid://cdbh531aowdrv"]
+
+[ext_resource type="Script" uid="uid://47lpkmhcjrj6" path="res://scripts/combat/CharacterRewards.gd" id="1_pq70o"]
+
+[node name="CharacterRewards" type="HBoxContainer"]
+offset_right = 1280.0
+offset_bottom = 128.0
+size_flags_horizontal = 3
+size_flags_vertical = 6
+script = ExtResource("1_pq70o")
+
+[node name="CharacterTextureRect" type="TextureRect" parent="."]
+custom_minimum_size = Vector2(128, 0)
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="CharacterNameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="LevelLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="RaceLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ClassLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="ExperienceProgressBar" type="ProgressBar" parent="VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="ExperienceToLevelLabel" type="Label" parent="VBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+horizontal_alignment = 1

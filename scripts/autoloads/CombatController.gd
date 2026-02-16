@@ -410,29 +410,43 @@ func _on_combatant_died(combatant: CombatantData):
 	
 	# Interrupt any active casts
 	combat_timeline.interrupt_casts(combatant)
+	
+	# If an enemy died, check victory immediately (all enemies dead)
+	if not combatant.is_player:
+		var enemies_alive = false
+		for e in enemy_combatants:
+			if not e.is_dead:
+				enemies_alive = true
+				break
+		if not enemies_alive:
+			_end_combat(true)
 
 ## End combat
 func _end_combat(victory: bool):
-	print("=== COMBAT ENDED ===")
-	print("Victory: %s" % victory)
-	
+	if not combat_active:
+		return
 	combat_active = false
 	waiting_for_player_input = false
+	
+	print("=== COMBAT ENDED ===")
+	print("Victory: %s" % victory)
 	
 	# Sync combat state back to party members
 	for combatant in player_combatants:
 		combatant.sync_back_to_source()
 	
-	# Calculate rewards (placeholder)
-	var rewards = {}
+	# Build rewards from killed enemies only (awarded at end of combat)
+	var rewards = {"victory": victory, "xp": 0, "gold": 0}
 	if victory and current_encounter:
-		# TODO: Load rewards from encounter
-		pass
+		for combatant in enemy_combatants:
+			if combatant.is_dead and combatant.source is Enemy:
+				rewards.xp += combatant.source.xp_reward
+				rewards.gold += combatant.source.gold_reward
+		rewards.xp += current_encounter.bonus_xp
+		rewards.gold += current_encounter.bonus_gold
 	
-	# Emit signal
 	combat_ended.emit(victory, rewards)
 	
-	# Clean up
 	combat_timeline = null
 	player_combatants.clear()
 	enemy_combatants.clear()

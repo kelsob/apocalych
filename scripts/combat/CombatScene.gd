@@ -17,6 +17,7 @@ var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/Co
 var character_info_panel_scene: PackedScene = preload("res://scenes/combat/CharacterCombatInformationPanel.tscn")
 var turn_order_entry_scene: PackedScene = preload("res://scenes/combat/TurnOrderEntry.tscn")
 var combat_ability_option_scene: PackedScene = preload("res://scenes/combat/CombatAbilityOption.tscn")
+var combat_rewards_scene: PackedScene = preload("res://scenes/combat/CombatRewards.tscn")
 
 # Current combatant data
 var current_player_combatant: CombatantData = null
@@ -91,18 +92,26 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 	else:
 		_log_message("=== DEFEAT ===")
 	
-	# Wait a moment to show results
 	await get_tree().create_timer(2.0).timeout
 	
-	# Find Main node and restore map visibility
 	var root = get_tree().root
+	var main = null
 	for child in root.get_children():
 		if child.name == "Main":
-			child.map_generator.visible = true
-			child.ui_controller.map_ui.visible = true
+			main = child
 			break
 	
-	# Clean up combat scene
+	if victory and main and rewards.get("xp", 0) >= 0 and rewards.get("gold", 0) >= 0:
+		var rewards_panel = combat_rewards_scene.instantiate()
+		add_child(rewards_panel)
+		rewards_panel.show_rewards(rewards, main.current_party_members)
+		await rewards_panel.continue_pressed
+		rewards_panel.queue_free()
+	
+	if main:
+		main.map_generator.visible = true
+		main.ui_controller.map_ui.visible = true
+	
 	queue_free()
 
 ## Called when a turn starts

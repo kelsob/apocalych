@@ -18,6 +18,7 @@ var current_state: GameState = GameState.MAIN_MENU
 var game_started: bool = false
 var current_world_name: String = ""
 var current_party_members: Array[PartyMember] = []
+var party_gold: int = 0
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 
 func _ready():
@@ -42,6 +43,8 @@ func _ready():
 	
 	# Connect event window signal to update rest button when event closes
 	ui_controller.event_window.event_closed.connect(_on_event_closed)
+	
+	CombatController.combat_ended.connect(_on_combat_ended)
 
 ## Automatically connect all menu signals
 func _connect_menu_signals():
@@ -140,6 +143,16 @@ func _show_introductory_event():
 	# Display the event with current node (for rest state effects)
 	var current_node = map_generator.current_party_node
 	ui_controller.event_window.display_event(presented_event, party_dict, current_node)
+
+## Apply victory rewards to party (XP and gold); called when combat ends
+func _on_combat_ended(victory: bool, rewards: Dictionary):
+	if not victory:
+		return
+	var xp: int = rewards.get("xp", 0)
+	var gold: int = rewards.get("gold", 0)
+	for member in current_party_members:
+		member.gain_experience(xp)
+	party_gold += gold
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found
