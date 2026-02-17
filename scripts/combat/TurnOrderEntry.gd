@@ -4,8 +4,8 @@ extends PanelContainer
 ## Shows whose turn it is and the timing
 
 # Node references
-@onready var character_name_label: Label = $VBoxContainer/CharacterNameLabel
-@onready var turn_time_label: Label = $VBoxContainer/TurnTimeLabel
+@onready var character_name_label: Label = $MarginContainer/VBoxContainer/CharacterNameLabel
+@onready var turn_time_label: Label = $MarginContainer/VBoxContainer/TurnTimeLabel
 
 # Is this the current/next turn?
 var is_current_turn: bool = false

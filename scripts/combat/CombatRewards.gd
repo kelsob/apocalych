@@ -4,12 +4,12 @@ extends Control
 
 signal continue_pressed
 
-@onready var gold_gained_label: Label = $VBoxContainer/PanelNinePatchRect2/HBoxContainer/GoldGainedLabel
-@onready var exp_gained_label: Label = $VBoxContainer/PanelNinePatchRect5/HBoxContainer/ExpGainedLabel
-@onready var character_rewards_1: CharacterRewardsDisplay = $VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards
-@onready var character_rewards_2: CharacterRewardsDisplay = $VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards2
-@onready var character_rewards_3: CharacterRewardsDisplay = $VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards3
-@onready var continue_button: Button = $VBoxContainer/PanelNinePatchRect3/HBoxContainer/PanelNinePatchRect2/VBoxContainer/ContinueButton
+@onready var gold_gained_label: Label = $MarginContainer/VBoxContainer/PanelNinePatchRect2/MarginContainer/HBoxContainer/GoldGainedLabel
+@onready var exp_gained_label: Label = $MarginContainer/VBoxContainer/PanelNinePatchRect5/MarginContainer/HBoxContainer/ExpGainedLabel
+@onready var character_rewards_1: CharacterRewardsDisplay = $MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards
+@onready var character_rewards_2: CharacterRewardsDisplay = $MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards2
+@onready var character_rewards_3: CharacterRewardsDisplay = $MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer/CharacterRewards3
+@onready var continue_button: Button = $MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer/PanelNinePatchRect2/MarginContainer/VBoxContainer/ContinueButton
 
 func _ready():
 	continue_button.pressed.connect(_on_continue_pressed)

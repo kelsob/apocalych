@@ -13,14 +13,14 @@ func _init(p_combatant: CombatantData, p_turn_time: float, p_turn_number: int = 
 	turn_time = p_turn_time
 	turn_number = p_turn_number
 
-## Get display name for UI
+## Get display name for UI (safe when combatant died/removed)
 func get_display_name() -> String:
-	if combatant:
-		return combatant.display_name
-	return "Unknown"
+	if combatant == null or not is_instance_valid(combatant) or not (combatant is CombatantData):
+		return "Unknown"
+	return (combatant as CombatantData).display_name
 
 ## Check if this turn belongs to a player combatant
 func is_player_turn() -> bool:
-	if combatant:
+	if combatant != null and is_instance_valid(combatant):
 		return combatant.is_player
 	return false

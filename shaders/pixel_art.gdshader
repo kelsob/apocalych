@@ -49,51 +49,51 @@ vec3 adjust_contrast(vec3 color, float contrast_factor) {
 void fragment() {
 	vec2 screen_size = 1.0 / SCREEN_PIXEL_SIZE;
 	vec2 pixelated_uv = floor(SCREEN_UV * screen_size / pixel_size) * pixel_size / screen_size;
-	
+
 	// Sample the texture
 	vec4 color = texture(SCREEN_TEXTURE, pixelated_uv);
-	
+
 	// Palette reduction
 	if (enable_palette_reduction) {
 		float levels = float(color_depth);
-		
+
 		// Apply dithering before quantization
 		if (enable_dithering) {
 			vec2 pixel_pos = SCREEN_UV * screen_size / pixel_size;
 			float threshold = get_bayer(pixel_pos) - 0.5;
 			color.rgb += threshold * dither_strength / levels;
 		}
-		
+
 		color.r = floor(color.r * levels) / levels;
 		color.g = floor(color.g * levels) / levels;
 		color.b = floor(color.b * levels) / levels;
 	}
-	
+
 	// Enhance colors
 	color.rgb = adjust_saturation(color.rgb, saturation);
 	color.rgb = adjust_contrast(color.rgb, contrast);
-	
+
 	// Edge detection for outlines
 	if (enable_outline) {
 		vec2 offset = pixel_size / screen_size * outline_thickness;
 		float edge = 0.0;
-		
+
 		// Sample neighbors
 		vec4 n = texture(SCREEN_TEXTURE, pixelated_uv + vec2(0.0, offset.y));
 		vec4 s = texture(SCREEN_TEXTURE, pixelated_uv - vec2(0.0, offset.y));
 		vec4 e = texture(SCREEN_TEXTURE, pixelated_uv + vec2(offset.x, 0.0));
 		vec4 w = texture(SCREEN_TEXTURE, pixelated_uv - vec2(offset.x, 0.0));
-		
+
 		// Calculate color difference
 		float diff = 0.0;
 		diff += distance(color.rgb, n.rgb);
 		diff += distance(color.rgb, s.rgb);
 		diff += distance(color.rgb, e.rgb);
 		diff += distance(color.rgb, w.rgb);
-		
+
 		edge = smoothstep(0.5, 1.0, diff);
 		color.rgb = mix(color.rgb, outline_color.rgb, edge * outline_color.a);
 	}
-	
+
 	COLOR = color;
 }

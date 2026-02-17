@@ -200,8 +200,8 @@ func get_turn_preview(count: int = 10) -> Array[TurnEvent]:
 		if not simulated_queue.is_empty():
 			var next_turn = simulated_queue.pop_front()
 			
-			# Skip dead combatants
-			if next_turn.combatant.is_dead:
+			# Skip dead combatants or invalid turns
+			if not next_turn or not next_turn.combatant or next_turn.combatant.is_dead:
 				continue
 			
 			preview.append(next_turn)

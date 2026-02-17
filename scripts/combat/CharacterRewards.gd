@@ -3,13 +3,13 @@ class_name CharacterRewardsDisplay
 
 ## One row of rewards for a party member: name, XP progress bar, XP gained label
 
-@onready var character_texture_rect : TextureRect = $CharacterTextureRect
-@onready var character_name_label: Label = $VBoxContainer/CharacterNameLabel
-@onready var level_label : Label = $VBoxContainer/HBoxContainer/LevelLabel
-@onready var race_label : Label = $VBoxContainer/HBoxContainer/RaceLabel
-@onready var class_label : Label = $VBoxContainer/HBoxContainer/ClassLabel
-@onready var experience_progress_bar: ProgressBar = $VBoxContainer2/ExperienceProgressBar
-@onready var experience_gain_label: Label = $VBoxContainer2/ExperienceToLevelLabel
+@onready var character_texture_rect : TextureRect = $MarginContainer/HBoxContainer/CharacterTextureRect
+@onready var character_name_label: Label = $MarginContainer/HBoxContainer/VBoxContainer/CharacterNameLabel
+@onready var level_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/LevelLabel
+@onready var race_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/RaceLabel
+@onready var class_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
+@onready var experience_progress_bar: ProgressBar = $MarginContainer/HBoxContainer/VBoxContainer2/ExperienceProgressBar
+@onready var experience_gain_label: Label = $MarginContainer/HBoxContainer/VBoxContainer2/ExperienceToLevelLabel
 
 func set_display(member: PartyMember, xp_gained: int):
 	if member == null:

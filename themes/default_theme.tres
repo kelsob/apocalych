@@ -1,4 +1,18 @@
-[gd_resource type="Theme" format=3 uid="uid://bv7il7gikunta"]
+[gd_resource type="Theme" load_steps=2 format=3 uid="uid://bv7il7gikunta"]
+
+[ext_resource type="FontFile" uid="uid://cou8slr6me4am" path="res://assets/fonts/Final_Fantasy_VII.ttf" id="1_mlkpy"]
 
 [resource]
-Label/colors/font_color = Color(0.287282, 0.227816, 0.123376, 1)
+Button/fonts/font = ExtResource("1_mlkpy")
+Label/font_sizes/font_size = 24
+Label/fonts/font = ExtResource("1_mlkpy")
+MarginContainer/constants/margin_bottom = 8
+MarginContainer/constants/margin_left = 8
+MarginContainer/constants/margin_right = 8
+MarginContainer/constants/margin_top = 8
+RichTextLabel/font_sizes/normal_font_size = 24
+RichTextLabel/fonts/bold_font = ExtResource("1_mlkpy")
+RichTextLabel/fonts/bold_italics_font = ExtResource("1_mlkpy")
+RichTextLabel/fonts/italics_font = ExtResource("1_mlkpy")
+RichTextLabel/fonts/mono_font = ExtResource("1_mlkpy")
+RichTextLabel/fonts/normal_font = ExtResource("1_mlkpy")

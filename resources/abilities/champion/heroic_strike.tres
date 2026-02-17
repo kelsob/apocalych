@@ -25,3 +25,4 @@ targeting_type = 2
 requires_target = true
 effects = Array[ExtResource("2")]([SubResource("1")])
 can_be_interrupted = true
+channeled_tick_on_cast = false

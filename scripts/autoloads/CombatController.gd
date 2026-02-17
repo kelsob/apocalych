@@ -33,6 +33,14 @@ var waiting_for_player_input: bool = false
 func _ready():
 	print("CombatController initialized")
 
+## Safe display name for logging; avoids Nil access when target died or was removed
+func _safe_display_name(c) -> String:
+	if c == null or not is_instance_valid(c):
+		return "[unknown]"
+	if c is CombatantData:
+		return (c as CombatantData).display_name
+	return str(c)
+
 ## Start combat from an encounter and party members
 func start_combat_from_encounter(encounter: Resource, party_members: Array):
 	if combat_active:
@@ -55,7 +63,7 @@ func start_combat_from_encounter(encounter: Resource, party_members: Array):
 			combatant.died.connect(_on_combatant_died.bind(combatant))
 			player_combatants.append(combatant)
 			combat_timeline.register_combatant(combatant)
-			print("Registered player: %s (Speed: %.2f, AP: %d)" % [combatant.display_name, combatant.get_effective_speed(), combatant.combatant_stats.base_ap_per_turn])
+			print("Registered player: %s (Speed: %.2f, AP: %d)" % [_safe_display_name(combatant), combatant.get_effective_speed(), combatant.combatant_stats.base_ap_per_turn])
 	
 	# Initialize enemy combatants from encounter
 	enemy_combatants.clear()
@@ -66,7 +74,7 @@ func start_combat_from_encounter(encounter: Resource, party_members: Array):
 			combatant.died.connect(_on_combatant_died.bind(combatant))
 			enemy_combatants.append(combatant)
 			combat_timeline.register_combatant(combatant)
-			print("Registered enemy: %s (Speed: %.2f, AP: %d)" % [combatant.display_name, combatant.get_effective_speed(), combatant.combatant_stats.base_ap_per_turn])
+			print("Registered enemy: %s (Speed: %.2f, AP: %d)" % [_safe_display_name(combatant), combatant.get_effective_speed(), combatant.combatant_stats.base_ap_per_turn])
 	
 	# Emit signal
 	combat_started.emit(player_combatants, enemy_combatants)
@@ -95,20 +103,29 @@ func _advance_to_next_turn():
 	# Start turn for combatant (processes status effects, regenerates AP)
 	var status_results = current_turn_combatant.start_turn()
 	
-	# Process any active casts for this combatant
+	# EMIT TURN STARTED SIGNAL FIRST (so "--- Turn ---" logs before anything else)
+	turn_started.emit(current_turn_combatant, turn_event.turn_number, status_results)
+	
+	# THEN process active casts for this combatant
 	var cast_tick_results = combat_timeline.process_cast_ticks(current_turn_combatant)
 	
-	# Process ticking casts (not yet complete)
+	# Check if they have a channeled cast that's still ticking
+	var has_channeling = false
 	for cast in cast_tick_results.ticking_casts:
 		if cast.ability.ability_type == Ability.AbilityType.CHANNELED:
+			has_channeling = true
 			# Apply effects each turn for channeled abilities
 			print("  -> Channeled tick %d/%d" % [cast.current_tick, cast.total_ticks])
 			var effects_applied = _apply_ability_effects(cast.caster, cast.ability, cast.targets)
+			
+			# Emit signal with effects so combat log can display them
+			ability_resolved.emit(cast.caster, cast.ability, cast.targets, effects_applied)
 			channeled_tick.emit(cast)
-			# Log individual effects
+			
+			# Log individual effects (with null checks)
 			for effect in effects_applied:
-				if effect.type == "damage":
-					print("    -> %s takes %d damage" % [effect.target.display_name, effect.amount])
+				if effect.type == "damage" and effect.has("target"):
+					print("    -> %s takes %d damage" % [_safe_display_name(effect.get("target")), effect.amount])
 	
 	# Resolve completed casts
 	for cast in cast_tick_results.completed_casts:
@@ -120,21 +137,25 @@ func _advance_to_next_turn():
 			# Delayed: Apply effects ONCE at the end
 			_resolve_ability_cast(cast)
 	
-	# Emit signal with status results
-	turn_started.emit(current_turn_combatant, turn_event.turn_number, status_results)
-	
 	# Check if combatant can act after processing status effects
 	if not status_results.can_act:
-		print("%s cannot act (stunned/incapacitated), skipping turn" % current_turn_combatant.display_name)
+		print("%s cannot act (stunned/incapacitated), skipping turn" % _safe_display_name(current_turn_combatant))
 		# Give a moment for the log to display status effects
 		await get_tree().create_timer(1.0).timeout
+		_end_current_turn()
+		return
+	
+	# If channeling, automatically end turn (channeling continues)
+	if has_channeling:
+		print("  -> %s continues channeling, turn ends automatically" % _safe_display_name(current_turn_combatant))
+		await get_tree().create_timer(0.5).timeout
 		_end_current_turn()
 		return
 	
 	# If player turn, wait for input
 	if current_turn_combatant.is_player:
 		waiting_for_player_input = true
-		print("Player turn: %s (AP: %d/%d)" % [current_turn_combatant.display_name, current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
+		print("Player turn: %s (AP: %d/%d)" % [_safe_display_name(current_turn_combatant), current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
 	else:
 		# AI turn - execute immediately
 		_execute_ai_turn()
@@ -164,7 +185,7 @@ func player_end_turn():
 	if not waiting_for_player_input:
 		return
 	
-	print("Player ended turn: %s" % current_turn_combatant.display_name)
+	print("Player ended turn: %s" % _safe_display_name(current_turn_combatant))
 	_end_current_turn()
 
 ## Attempt to flee from combat (called by UI)
@@ -184,7 +205,7 @@ func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Arr
 	if not caster.cast_ability(ability, targets):
 		return false
 	
-	print("%s casts %s (AP: %d, Cast Time: %d)" % [caster.display_name, ability.ability_name, ability.get_modified_ap_cost(), ability.get_modified_cast_time()])
+	print("%s casts %s (AP: %d, Cast Time: %d)" % [_safe_display_name(caster), ability.ability_name, ability.get_modified_ap_cost(), ability.get_modified_cast_time()])
 	
 	var cast_time = ability.get_modified_cast_time()
 	
@@ -199,14 +220,15 @@ func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Arr
 		cast_started.emit(cast)
 		print("  -> Queued with %d turn cast time" % cast_time)
 		
-		# Channeled abilities apply effects immediately on the SAME turn they're cast
-		if ability.ability_type == Ability.AbilityType.CHANNELED:
-			print("  -> Channeled: applying first tick immediately")
+		# Channeled abilities: optionally apply first tick on the turn they're cast
+		if ability.ability_type == Ability.AbilityType.CHANNELED and ability.channeled_tick_on_cast:
+			print("  -> Channeled (tick on cast): applying first tick immediately")
 			var effects_applied = _apply_ability_effects(caster, ability, targets)
+			ability_resolved.emit(caster, ability, targets, effects_applied)
 			# Log the first tick
 			for effect in effects_applied:
-				if effect.type == "damage":
-					print("    -> %s takes %d damage (tick 1/%d)" % [effect.target.display_name, effect.amount, cast_time])
+				if effect.type == "damage" and effect.has("target"):
+					print("    -> %s takes %d damage (tick 1/%d)" % [_safe_display_name(effect.get("target")), effect.amount, cast_time])
 	
 	return true
 
@@ -218,7 +240,12 @@ func _resolve_ability_instant(caster: CombatantData, ability: Ability, targets: 
 
 ## Resolve a completed cast
 func _resolve_ability_cast(cast: ActiveCast):
-	print("%s's %s resolves!" % [cast.caster.display_name, cast.ability.ability_name])
+	# Null check
+	if not cast or not cast.caster:
+		push_warning("CombatController: Attempted to resolve cast with null caster")
+		return
+	
+	print("%s's %s resolves!" % [_safe_display_name(cast.caster), cast.ability.ability_name])
 	
 	# For channeled abilities, apply effects one last time on the final turn
 	if cast.ability.ability_type == Ability.AbilityType.CHANNELED:
@@ -244,7 +271,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 						var actual_damage = damage_result.damage_dealt
 						effects_applied.append({"type": "damage", "target": target, "amount": actual_damage})
 						combatant_damaged.emit(target, actual_damage, caster)
-						print("  -> %s takes %d damage" % [target.display_name, actual_damage])
+						print("  -> %s takes %d damage" % [_safe_display_name(target), actual_damage])
 			
 			AbilityEffect.EffectType.HEAL:
 				var potency = effect.calculate_final_potency(caster_stats)
@@ -253,7 +280,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 						target.combatant_stats.heal(potency)
 						effects_applied.append({"type": "heal", "target": target, "amount": potency})
 						combatant_healed.emit(target, potency, caster)
-						print("  -> %s heals %.1f" % [target.display_name, potency])
+						print("  -> %s heals %.1f" % [_safe_display_name(target), potency])
 			
 			AbilityEffect.EffectType.APPLY_STATUS:
 				if effect.status_to_apply:
@@ -262,7 +289,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 							target.combatant_stats.apply_status(effect.status_to_apply)
 							effects_applied.append({"type": "status", "target": target, "status": effect.status_to_apply})
 							status_applied.emit(target, effect.status_to_apply)
-							print("  -> %s gains %s" % [target.display_name, effect.status_to_apply.status_name])
+							print("  -> %s gains %s" % [_safe_display_name(target), effect.status_to_apply.status_name])
 			
 			AbilityEffect.EffectType.INTERRUPT_CAST:
 				for target in targets:
@@ -273,7 +300,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 								combat_timeline.interrupt_casts(target)
 								effects_applied.append({"type": "interrupt", "target": target})
 								cast_interrupted.emit(target, interrupted_cast.ability)
-								print("  -> Interrupted %s's %s" % [target.display_name, interrupted_cast.ability.ability_name])
+								print("  -> Interrupted %s's %s" % [_safe_display_name(target), interrupted_cast.ability.ability_name])
 	
 	return effects_applied
 
@@ -344,10 +371,10 @@ func get_valid_targets(caster: CombatantData, ability: Ability) -> Array:
 
 ## Execute AI turn
 func _execute_ai_turn():
-	print("AI turn: %s (AP: %d/%d)" % [current_turn_combatant.display_name, current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
+	print("AI turn: %s (AP: %d/%d)" % [_safe_display_name(current_turn_combatant), current_turn_combatant.combatant_stats.current_ap, current_turn_combatant.combatant_stats.max_ap])
 	
-	# Small delay for readability
-	await get_tree().create_timer(0.5).timeout
+	# Pause after "Enemy's Turn" is logged so player can read it before the enemy acts
+	await get_tree().create_timer(2.0).timeout
 	
 	# Note: can_act check is now done in _advance_to_next_turn after status processing
 	
@@ -363,6 +390,7 @@ func _execute_ai_turn():
 	# If no abilities available, end turn
 	if available_abilities.is_empty():
 		print("  -> No usable abilities, ending turn")
+		await get_tree().create_timer(1.0).timeout
 		_end_current_turn()
 		return
 	
@@ -374,6 +402,7 @@ func _execute_ai_turn():
 	
 	if valid_targets.is_empty():
 		print("  -> No valid targets for %s, ending turn" % chosen_ability.ability_name)
+		await get_tree().create_timer(1.0).timeout
 		_end_current_turn()
 		return
 	
@@ -393,11 +422,13 @@ func _execute_ai_turn():
 	
 	# Execute the ability
 	if _execute_ability_cast(current_turn_combatant, chosen_ability, selected_targets):
-		# End turn after successful cast
+		# Brief pause before ending turn so player sees the result
+		await get_tree().create_timer(1.0).timeout
 		_end_current_turn()
 	else:
 		# If cast failed, end turn anyway
 		print("  -> Cast failed, ending turn")
+		await get_tree().create_timer(1.0).timeout
 		_end_current_turn()
 
 ## End the current turn
@@ -438,14 +469,14 @@ func _check_victory_conditions() -> bool:
 
 ## Called when a combatant dies
 func _on_combatant_died(combatant: CombatantData):
-	print("%s has died!" % combatant.display_name)
+	print("%s has died!" % _safe_display_name(combatant))
 	combatant_died.emit(combatant)
 	
-	# Remove from timeline
-	combat_timeline.unregister_combatant(combatant)
-	
-	# Interrupt any active casts
-	combat_timeline.interrupt_casts(combatant)
+	# Remove from timeline (if combat is still active)
+	if combat_timeline:
+		combat_timeline.unregister_combatant(combatant)
+		# Interrupt any active casts
+		combat_timeline.interrupt_casts(combatant)
 	
 	# If an enemy died, check victory immediately (all enemies dead)
 	if not combatant.is_player:

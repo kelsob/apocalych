@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://ouf7yg4chq5p"]
+[gd_scene load_steps=5 format=3 uid="uid://ouf7yg4chq5p"]
 
 [ext_resource type="Script" uid="uid://x347o17u3ij5" path="res://scripts/combat/CombatRewards.gd" id="1_6721q"]
 [ext_resource type="PackedScene" uid="uid://ye4mu42w7nqv" path="res://scenes/2d/PanelNinePatchRect.tscn" id="1_w5tyj"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_0qaog"]
 [ext_resource type="PackedScene" uid="uid://cdbh531aowdrv" path="res://scenes/combat/CharacterRewards.tscn" id="2_t74ba"]
 
 [node name="CombatRewards" type="Control"]
@@ -13,38 +14,41 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_6721q")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
 
-[node name="PanelNinePatchRect" parent="VBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="PanelNinePatchRect" parent="MarginContainer/VBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelNinePatchRect"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -20.0
-offset_top = -17.0
-offset_right = 20.0
-offset_bottom = 17.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/PanelNinePatchRect/MarginContainer"]
+layout_mode = 2
+theme = ExtResource("2_0qaog")
 text = "Rewards"
 
-[node name="PanelNinePatchRect2" parent="VBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="PanelNinePatchRect2" parent="MarginContainer/VBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelNinePatchRect2"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect2"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -52,91 +56,106 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelNinePatchRect2/HBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect2/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/PanelNinePatchRect2/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0qaog")
+text = "Gold gained:   "
+
+[node name="GoldGainedLabel" type="Label" parent="MarginContainer/VBoxContainer/PanelNinePatchRect2/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Gold gained:"
+theme = ExtResource("2_0qaog")
 
-[node name="GoldGainedLabel" type="Label" parent="VBoxContainer/PanelNinePatchRect2/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-horizontal_alignment = 2
-
-[node name="PanelNinePatchRect5" parent="VBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="PanelNinePatchRect5" parent="MarginContainer/VBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelNinePatchRect5"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect5"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
 
-[node name="Label" type="Label" parent="VBoxContainer/PanelNinePatchRect5/HBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect5/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/PanelNinePatchRect5/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_0qaog")
+text = "Exp gained: "
+
+[node name="ExpGainedLabel" type="Label" parent="MarginContainer/VBoxContainer/PanelNinePatchRect5/MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Exp gained:"
+theme = ExtResource("2_0qaog")
 
-[node name="ExpGainedLabel" type="Label" parent="VBoxContainer/PanelNinePatchRect5/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-horizontal_alignment = 2
-
-[node name="PanelNinePatchRect4" parent="VBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="PanelNinePatchRect4" parent="MarginContainer/VBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/PanelNinePatchRect4"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
 
-[node name="PartyRewardsPanelContainer" type="PanelContainer" parent="VBoxContainer/PanelNinePatchRect4/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer"]
+layout_mode = 2
+
+[node name="PartyRewardsPanelContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer"]
 layout_mode = 2
 theme_override_constants/separation = 32
 
-[node name="CharacterRewards" parent="VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
+[node name="CharacterRewards" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="CharacterRewards2" parent="VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
+[node name="CharacterRewards2" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="CharacterRewards3" parent="VBoxContainer/PanelNinePatchRect4/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
+[node name="CharacterRewards3" parent="MarginContainer/VBoxContainer/PanelNinePatchRect4/MarginContainer/VBoxContainer/PartyRewardsPanelContainer/VBoxContainer" instance=ExtResource("2_t74ba")]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="PanelNinePatchRect3" parent="VBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="PanelNinePatchRect3" parent="MarginContainer/VBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/PanelNinePatchRect3"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
 
-[node name="PanelNinePatchRect" parent="VBoxContainer/PanelNinePatchRect3/HBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer"]
+layout_mode = 2
+
+[node name="PanelNinePatchRect" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer" instance=ExtResource("1_w5tyj")]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/PanelNinePatchRect3/HBoxContainer/PanelNinePatchRect"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer/PanelNinePatchRect"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -144,21 +163,25 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="PanelNinePatchRect2" parent="VBoxContainer/PanelNinePatchRect3/HBoxContainer" instance=ExtResource("1_w5tyj")]
+[node name="PanelNinePatchRect2" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer" instance=ExtResource("1_w5tyj")]
 custom_minimum_size = Vector2(384, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/PanelNinePatchRect3/HBoxContainer/PanelNinePatchRect2"]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer/PanelNinePatchRect2"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_0qaog")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer/PanelNinePatchRect2/MarginContainer"]
+layout_mode = 2
 alignment = 1
 
-[node name="ContinueButton" type="Button" parent="VBoxContainer/PanelNinePatchRect3/HBoxContainer/PanelNinePatchRect2/VBoxContainer"]
+[node name="ContinueButton" type="Button" parent="MarginContainer/VBoxContainer/PanelNinePatchRect3/MarginContainer/HBoxContainer/PanelNinePatchRect2/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 4
 text = "Continue"

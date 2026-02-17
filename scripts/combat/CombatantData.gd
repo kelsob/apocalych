@@ -111,9 +111,8 @@ func take_damage(amount: float, source_combatant: CombatantData = null) -> Dicti
 	var damage_result = combatant_stats.take_damage(amount)
 	took_damage.emit(amount, source_combatant)
 	
-	if not damage_result.alive:
-		is_dead = true
-		died.emit()
+	# Don't emit died here - it's handled by _on_died when combatant_stats.died fires
+	# This prevents double death logging
 	
 	return damage_result
 

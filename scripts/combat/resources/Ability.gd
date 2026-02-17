@@ -40,6 +40,10 @@ enum TargetingType {
 # Interruption
 @export var can_be_interrupted: bool = true
 
+# Channeled behavior: if true, channeled abilities apply their first tick on the turn they're cast
+# If false, first tick happens on the caster's next turn (e.g. items can set this to true)
+@export var channeled_tick_on_cast: bool = false
+
 # Modifiers (applied by items/passives at runtime)
 # These are dictionaries that modify ability properties
 # e.g., {"cast_time": -1, "ap_cost": -1, "potency_multiplier": 1.2}

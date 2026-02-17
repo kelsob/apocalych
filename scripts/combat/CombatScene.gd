@@ -6,11 +6,11 @@ extends Control
 # Node references
 @onready var current_turn_label: Label = $MarginContainer/VBoxContainer/CurrentTurnLabel
 @onready var turn_order_display: HBoxContainer = $MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer/ScrollContainer/TurnOrderDisplay
-@onready var combat_area_player_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel
-@onready var combat_area_enemy_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel
-@onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/VBoxContainer
-@onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/VBoxContainer
-@onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/CombatLogContainer/CombatLogLabel
+@onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel/HBoxContainer
+@onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel/HBoxContainer
+@onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
+@onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer/VBoxContainer
+@onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer/CombatLogContainer/CombatLogLabel
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
@@ -33,6 +33,9 @@ var combatant_sprites: Dictionary = {}  # CombatantData -> CombatCharacterSprite
 var combatant_info_panels: Dictionary = {}  # CombatantData -> CharacterCombatInformationPanel
 var combatant_clickable_areas: Dictionary = {}  # CombatantData -> Button (for targeting)
 var ability_buttons: Array[Button] = []
+
+# Deaths that happened during an ability; we log them right after the ability log so order is correct
+var _pending_death_logs: Array = []  # [CombatantData, ...]
 
 func _ready():
 	print("CombatScene _ready() called")
@@ -61,6 +64,20 @@ func _ready():
 	
 	print("CombatScene initialized and signals connected")
 
+## Safe display name for logging; avoids Nil access when target died or was removed
+func _safe_combatant_name(c) -> String:
+	if c == null or not is_instance_valid(c):
+		return "Unknown"
+	if c is CombatantData:
+		return (c as CombatantData).display_name
+	return str(c)
+
+## Log any queued "X has fallen!" messages (so deaths appear after damage, before next turn)
+func _flush_pending_death_logs():
+	for combatant in _pending_death_logs:
+		_log_message("  %s has fallen!" % _safe_combatant_name(combatant))
+	_pending_death_logs.clear()
+
 ## Called when combat starts
 func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	print("CombatScene: _on_combat_started called with %d players, %d enemies" % [player_combatants.size(), enemy_combatants.size()])
@@ -74,12 +91,12 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	
 	# Generate player combatants (sprites in combat area + info panels below)
 	for combatant in player_combatants:
-		print("CombatScene: Creating display for player: %s" % combatant.display_name)
+		print("CombatScene: Creating display for player: %s" % _safe_combatant_name(combatant))
 		_create_player_combatant_display(combatant)
 	
 	# Generate enemy combatants (sprites in combat area only)
 	for combatant in enemy_combatants:
-		print("CombatScene: Creating display for enemy: %s" % combatant.display_name)
+		print("CombatScene: Creating display for enemy: %s" % _safe_combatant_name(combatant))
 		_create_enemy_combatant_display(combatant)
 	
 	# Update turn order display
@@ -87,8 +104,12 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	_update_turn_order_display()
 	print("CombatScene: Combat start complete")
 
-## Called when combat ends
+## Called when combat ends (emitted from death handler; defer so damage/death logs appear first)
 func _on_combat_ended(victory: bool, rewards: Dictionary):
+	call_deferred("_deferred_combat_end", victory, rewards)
+
+## Runs after current frame so combat log shows damage and "X has fallen!" before VICTORY/DEFEAT
+func _deferred_combat_end(victory: bool, rewards: Dictionary):
 	if victory:
 		_log_message("=== VICTORY ===")
 	else:
@@ -118,17 +139,21 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 
 ## Called when a turn starts
 func _on_turn_started(combatant: CombatantData, turn_number: int, status_results: Dictionary):
-	_log_message("--- %s's Turn ---" % combatant.display_name)
+	if not combatant or not is_instance_valid(combatant):
+		return
+	# Flush any deaths from previous turn (e.g. DoT kill) before showing "X's Turn"
+	_flush_pending_death_logs()
+	_log_message("--- %s's Turn ---" % _safe_combatant_name(combatant))
 	
-	current_turn_label.text = "%s's Turn" % combatant.display_name
+	current_turn_label.text = "%s's Turn" % _safe_combatant_name(combatant)
 	
 	# Log any status effects that triggered (DoTs, HoTs, etc.)
 	for effect in status_results.get("effects_triggered", []):
 		match effect.type:
 			"damage":
-				_log_message("  %s takes %d damage from %s" % [combatant.display_name, effect.amount, effect.status])
+				_log_message("  %s takes %d damage from %s" % [_safe_combatant_name(combatant), effect.amount, effect.status])
 			"heal":
-				_log_message("  %s heals %d from %s" % [combatant.display_name, effect.amount, effect.status])
+				_log_message("  %s heals %d from %s" % [_safe_combatant_name(combatant), effect.amount, effect.status])
 	
 	# Update turn order display
 	_update_turn_order_display()
@@ -136,13 +161,16 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	# Update info panel for current combatant (AP refreshed, health may have changed from DoTs)
 	_update_combatant_info_panel(combatant)
 	
+	# Update all combatant sprites (casting displays may have changed)
+	_update_all_casting_displays()
+	
 	# Check if combatant is stunned/incapacitated
 	if not status_results.get("can_act", true):
-		_log_message("  %s is stunned and cannot act!" % combatant.display_name)
+		_log_message("  %s is stunned and cannot act!" % _safe_combatant_name(combatant))
 		
 		# Show which control effects wore off
 		for status_name in status_results.get("control_statuses_consumed", []):
-			_log_message("  %s's %s wore off!" % [combatant.display_name, status_name])
+			_log_message("  %s's %s wore off!" % [_safe_combatant_name(combatant), status_name])
 		
 		current_player_combatant = null
 		_clear_ability_panel()
@@ -150,7 +178,7 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	
 	# Log non-control statuses that wore off (buffs, debuffs, DoTs, HoTs)
 	for status_name in status_results.get("statuses_expired", []):
-		_log_message("  %s's %s wore off!" % [combatant.display_name, status_name])
+		_log_message("  %s's %s wore off!" % [_safe_combatant_name(combatant), status_name])
 	
 	# If player turn, show abilities
 	if combatant.is_player:
@@ -164,106 +192,142 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 ## Called when a delayed/channeled cast starts
 func _on_cast_started(cast):
 	var cast_time = cast.ability.get_modified_cast_time()
-	
+	var caster_name = _safe_combatant_name(cast.caster)
 	# Show different messages for delayed vs channeled
 	if cast.ability.ability_type == Ability.AbilityType.DELAYED_CAST:
 		_log_message("%s begins casting %s (%d turn%s)" % [
-			cast.caster.display_name,
+			caster_name,
 			cast.ability.ability_name,
 			cast_time,
 			"s" if cast_time != 1 else ""
 		])
 	elif cast.ability.ability_type == Ability.AbilityType.CHANNELED:
 		_log_message("%s begins channeling %s (%d turn%s)" % [
-			cast.caster.display_name,
+			caster_name,
 			cast.ability.ability_name,
 			cast_time,
 			"s" if cast_time != 1 else ""
 		])
+	
+	# Update casting display on the caster's sprite
+	if combatant_sprites.has(cast.caster):
+		var sprite = combatant_sprites[cast.caster]
+		sprite.update_casting_display()
 
-## Called when a channeled ability ticks
+## Called when a channeled ability ticks (subsequent turns, not the first)
 func _on_channeled_tick(cast):
-	# Channeled abilities trigger every turn, so don't show "continues" on first turn
-	# First turn was already shown in cast_started
-	if cast.current_tick > 1:
-		var remaining = cast.remaining_cast_time
-		_log_message("  %s continues channeling %s (%d turn%s remaining)" % [
-			cast.caster.display_name,
-			cast.ability.ability_name,
-			remaining,
-			"s" if remaining != 1 else ""
-		])
+	# Update casting display
+	if combatant_sprites.has(cast.caster):
+		var sprite = combatant_sprites[cast.caster]
+		sprite.update_casting_display()
 
 ## Called when an ability resolves
 func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array):
+	# Null check
+	if not caster or not ability:
+		_flush_pending_death_logs()
+		return
+	
 	# Filter different effect types
 	var damage_effects = effects_applied.filter(func(e): return e.type == "damage")
 	var heal_effects = effects_applied.filter(func(e): return e.type == "heal")
 	var status_effects = effects_applied.filter(func(e): return e.type == "status")
 	var interrupt_effects = effects_applied.filter(func(e): return e.type == "interrupt")
 	
-	# Check if this is a delayed cast resolving
+	# Check ability type
 	var is_delayed_cast = (ability.ability_type == Ability.AbilityType.DELAYED_CAST)
+	var is_channeled = (ability.ability_type == Ability.AbilityType.CHANNELED)
+	
+	# For channeled abilities that just completed with no effects, just log completion
+	if is_channeled and effects_applied.is_empty():
+		_log_message("  %s's %s completes!" % [_safe_combatant_name(caster), ability.ability_name])
+		_flush_pending_death_logs()
+		return
 	
 	# Single-target damage - combine into one message
 	if damage_effects.size() == 1 and heal_effects.is_empty() and status_effects.is_empty():
 		var effect = damage_effects[0]
+		if not effect.get("target"):
+			_flush_pending_death_logs()
+			return  # Target is null/invalid, skip
+		var tname = _safe_combatant_name(effect.get("target"))
 		if is_delayed_cast:
 			_log_message("%s's %s finishes casting and hits %s for %d damage!" % [
-				caster.display_name,
+				_safe_combatant_name(caster),
 				ability.ability_name,
-				effect.target.display_name,
+				tname,
 				int(effect.amount)
 			])
 		else:
 			_log_message("%s attacked %s with %s and dealt %d damage" % [
-				caster.display_name,
-				effect.target.display_name,
+				_safe_combatant_name(caster),
+				tname,
 				ability.ability_name,
 				int(effect.amount)
 			])
 	# Single-target heal - combine into one message
 	elif heal_effects.size() == 1 and damage_effects.is_empty() and status_effects.is_empty():
 		var effect = heal_effects[0]
+		if not effect.get("target"):
+			_flush_pending_death_logs()
+			return
 		_log_message("%s healed %s with %s for %d health" % [
-			caster.display_name,
-			effect.target.display_name,
+			_safe_combatant_name(caster),
+			_safe_combatant_name(effect.get("target")),
 			ability.ability_name,
 			int(effect.amount)
 		])
 	# Multi-target or mixed effects - show ability first, then individual effects
 	else:
-		# For channeled abilities with no effects_applied, just show completion (already applied on ticks)
-		if ability.ability_type == Ability.AbilityType.CHANNELED and effects_applied.is_empty():
-			_log_message("  %s's %s completes!" % [caster.display_name, ability.ability_name])
-			return  # Don't show individual effects since there are none
-		
-		# Show appropriate resolution message
+		# Show appropriate message based on ability type
 		if is_delayed_cast:
-			_log_message("%s's %s finishes casting!" % [caster.display_name, ability.ability_name])
-		elif ability.ability_type == Ability.AbilityType.CHANNELED:
-			_log_message("%s's %s completes!" % [caster.display_name, ability.ability_name])
+			_log_message("%s's %s finishes casting!" % [_safe_combatant_name(caster), ability.ability_name])
+		elif is_channeled:
+			# For channeled ticks, show "channels" instead of "used"
+			var has_active_cast = CombatController.combat_timeline and CombatController.combat_timeline.has_active_cast(caster)
+			if has_active_cast:
+				# Still channeling - this is a tick
+				var active_cast = CombatController.combat_timeline.get_active_cast(caster)
+				_log_message("  %s channels %s (%d turn%s remaining)" % [
+					_safe_combatant_name(caster),
+					ability.ability_name,
+					active_cast.remaining_cast_time if active_cast else 0,
+					"s" if (active_cast.remaining_cast_time if active_cast else 0) != 1 else ""
+				])
+			else:
+				# Just completed
+				_log_message("  %s's %s completes!" % [_safe_combatant_name(caster), ability.ability_name])
 		else:
-			_log_message("%s used %s" % [caster.display_name, ability.ability_name])
+			_log_message("%s used %s" % [_safe_combatant_name(caster), ability.ability_name])
 		
 		# Show damage to each target
 		for effect in damage_effects:
-			_log_message("  → %s takes %d damage" % [effect.target.display_name, int(effect.amount)])
+			if effect.has("target"):
+				_log_message("  → %s takes %d damage" % [_safe_combatant_name(effect.get("target")), int(effect.amount)])
 		
 		# Show healing to each target
 		for effect in heal_effects:
-			_log_message("  → %s heals %d" % [effect.target.display_name, int(effect.amount)])
+			if effect.has("target"):
+				_log_message("  → %s heals %d" % [_safe_combatant_name(effect.get("target")), int(effect.amount)])
 		
 		# Show status effects applied
 		for effect in status_effects:
-			_log_message("  → %s is afflicted with %s" % [effect.target.display_name, effect.status.status_name])
+			if effect.has("target") and effect.has("status") and effect.status:
+				_log_message("  → %s is afflicted with %s" % [_safe_combatant_name(effect.get("target")), effect.status.status_name])
 		
 		# Show interrupts
 		for effect in interrupt_effects:
-			_log_message("  → %s's cast was interrupted!" % effect.target.display_name)
+			if effect.has("target"):
+				_log_message("  → %s's cast was interrupted!" % _safe_combatant_name(effect.get("target")))
 	
 	# Update caster's AP display (spent AP on ability)
 	_update_combatant_info_panel(caster)
+	
+	# Update casting displays (casts may have completed)
+	_update_all_casting_displays()
+	
+	# Log any deaths from this ability now (after damage lines, before turn advances)
+	_flush_pending_death_logs()
 
 ## Called when a combatant takes damage
 func _on_combatant_damaged(combatant: CombatantData, amount: float, source: CombatantData):
@@ -277,7 +341,8 @@ func _on_combatant_healed(combatant: CombatantData, amount: float, source: Comba
 
 ## Called when a combatant dies
 func _on_combatant_died(combatant: CombatantData):
-	_log_message("  %s has fallen!" % combatant.display_name)
+	# Queue the death log; we flush it after the ability log so order is: damage → fallen → next turn
+	_pending_death_logs.append(combatant)
 	
 	# Grey out sprite to show death
 	if combatant_sprites.has(combatant):
@@ -301,8 +366,11 @@ func _create_player_combatant_display(combatant: CombatantData):
 	combat_area_player_panel.add_child(sprite_instance)
 	combatant_sprites[combatant] = sprite_instance
 	
+	# Setup sprite with combatant data
+	sprite_instance.setup(combatant)
+	
 	# TODO: Set sprite texture based on class/character
-	# sprite_instance.sprite.texture = load("res://assets/characters/%s.png" % combatant.display_name)
+	# sprite_instance.character_sprite.texture = load("res://assets/characters/%s.png" % combatant.display_name)
 	
 	# Create clickable button overlay for targeting (invisible, just for clicks)
 	var click_button = Button.new()
@@ -327,8 +395,11 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 	combat_area_enemy_panel.add_child(sprite_instance)
 	combatant_sprites[combatant] = sprite_instance
 	
+	# Setup sprite with combatant data
+	sprite_instance.setup(combatant)
+	
 	# TODO: Set sprite texture based on enemy type
-	# sprite_instance.sprite.texture = load("res://assets/enemies/%s.png" % combatant.display_name)
+	# sprite_instance.character_sprite.texture = load("res://assets/enemies/%s.png" % combatant.display_name)
 	
 	# Create clickable button overlay for targeting
 	var click_button = Button.new()
@@ -338,7 +409,7 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 	sprite_instance.add_child(click_button)
 	combatant_clickable_areas[combatant] = click_button
 	
-	# Enemies don't get info panels (or optionally you could add them above the sprite)
+	# Enemies don't get info panels (their health is shown on the sprite)
 
 ## Show abilities for a combatant
 func _show_abilities_for_combatant(combatant: CombatantData):
@@ -428,19 +499,37 @@ func _update_turn_order_display():
 
 ## Update combatant info panel with current stats
 func _update_combatant_info_panel(combatant: CombatantData):
-	if combatant_info_panels.has(combatant):
-		var info_panel = combatant_info_panels[combatant]
-		info_panel.update_display(
-			combatant.display_name,
-			combatant.combatant_stats.current_health,
-			combatant.combatant_stats.max_health,
-			combatant.combatant_stats.current_ap,
-			combatant.combatant_stats.max_ap
-		)
+	if not combatant or not is_instance_valid(combatant) or not combatant_info_panels.has(combatant):
+		return
+	var info_panel = combatant_info_panels[combatant]
+	var stats = combatant.combatant_stats
+	if not stats:
+		return
+	info_panel.update_display(
+		_safe_combatant_name(combatant),
+		stats.current_health,
+		stats.max_health,
+		stats.current_ap,
+		stats.max_ap
+	)
 
 ## Update combatant health display
 func _update_combatant_health_display(combatant: CombatantData):
+	if not combatant or not is_instance_valid(combatant):
+		return
+	# Update info panel if they have one (players)
 	_update_combatant_info_panel(combatant)
+	
+	# Update sprite health bar (all combatants)
+	if combatant_sprites.has(combatant):
+		var sprite = combatant_sprites[combatant]
+		sprite.update_health_display()
+
+## Update all casting displays (after turns change or casts start/complete)
+func _update_all_casting_displays():
+	for combatant in combatant_sprites:
+		var sprite = combatant_sprites[combatant]
+		sprite.update_casting_display()
 
 ## Called when ability button pressed - enter targeting; never auto-fire
 func _on_ability_button_pressed(ability: Ability):
@@ -493,13 +582,13 @@ func _on_combatant_clicked(combatant: CombatantData):
 ## Called when Pass Turn button pressed
 func _on_pass_turn_pressed():
 	if current_player_combatant:
-		_log_message("%s passes their turn" % current_player_combatant.display_name)
+		_log_message("%s passes their turn" % _safe_combatant_name(current_player_combatant))
 		CombatController.player_end_turn()
 
 ## Called when Flee button pressed
 func _on_flee_pressed():
 	if current_player_combatant:
-		_log_message("%s attempts to flee..." % current_player_combatant.display_name)
+		_log_message("%s attempts to flee..." % _safe_combatant_name(current_player_combatant))
 		_attempt_flee()
 
 ## Attempt to flee from combat

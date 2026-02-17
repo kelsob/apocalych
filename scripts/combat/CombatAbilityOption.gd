@@ -4,9 +4,9 @@ extends Button
 ## Shows ability name, AP cost, and handles click interactions
 
 # Node references
-@onready var selection_icon: TextureRect = $HBoxContainer/SelectionIcon
-@onready var ability_name_label: Label = $HBoxContainer/AbilityNameLabel
-@onready var ap_cost_label: Label = $HBoxContainer/APCostLabel
+@onready var selection_icon: Sprite2D = $MarginContainer/HBoxContainer/SelectionIcon/Sprite2D
+@onready var ability_name_label: Label = $MarginContainer/HBoxContainer/AbilityNameLabel
+@onready var ap_cost_label: Label = $MarginContainer/HBoxContainer/APCostLabel
 
 # Data
 var ability: Ability = null

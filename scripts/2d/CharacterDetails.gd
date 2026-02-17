@@ -3,7 +3,7 @@ extends Control
 @onready var name_label: Label = $MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/NameLabel
 @onready var class_label: Label = $MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
 @onready var race_label: Label = $MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/RaceLabel
-@onready var level_label: Label = $MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
+@onready var level_label: Label = $MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/LevelLabel
 
 func set_member(member: PartyMember) -> void:
 	if not member:
