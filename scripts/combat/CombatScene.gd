@@ -52,6 +52,8 @@ func _ready():
 	CombatController.combat_started.connect(_on_combat_started)
 	CombatController.combat_ended.connect(_on_combat_ended)
 	CombatController.turn_started.connect(_on_turn_started)
+	CombatController.cast_started.connect(_on_cast_started)
+	CombatController.channeled_tick.connect(_on_channeled_tick)
 	CombatController.ability_resolved.connect(_on_ability_resolved)
 	CombatController.combatant_damaged.connect(_on_combatant_damaged)
 	CombatController.combatant_healed.connect(_on_combatant_healed)
@@ -159,6 +161,39 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 		current_player_combatant = null
 		_clear_ability_panel()
 
+## Called when a delayed/channeled cast starts
+func _on_cast_started(cast):
+	var cast_time = cast.ability.get_modified_cast_time()
+	
+	# Show different messages for delayed vs channeled
+	if cast.ability.ability_type == Ability.AbilityType.DELAYED_CAST:
+		_log_message("%s begins casting %s (%d turn%s)" % [
+			cast.caster.display_name,
+			cast.ability.ability_name,
+			cast_time,
+			"s" if cast_time != 1 else ""
+		])
+	elif cast.ability.ability_type == Ability.AbilityType.CHANNELED:
+		_log_message("%s begins channeling %s (%d turn%s)" % [
+			cast.caster.display_name,
+			cast.ability.ability_name,
+			cast_time,
+			"s" if cast_time != 1 else ""
+		])
+
+## Called when a channeled ability ticks
+func _on_channeled_tick(cast):
+	# Channeled abilities trigger every turn, so don't show "continues" on first turn
+	# First turn was already shown in cast_started
+	if cast.current_tick > 1:
+		var remaining = cast.remaining_cast_time
+		_log_message("  %s continues channeling %s (%d turn%s remaining)" % [
+			cast.caster.display_name,
+			cast.ability.ability_name,
+			remaining,
+			"s" if remaining != 1 else ""
+		])
+
 ## Called when an ability resolves
 func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array):
 	# Filter different effect types
@@ -167,15 +202,26 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 	var status_effects = effects_applied.filter(func(e): return e.type == "status")
 	var interrupt_effects = effects_applied.filter(func(e): return e.type == "interrupt")
 	
+	# Check if this is a delayed cast resolving
+	var is_delayed_cast = (ability.ability_type == Ability.AbilityType.DELAYED_CAST)
+	
 	# Single-target damage - combine into one message
 	if damage_effects.size() == 1 and heal_effects.is_empty() and status_effects.is_empty():
 		var effect = damage_effects[0]
-		_log_message("%s attacked %s with %s and dealt %d damage" % [
-			caster.display_name,
-			effect.target.display_name,
-			ability.ability_name,
-			int(effect.amount)
-		])
+		if is_delayed_cast:
+			_log_message("%s's %s finishes casting and hits %s for %d damage!" % [
+				caster.display_name,
+				ability.ability_name,
+				effect.target.display_name,
+				int(effect.amount)
+			])
+		else:
+			_log_message("%s attacked %s with %s and dealt %d damage" % [
+				caster.display_name,
+				effect.target.display_name,
+				ability.ability_name,
+				int(effect.amount)
+			])
 	# Single-target heal - combine into one message
 	elif heal_effects.size() == 1 and damage_effects.is_empty() and status_effects.is_empty():
 		var effect = heal_effects[0]
@@ -187,7 +233,18 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 		])
 	# Multi-target or mixed effects - show ability first, then individual effects
 	else:
-		_log_message("%s used %s" % [caster.display_name, ability.ability_name])
+		# For channeled abilities with no effects_applied, just show completion (already applied on ticks)
+		if ability.ability_type == Ability.AbilityType.CHANNELED and effects_applied.is_empty():
+			_log_message("  %s's %s completes!" % [caster.display_name, ability.ability_name])
+			return  # Don't show individual effects since there are none
+		
+		# Show appropriate resolution message
+		if is_delayed_cast:
+			_log_message("%s's %s finishes casting!" % [caster.display_name, ability.ability_name])
+		elif ability.ability_type == Ability.AbilityType.CHANNELED:
+			_log_message("%s's %s completes!" % [caster.display_name, ability.ability_name])
+		else:
+			_log_message("%s used %s" % [caster.display_name, ability.ability_name])
 		
 		# Show damage to each target
 		for effect in damage_effects:

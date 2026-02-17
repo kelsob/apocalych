@@ -120,9 +120,10 @@ func queue_ability_cast(caster: CombatantData, ability: Ability, targets: Array)
 	active_casts.append(cast)
 
 ## Process cast ticks for a combatant's turn
-## Returns array of casts that completed this turn
-func process_cast_ticks(combatant: CombatantData) -> Array[ActiveCast]:
+## Returns dictionary with completed and ticking casts
+func process_cast_ticks(combatant: CombatantData) -> Dictionary:
 	var completed_casts: Array[ActiveCast] = []
+	var ticking_casts: Array[ActiveCast] = []
 	
 	for i in range(active_casts.size() - 1, -1, -1):
 		var cast = active_casts[i]
@@ -132,8 +133,14 @@ func process_cast_ticks(combatant: CombatantData) -> Array[ActiveCast]:
 				# Cast completed
 				completed_casts.append(cast)
 				active_casts.remove_at(i)
+			else:
+				# Cast still ticking
+				ticking_casts.append(cast)
 	
-	return completed_casts
+	return {
+		"completed_casts": completed_casts,
+		"ticking_casts": ticking_casts
+	}
 
 ## Interrupt all casts by a combatant
 func interrupt_casts(combatant: CombatantData):
@@ -148,8 +155,11 @@ func interrupt_casts(combatant: CombatantData):
 func get_turn_preview(count: int = 10) -> Array[TurnEvent]:
 	var preview: Array[TurnEvent] = []
 	
-	# Start with current queue
-	var simulated_queue = turn_queue.duplicate()
+	# Start with current queue, filtering out dead combatants
+	var simulated_queue = []
+	for turn_event in turn_queue:
+		if not turn_event.combatant.is_dead:
+			simulated_queue.append(turn_event)
 	
 	# Track next turn time for each combatant
 	var combatant_next_times: Dictionary = {}
@@ -189,6 +199,11 @@ func get_turn_preview(count: int = 10) -> Array[TurnEvent]:
 		# Take the next turn from simulated queue
 		if not simulated_queue.is_empty():
 			var next_turn = simulated_queue.pop_front()
+			
+			# Skip dead combatants
+			if next_turn.combatant.is_dead:
+				continue
+			
 			preview.append(next_turn)
 			
 			# Schedule this combatant's next turn in the simulation

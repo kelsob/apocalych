@@ -9,6 +9,8 @@ var ability: Ability = null
 var targets: Array = []  # Array of CombatantData
 var base_cast_time: int = 0
 var remaining_cast_time: int = 0
+var current_tick: int = 0
+var total_ticks: int = 0
 var can_be_interrupted: bool = true
 var is_channeled: bool = false
 
@@ -18,19 +20,18 @@ func _init(p_caster: CombatantData, p_ability: Ability, p_targets: Array):
 	targets = p_targets
 	base_cast_time = p_ability.get_modified_cast_time()
 	remaining_cast_time = base_cast_time
+	total_ticks = base_cast_time
+	current_tick = 0
 	can_be_interrupted = p_ability.can_be_interrupted
 	is_channeled = (p_ability.ability_type == Ability.AbilityType.CHANNELED)
 
 ## Process a turn tick for this cast
-## Returns true if cast is complete and should resolve
+## Returns true if cast is complete and should be removed
 func tick() -> bool:
+	current_tick += 1
 	remaining_cast_time -= 1
 	
-	# Channeled abilities apply effects each tick
-	if is_channeled and remaining_cast_time > 0:
-		# Effects will be applied by CombatController
-		pass
-	
+	# Cast is complete when remaining time reaches 0
 	return remaining_cast_time <= 0
 
 ## Check if this cast can be interrupted

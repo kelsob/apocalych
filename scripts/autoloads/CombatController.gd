@@ -96,9 +96,29 @@ func _advance_to_next_turn():
 	var status_results = current_turn_combatant.start_turn()
 	
 	# Process any active casts for this combatant
-	var completed_casts = combat_timeline.process_cast_ticks(current_turn_combatant)
-	for cast in completed_casts:
-		_resolve_ability_cast(cast)
+	var cast_tick_results = combat_timeline.process_cast_ticks(current_turn_combatant)
+	
+	# Process ticking casts (not yet complete)
+	for cast in cast_tick_results.ticking_casts:
+		if cast.ability.ability_type == Ability.AbilityType.CHANNELED:
+			# Apply effects each turn for channeled abilities
+			print("  -> Channeled tick %d/%d" % [cast.current_tick, cast.total_ticks])
+			var effects_applied = _apply_ability_effects(cast.caster, cast.ability, cast.targets)
+			channeled_tick.emit(cast)
+			# Log individual effects
+			for effect in effects_applied:
+				if effect.type == "damage":
+					print("    -> %s takes %d damage" % [effect.target.display_name, effect.amount])
+	
+	# Resolve completed casts
+	for cast in cast_tick_results.completed_casts:
+		if cast.ability.ability_type == Ability.AbilityType.CHANNELED:
+			# Channeled: Just ends, no final effect (already applied on last tick)
+			ability_resolved.emit(cast.caster, cast.ability, cast.targets, [])
+			print("  -> Channeled cast complete (no final effect, already applied)")
+		else:
+			# Delayed: Apply effects ONCE at the end
+			_resolve_ability_cast(cast)
 	
 	# Emit signal with status results
 	turn_started.emit(current_turn_combatant, turn_event.turn_number, status_results)
@@ -178,6 +198,15 @@ func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Arr
 		ability_queued.emit(caster, ability, targets)
 		cast_started.emit(cast)
 		print("  -> Queued with %d turn cast time" % cast_time)
+		
+		# Channeled abilities apply effects immediately on the SAME turn they're cast
+		if ability.ability_type == Ability.AbilityType.CHANNELED:
+			print("  -> Channeled: applying first tick immediately")
+			var effects_applied = _apply_ability_effects(caster, ability, targets)
+			# Log the first tick
+			for effect in effects_applied:
+				if effect.type == "damage":
+					print("    -> %s takes %d damage (tick 1/%d)" % [effect.target.display_name, effect.amount, cast_time])
 	
 	return true
 
@@ -190,8 +219,15 @@ func _resolve_ability_instant(caster: CombatantData, ability: Ability, targets: 
 ## Resolve a completed cast
 func _resolve_ability_cast(cast: ActiveCast):
 	print("%s's %s resolves!" % [cast.caster.display_name, cast.ability.ability_name])
-	var effects_applied = _apply_ability_effects(cast.caster, cast.ability, cast.targets)
-	ability_resolved.emit(cast.caster, cast.ability, cast.targets, effects_applied)
+	
+	# For channeled abilities, apply effects one last time on the final turn
+	if cast.ability.ability_type == Ability.AbilityType.CHANNELED:
+		var effects_applied = _apply_ability_effects(cast.caster, cast.ability, cast.targets)
+		ability_resolved.emit(cast.caster, cast.ability, cast.targets, effects_applied)
+	else:
+		# Delayed casts only resolve once at the end
+		var effects_applied = _apply_ability_effects(cast.caster, cast.ability, cast.targets)
+		ability_resolved.emit(cast.caster, cast.ability, cast.targets, effects_applied)
 
 ## Apply ability effects to targets
 func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Array) -> Array:
