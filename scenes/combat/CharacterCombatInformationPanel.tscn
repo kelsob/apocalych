@@ -23,6 +23,7 @@ alignment = 1
 
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 16
 
 [node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
@@ -33,43 +34,76 @@ vertical_alignment = 2
 [node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
+alignment = 2
 
 [node name="APLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+text = "1"
 horizontal_alignment = 2
 vertical_alignment = 2
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(6, 9)
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 4
+
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer/Control"]
+position = Vector2(0, 13)
+scale = Vector2(0.25, 0.25)
 texture = ExtResource("3_x4gb5")
+centered = false
 
 [node name="APMaxLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
+theme = ExtResource("2_32hsn")
+text = "10"
+vertical_alignment = 2
+
+[node name="APLabel2" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+modulate = Color(0, 1, 0, 1)
+layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+text = " AP"
 vertical_alignment = 2
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 0
 
 [node name="HealthLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+text = "1"
 horizontal_alignment = 2
 vertical_alignment = 2
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(6, 9)
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 4
+
+[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2/Control"]
+position = Vector2(0, 13)
+scale = Vector2(0.25, 0.25)
 texture = ExtResource("3_x4gb5")
+centered = false
 
 [node name="HealthMaxLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
 layout_mode = 2
+theme = ExtResource("2_32hsn")
+text = "10"
+vertical_alignment = 2
+
+[node name="HPLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+modulate = Color(1, 0, 0, 1)
+layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+text = " HP"
 vertical_alignment = 2

@@ -10,6 +10,8 @@ class_name CombatCharacterSprite
 # Targeting visuals (created in _ready so we don't require scene edits)
 var _selection_highlight: ColorRect = null
 var _valid_outline: ColorRect = null
+# Hover highlight when turn order entry (or this sprite) is hovered - distinct from selection
+var _hover_highlight: ColorRect = null
 
 # Combatant reference (set by CombatScene)
 var combatant: CombatantData = null
@@ -38,6 +40,13 @@ func _ready():
 	_valid_outline.visible = false
 	add_child(_valid_outline)
 	
+	# Hover highlight when this character is highlighted via turn order / sprite hover (not selection)
+	_hover_highlight = ColorRect.new()
+	_hover_highlight.color = Color(0.4, 0.7, 1.0, 0.2)
+	_hover_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hover_highlight.visible = false
+	add_child(_hover_highlight)
+	
 	call_deferred("_resize_overlays")
 
 func _resize_overlays():
@@ -48,6 +57,10 @@ func _resize_overlays():
 	_valid_outline.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_valid_outline.set_offsets_preset(Control.PRESET_FULL_RECT)
 	_valid_outline.size = sz
+	if _hover_highlight:
+		_hover_highlight.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_hover_highlight.set_offsets_preset(Control.PRESET_FULL_RECT)
+		_hover_highlight.size = sz
 
 func _notification(what: int):
 	if what == NOTIFICATION_RESIZED:
@@ -55,6 +68,8 @@ func _notification(what: int):
 			_selection_highlight.size = size
 		if _valid_outline:
 			_valid_outline.size = size
+		if _hover_highlight:
+			_hover_highlight.size = size
 
 ## Initialize with combatant data
 func setup(combatant_data: CombatantData):
@@ -115,6 +130,11 @@ func set_selected(selected: bool):
 func set_valid_target(valid: bool):
 	if _valid_outline:
 		_valid_outline.visible = valid
+
+## Show or hide hover highlight (when turn order entry or this sprite is hovered)
+func set_hover_highlight(visible: bool):
+	if _hover_highlight:
+		_hover_highlight.visible = visible
 
 ## Clear targeting visuals
 func clear_targeting_state():

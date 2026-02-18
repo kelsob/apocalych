@@ -1,14 +1,37 @@
 extends PanelContainer
 
 ## TurnOrderEntry - UI element representing a single turn in the turn order display
-## Shows whose turn it is and the timing
+## Shows whose turn it is and the timing. Hover highlights all entries for the same character.
 
 # Node references
 @onready var character_name_label: Label = $MarginContainer/VBoxContainer/CharacterNameLabel
 @onready var turn_time_label: Label = $MarginContainer/VBoxContainer/TurnTimeLabel
+@onready var highlight_rect: NinePatchRect = $HighlightRect
 
 # Is this the current/next turn?
 var is_current_turn: bool = false
+# Set by TurnOrderPanel when building the list; used for hover highlight grouping
+var combatant: CombatantData = null
+var turn_order_panel: Node = null
+
+func _ready() -> void:
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+
+func set_combatant_and_panel(p_combatant: CombatantData, p_panel: Node) -> void:
+	combatant = p_combatant
+	turn_order_panel = p_panel
+
+func set_highlight(visible: bool) -> void:
+	highlight_rect.visible = visible
+
+func _on_mouse_entered() -> void:
+	if turn_order_panel and turn_order_panel.has_method("highlight_entries_for_combatant") and combatant:
+		turn_order_panel.highlight_entries_for_combatant(combatant)
+
+func _on_mouse_exited() -> void:
+	if turn_order_panel and turn_order_panel.has_method("unhighlight_all_entries"):
+		turn_order_panel.unhighlight_all_entries()
 
 ## Update the display with turn information
 func update_display(character_name: String, turn_time: float, is_next_turn: bool = false):

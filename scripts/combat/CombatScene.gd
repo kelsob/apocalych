@@ -5,7 +5,7 @@ extends Control
 
 # Node references
 @onready var current_turn_label: Label = $MarginContainer/VBoxContainer/CurrentTurnLabel
-@onready var turn_order_display: HBoxContainer = $MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer/ScrollContainer/TurnOrderDisplay
+@onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
 @onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel/HBoxContainer
 @onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel/HBoxContainer
 @onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
@@ -15,7 +15,6 @@ extends Control
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
 var character_info_panel_scene: PackedScene = preload("res://scenes/combat/CharacterCombatInformationPanel.tscn")
-var turn_order_entry_scene: PackedScene = preload("res://scenes/combat/TurnOrderEntry.tscn")
 var combat_ability_option_scene: PackedScene = preload("res://scenes/combat/CombatAbilityOption.tscn")
 var combat_rewards_scene: PackedScene = preload("res://scenes/combat/CombatRewards.tscn")
 
@@ -43,8 +42,8 @@ func _ready():
 	# Verify all node references are valid
 	if not current_turn_label:
 		push_error("CombatScene: current_turn_label is null!")
-	if not turn_order_display:
-		push_error("CombatScene: turn_order_display is null!")
+	if not turn_order_panel:
+		push_error("CombatScene: turn_order_panel is null!")
 	if not party_info_panel:
 		push_error("CombatScene: party_info_panel is null!")
 	
@@ -61,6 +60,12 @@ func _ready():
 	CombatController.combatant_damaged.connect(_on_combatant_damaged)
 	CombatController.combatant_healed.connect(_on_combatant_healed)
 	CombatController.combatant_died.connect(_on_combatant_died)
+	
+	if turn_order_panel:
+		if turn_order_panel.has_signal("combatant_hover_highlighted"):
+			turn_order_panel.combatant_hover_highlighted.connect(_on_turn_order_combatant_highlighted)
+		if turn_order_panel.has_signal("combatant_hover_unhighlighted"):
+			turn_order_panel.combatant_hover_unhighlighted.connect(_on_turn_order_combatant_unhighlighted)
 	
 	print("CombatScene initialized and signals connected")
 
@@ -339,6 +344,30 @@ func _on_combatant_healed(combatant: CombatantData, amount: float, source: Comba
 	# Don't log here - it's handled in ability_resolved
 	_update_combatant_health_display(combatant)
 
+## Hover over a combat sprite: highlight that character's turn order entries
+func _on_combat_sprite_hover_entered(combatant: CombatantData):
+	if turn_order_panel and turn_order_panel.has_method("highlight_entries_for_combatant") and combatant:
+		turn_order_panel.highlight_entries_for_combatant(combatant)
+
+## Hover left combat sprite: clear turn order entry highlights
+func _on_combat_sprite_hover_exited():
+	if turn_order_panel and turn_order_panel.has_method("unhighlight_all_entries"):
+		turn_order_panel.unhighlight_all_entries()
+
+## Turn order panel emitted: highlight this combatant's sprite (hover highlight, not selection)
+func _on_turn_order_combatant_highlighted(combatant: CombatantData):
+	if combatant and combatant_sprites.has(combatant):
+		var sprite = combatant_sprites[combatant]
+		if sprite and sprite.has_method("set_hover_highlight"):
+			sprite.set_hover_highlight(true)
+
+## Turn order panel emitted: clear all sprite hover highlights
+func _on_turn_order_combatant_unhighlighted():
+	for c in combatant_sprites:
+		var sprite = combatant_sprites[c]
+		if sprite and sprite.has_method("set_hover_highlight"):
+			sprite.set_hover_highlight(false)
+
 ## Called when a combatant dies
 func _on_combatant_died(combatant: CombatantData):
 	# Queue the death log; we flush it after the ability log so order is: damage → fallen → next turn
@@ -377,6 +406,8 @@ func _create_player_combatant_display(combatant: CombatantData):
 	click_button.flat = true
 	click_button.custom_minimum_size = sprite_instance.size
 	click_button.pressed.connect(_on_combatant_clicked.bind(combatant))
+	click_button.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
+	click_button.mouse_exited.connect(_on_combat_sprite_hover_exited)
 	sprite_instance.add_child(click_button)
 	combatant_clickable_areas[combatant] = click_button
 	
@@ -384,6 +415,8 @@ func _create_player_combatant_display(combatant: CombatantData):
 	var info_panel = character_info_panel_scene.instantiate()
 	party_info_panel.add_child(info_panel)
 	combatant_info_panels[combatant] = info_panel
+	info_panel.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
+	info_panel.mouse_exited.connect(_on_combat_sprite_hover_exited)
 	
 	# Initialize info panel
 	_update_combatant_info_panel(combatant)
@@ -406,6 +439,8 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 	click_button.flat = true
 	click_button.custom_minimum_size = sprite_instance.size
 	click_button.pressed.connect(_on_combatant_clicked.bind(combatant))
+	click_button.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
+	click_button.mouse_exited.connect(_on_combat_sprite_hover_exited)
 	sprite_instance.add_child(click_button)
 	combatant_clickable_areas[combatant] = click_button
 	
@@ -465,37 +500,10 @@ func _update_ability_button_states():
 			var can_afford = ability.get_modified_ap_cost() <= current_ap
 			ability_option.set_ability_enabled(can_afford)
 
-## Update turn order display
+## Update turn order display (delegates to TurnOrderPanel)
 func _update_turn_order_display():
-	if not CombatController.combat_timeline:
-		print("CombatScene: No combat timeline available")
-		return
-	
-	if not turn_order_display:
-		push_error("CombatScene: turn_order_display is null!")
-		return
-	
-	# Clear existing display
-	for child in turn_order_display.get_children():
-		child.queue_free()
-	
-	# Get upcoming turns (show up to 25 turns into the future for scrolling)
-	var preview = CombatController.combat_timeline.get_turn_preview(25)
-	print("CombatScene: Got %d turns in preview" % preview.size())
-	
-	for i in range(preview.size()):
-		var turn_event = preview[i]
-		var entry = turn_order_entry_scene.instantiate()
-		turn_order_display.add_child(entry)
-		
-		# Update display - first entry (i==0) is the next turn
-		entry.update_display(
-			turn_event.get_display_name(),
-			turn_event.turn_time,
-			i == 0  # is_next_turn
-		)
-	
-	print("CombatScene: Turn order display updated with %d entries" % preview.size())
+	if turn_order_panel and turn_order_panel.has_method("refresh_turn_order"):
+		turn_order_panel.refresh_turn_order()
 
 ## Update combatant info panel with current stats
 func _update_combatant_info_panel(combatant: CombatantData):
