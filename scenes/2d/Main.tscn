@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=23 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="14_ialqc"]
 [ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="15_kabjb"]
 [ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="16_ynnhv"]
+[ext_resource type="PackedScene" uid="uid://bbywra8tsd1gj" path="res://scenes/2d/TownScreen.tscn" id="17_ialqc"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
 shader = ExtResource("4_f0bfo")
@@ -67,6 +68,7 @@ script = ExtResource("1_main")
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true
 layout_mode = 1
+mouse_reveal_radius = 64.0
 
 [node name="UIController" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
@@ -221,3 +223,5 @@ layout_mode = 2
 
 [node name="CharacterDetails3" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
 layout_mode = 2
+
+[node name="TownScreen" parent="UIController" instance=ExtResource("17_ialqc")]

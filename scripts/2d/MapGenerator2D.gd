@@ -74,6 +74,10 @@ class_name MapGenerator2D
 
 @export_group("Visibility")
 @export var path_visibility_range: int = 0  # How many steps away from party to show paths (0 = only adjacent, 1 = adjacent + their neighbors, etc.)
+@export var mouse_reveal_enabled: bool = true  # Reveal paths in a radius around the mouse with distance-based fade
+@export var mouse_reveal_radius: float = 200.0  # Pixels from mouse within which paths are revealed
+@export var mouse_reveal_node_radius: float = 64.0  # Pixels from mouse within which nodes are revealed (modulated by distance)
+@export var mouse_reveal_fade_ratio: float = 0.5  # Fade starts at this fraction of radius (0.5 = fade from 50% to 100% of radius)
 
 @export var coast_expansion_distance: float = 20.0  # Base/average expansion distance (deprecated if using min/max)
 @export var coast_expansion_min: float = 10.0  # Minimum coast expansion distance
@@ -252,6 +256,7 @@ signal travel_completed(node: MapNode2D)  # Emitted when party finishes travelin
 # ============================================================================
 
 var _regeneration_requested: bool = false
+var _reveal_mouse_pos: Vector2 = Vector2.ZERO  # Local coords; used for mouse-reveal radius
 
 var map_nodes: Array[MapNode2D] = []
 var node_positions: Array[Vector2] = []
@@ -3221,6 +3226,7 @@ func generate_towns():
 					# Valid location - spawn town
 					candidate_node.is_town = true
 					candidate_node.node_type = MapNode2D.NodeType.TOWN
+					candidate_node.town_services = _pick_town_services()
 					town_nodes.append(candidate_node)
 					towns_created.append(candidate_node.node_index)
 					
@@ -3251,6 +3257,17 @@ func generate_towns():
 			debug_print("TOWN: Region %d (%s): No towns generated" % [region_id, region_biome_name])
 	
 	debug_print("TOWN: === Total towns generated: %d ===" % town_nodes.size())
+
+## Pick a random subset of town services (2-4 services per town)
+func _pick_town_services() -> Array:
+	var all_services = ["inn", "blacksmith", "merchant", "casino", "warmaster"]
+	var count = randi_range(2, 4)
+	var result: Array = []
+	var indices = range(all_services.size())
+	indices.shuffle()
+	for i in range(mini(count, indices.size())):
+		result.append(all_services[indices[i]])
+	return result
 
 ## Determine how many towns a region should have (0-2, mostly 1)
 func _determine_town_count() -> int:
@@ -6488,15 +6505,24 @@ func _draw():
 			if is_road_edge:
 				continue
 			
-			# Skip if static rendering is enabled (all roads are baked, regular paths are dynamic)
-			if use_static_rendering:
-				# Check if this path is visible
-				if not is_path_visible(node, neighbor):
-					continue  # Not visible, don't draw
-			
 			# Control nodes position from top-left, so add half size for center
 			var pos_a = node.position + (node.size / 2.0)
 			var pos_b = neighbor.position + (neighbor.size / 2.0)
+			
+			var path_visible = is_path_visible(node, neighbor)
+			var mouse_reveal_alpha := 1.0
+			if use_static_rendering:
+				if path_visible:
+					# Party-visible paths are always full opacity; never use mouse fade
+					pass
+				elif mouse_reveal_enabled and mouse_reveal_radius > 0.0:
+					var dist = _distance_from_reveal_mouse_to_connection(node, neighbor, pos_a, pos_b)
+					if dist < mouse_reveal_radius:
+						mouse_reveal_alpha = _get_mouse_reveal_alpha(dist)
+					else:
+						continue  # Outside radius, don't draw
+				else:
+					continue  # Not visible, don't draw
 			
 			# Use regular path styling
 			var base_width = line_width
@@ -6505,6 +6531,7 @@ func _draw():
 			# Adjust line width and color based on orientation
 			var adjusted_width = get_orientation_adjusted_width(base_width, pos_a, pos_b)
 			var adjusted_color = get_orientation_adjusted_color(base_color, pos_a, pos_b)
+			adjusted_color.a *= mouse_reveal_alpha
 			
 			if use_curved_lines:
 				# Draw smooth Bezier curve with variation
@@ -7092,32 +7119,68 @@ func get_party_available_moves() -> Array[MapNode2D]:
 	
 	return available
 
-## Update node visibility based on party position
-## Only shows: current node, connected nodes (non-secret), towns, and mountains
+## True if node is shown by party logic (current node, neighbor, mountain, town). Mouse reveal must not affect these.
+func _is_node_party_visible(node: MapNode2D) -> bool:
+	if node.is_mountain or node.is_town:
+		return true
+	if not current_party_node:
+		return false
+	if node == current_party_node:
+		return true
+	for neighbor in current_party_node.connections:
+		if neighbor == node and not is_edge_secret_and_hidden(current_party_node, node):
+			return true
+	return false
+
+## Update node visibility based on party position and mouse-reveal radius
+## Party-visible nodes stay full opacity; others can be temporarily revealed by mouse with distance-based modulation
 func update_node_visibility():
 	if not current_party_node:
 		return
 	
-	# Hide all non-mountain, non-town nodes first
+	var mouse_pos := _reveal_mouse_pos
+	var use_mouse_reveal := mouse_reveal_enabled and mouse_reveal_node_radius > 0.0
+	
+	# Hide nodes that won't be visible. Do NOT hide nodes within mouse-reveal radius, or we
+	# briefly hide the node under the cursor and trigger mouse_exited -> hide() on LocationDetailDisplay.
 	for node in map_nodes:
 		if node.is_mountain or node.is_town:
-			# Mountains and towns always visible
 			node.visible = true
+			node.modulate = Color(1, 1, 1, 1)
+		elif _is_node_party_visible(node):
+			pass  # set below
+		elif use_mouse_reveal:
+			var center = node.position + (node.size / 2.0)
+			if mouse_pos.distance_to(center) < mouse_reveal_node_radius:
+				pass  # set in mouse-reveal block below; do not hide or we get spurious mouse_exited
+			else:
+				node.visible = false
+				node.modulate = Color(1, 1, 1, 1)
 		else:
-			# Everything else hidden by default
 			node.visible = false
+			node.modulate = Color(1, 1, 1, 1)
 	
-	# Show current node
+	# Show current node and party-visible neighbors (never faded)
 	current_party_node.visible = true
+	current_party_node.modulate = Color(1, 1, 1, 1)
 	
-	# Show all connected nodes (but ONLY via non-secret paths!)
 	for neighbor in current_party_node.connections:
-		# Check if the path to this neighbor is secret and hidden
 		if is_edge_secret_and_hidden(current_party_node, neighbor):
-			# Don't reveal this neighbor - the path is secret!
 			continue
-		
 		neighbor.visible = true
+		neighbor.modulate = Color(1, 1, 1, 1)
+	
+	# Mouse reveal: show and modulate nodes that are NOT party-visible but within radius
+	if use_mouse_reveal:
+		for node in map_nodes:
+			if _is_node_party_visible(node):
+				continue
+			var center = node.position + (node.size / 2.0)
+			var dist = mouse_pos.distance_to(center)
+			if dist < mouse_reveal_node_radius:
+				var alpha = _get_mouse_reveal_alpha_node(dist)
+				node.visible = true
+				node.modulate = Color(1, 1, 1, alpha)
 	
 	# Request redraw to update path visibility
 	queue_redraw()
@@ -7161,6 +7224,58 @@ func is_node_within_visibility_range(node: MapNode2D) -> bool:
 	
 	# Node is in range if distance <= visibility range
 	return distance <= (path_visibility_range + 1)  # +1 because range 0 means "1 step away" (adjacent)
+
+## Minimum distance from point to line segment (pos_a, pos_b)
+func _distance_point_to_segment(point: Vector2, pos_a: Vector2, pos_b: Vector2) -> float:
+	var ab = pos_b - pos_a
+	var ap = point - pos_a
+	var len_sq = ab.length_squared()
+	if len_sq <= 0.0:
+		return point.distance_to(pos_a)
+	var t = clampf(ap.dot(ab) / len_sq, 0.0, 1.0)
+	var closest = pos_a + t * ab
+	return point.distance_to(closest)
+
+## Minimum distance from point to a polyline (series of segments)
+func _distance_point_to_polyline(point: Vector2, points: PackedVector2Array) -> float:
+	if points.size() < 2:
+		return INF if points.size() == 0 else point.distance_to(points[0])
+	var min_d := INF
+	for i in range(points.size() - 1):
+		var d = _distance_point_to_segment(point, points[i], points[i + 1])
+		if d < min_d:
+			min_d = d
+	return min_d
+
+## Distance from mouse to a connection (curve or straight). Used for mouse-reveal fade.
+func _distance_from_reveal_mouse_to_connection(node_a: MapNode2D, node_b: MapNode2D, pos_a: Vector2, pos_b: Vector2) -> float:
+	if use_curved_lines:
+		var path_pts = get_path_points(node_a, node_b)
+		return _distance_point_to_polyline(_reveal_mouse_pos, path_pts)
+	return _distance_point_to_segment(_reveal_mouse_pos, pos_a, pos_b)
+
+## Alpha for mouse-reveal (0 = invisible, 1 = full). Party-visible paths ignore this and use 1.
+func _get_mouse_reveal_alpha(distance: float) -> float:
+	if distance <= 0.0 or mouse_reveal_radius <= 0.0:
+		return 1.0
+	if distance >= mouse_reveal_radius:
+		return 0.0
+	var fade_start = mouse_reveal_radius * clampf(mouse_reveal_fade_ratio, 0.0, 1.0)
+	if distance <= fade_start:
+		return 1.0
+	# Linear fade from fade_start to radius
+	return 1.0 - (distance - fade_start) / (mouse_reveal_radius - fade_start)
+
+## Alpha for mouse-reveal on nodes (uses node radius and same fade ratio).
+func _get_mouse_reveal_alpha_node(distance: float) -> float:
+	if distance <= 0.0 or mouse_reveal_node_radius <= 0.0:
+		return 1.0
+	if distance >= mouse_reveal_node_radius:
+		return 0.0
+	var fade_start = mouse_reveal_node_radius * clampf(mouse_reveal_fade_ratio, 0.0, 1.0)
+	if distance <= fade_start:
+		return 1.0
+	return 1.0 - (distance - fade_start) / (mouse_reveal_node_radius - fade_start)
 
 ## Calculate path points along a curve between two nodes
 func get_path_points(node_a: MapNode2D, node_b: MapNode2D) -> PackedVector2Array:
@@ -7296,6 +7411,12 @@ func _process(delta: float):
 		_process_party_movement(delta)
 
 func _input(event: InputEvent):
+	# Update mouse position for circular reveal (only when map is visible)
+	if mouse_reveal_enabled and is_visible_in_tree() and event is InputEventMouseMotion:
+		_reveal_mouse_pos = get_local_mouse_position()
+		queue_redraw()
+		if current_party_node:
+			update_node_visibility()
 	# Handle mouse wheel for path cycling when hovering
 	# This takes priority over zoom when a node is hovered
 	if hovered_node:
@@ -7468,7 +7589,6 @@ func _on_node_clicked(node: MapNode2D):
 	debug_node_edges(node)
 
 func _on_node_hovered(node: MapNode2D):
-	
 	var location: Dictionary = {}
 	
 	# Get biome name

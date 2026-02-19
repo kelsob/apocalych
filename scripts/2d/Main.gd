@@ -20,6 +20,7 @@ var current_world_name: String = ""
 var current_party_members: Array[PartyMember] = []
 var party_gold: int = 0
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
+var _town_node_for_rest: MapNode2D = null  # When in town, Inn rest returns here instead of map
 
 func _ready():
 	# Connect menu signals automatically
@@ -43,6 +44,15 @@ func _ready():
 	
 	# Connect event window signal to update rest button when event closes
 	ui_controller.event_window.event_closed.connect(_on_event_closed)
+
+	# Town screen (user adds TownScreen node under UIController; optional reference)
+	var town_screen = ui_controller.get_node_or_null("TownScreen")
+	if town_screen and town_screen.has_signal("town_closed"):
+		town_screen.town_closed.connect(_on_town_screen_closed)
+	if town_screen and town_screen.has_signal("rest_from_town_requested"):
+		town_screen.rest_from_town_requested.connect(_on_rest_from_town_requested)
+	if town_screen and town_screen.has_signal("warmaster_training_requested"):
+		town_screen.warmaster_training_requested.connect(_on_warmaster_training_requested)
 	
 	CombatController.combat_ended.connect(_on_combat_ended)
 
@@ -144,15 +154,25 @@ func _show_introductory_event():
 	var current_node = map_generator.current_party_node
 	ui_controller.event_window.display_event(presented_event, party_dict, current_node)
 
-## Apply victory rewards to party (XP and gold); called when combat ends
+## Apply rewards to party when combat ends (victory: XP + gold; fled: XP only for killed enemies)
+## Victory: current node becomes safe to rest at; flee/defeat: node is not safe to rest at
 func _on_combat_ended(victory: bool, rewards: Dictionary):
-	if not victory:
-		return
 	var xp: int = rewards.get("xp", 0)
 	var gold: int = rewards.get("gold", 0)
-	for member in current_party_members:
-		member.gain_experience(xp)
-	party_gold += gold
+	var fled: bool = rewards.get("fled", false)
+	if victory:
+		for member in current_party_members:
+			member.gain_experience(xp)
+		party_gold += gold
+	elif fled:
+		for member in current_party_members:
+			member.gain_experience(xp)
+		# No gold on flee
+
+	# Set rest safety at current node: safe only on victory; flee/defeat = not safe
+	var node = map_generator.current_party_node
+	if node != null:
+		node.can_rest_here = victory
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found
@@ -165,10 +185,11 @@ func _launch_node_event(node: MapNode2D):
 	# Build party dictionary for event system
 	var party_dict = _build_party_dict()
 	
-	# Try to pick an event for this node
+	# Try to pick an event for this node (town nodes use biome-specific town_entry events)
 	var node_state = {}
 	node_state["current_node"] = node
-	
+	node_state["is_town"] = node.is_town
+
 	var selected_event = EventManager.pick_event_for_node(biome_name, party_dict, node_state)
 	
 	# Check if event was found
@@ -222,10 +243,13 @@ func _build_party_dict() -> Dictionary:
 	
 	# Add reputation (empty for now, can be populated later if needed)
 	party_dict.reputation = {}
-	
+
 	# Add variables (empty for now, can be populated later if needed)
 	party_dict.variables = {}
-	
+
+	# Party gold (for event conditions e.g. min_gold, and interpolation)
+	party_dict.party_gold = party_gold
+
 	return party_dict
 
 ## Calculate average party level
@@ -249,7 +273,11 @@ func _on_party_moved_to_node(node: MapNode2D):
 
 ## Called when event window closes - update rest button visibility
 func _on_event_closed():
-	# Update rest button visibility based on current node's rest state
+	refresh_rest_button_visibility()
+
+## Update rest button visibility from current node's rest state (safe to rest and not already rested here).
+## Call after events or when returning from combat.
+func refresh_rest_button_visibility():
 	var current_node = map_generator.current_party_node
 	if current_node == null:
 		ui_controller.map_ui.update_rest_button_visibility(false)
@@ -284,21 +312,70 @@ func start_rest():
 	# Show rest screen
 	ui_controller.rest_controller.start_rest()
 
-## Called when rest is complete - return to map
+## Called when rest is complete - return to map or back to town if we rested from Inn
 func _on_rest_complete():
-	print("Main: Rest complete, returning to map")
-	
+	print("Main: Rest complete")
 	# Mark that the party has rested at the current node
 	map_generator.mark_node_as_rested()
-	
-	# Update rest button (now hidden since we've rested here)
 	var current_node = map_generator.current_party_node
 	if current_node:
 		ui_controller.map_ui.update_rest_button_visibility(false)
-	
-	# Hide rest screen
 	ui_controller.rest_controller.visible = false
-	
-	# Show map and map UI
+	if _town_node_for_rest != null:
+		# Return to town screen instead of map
+		_town_node_for_rest.can_rest_here = true
+		open_town_screen(_town_node_for_rest)
+		_town_node_for_rest = null
+		return
 	map_generator.visible = true
 	ui_controller.map_ui.visible = true
+
+# ============================================================================
+# TOWN SYSTEM
+# ============================================================================
+
+## Open the town screen for the given town node (called by open_town effect)
+func open_town_screen(town_node: MapNode2D):
+	var town_screen = ui_controller.get_node_or_null("TownScreen")
+	if not town_screen:
+		push_warning("Main: TownScreen node not found under UIController; add and design the town scene")
+		map_generator.visible = true
+		ui_controller.map_ui.visible = true
+		return
+	town_node.can_rest_here = true
+	town_screen.open_town(town_node, current_party_members, party_gold)
+	town_screen.visible = true
+	map_generator.visible = false
+	ui_controller.map_ui.visible = false
+
+## Called when player leaves town
+func _on_town_screen_closed():
+	var town_screen = ui_controller.get_node_or_null("TownScreen")
+	if town_screen:
+		town_screen.visible = false
+	map_generator.visible = true
+	ui_controller.map_ui.visible = true
+
+## Called when player uses Inn in town: start rest and return to town when done
+func _on_rest_from_town_requested(town_node: MapNode2D, gold_cost: int):
+	if party_gold < gold_cost:
+		return
+	party_gold -= gold_cost
+	_town_node_for_rest = town_node
+	var town_screen = ui_controller.get_node_or_null("TownScreen")
+	if town_screen:
+		town_screen.visible = false
+	ui_controller.rest_controller.start_rest()
+	ui_controller.rest_controller.visible = true
+
+## Called when player buys XP from Warmaster in town
+func _on_warmaster_training_requested(member_index: int, gold_cost: int, xp_amount: int):
+	if member_index < 0 or member_index >= current_party_members.size():
+		return
+	if party_gold < gold_cost:
+		return
+	party_gold -= gold_cost
+	current_party_members[member_index].gain_experience(xp_amount)
+	var town_screen = ui_controller.get_node_or_null("TownScreen")
+	if town_screen and town_screen.has_method("update_party_gold"):
+		town_screen.update_party_gold(party_gold)

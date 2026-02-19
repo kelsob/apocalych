@@ -20,14 +20,36 @@ func refresh_turn_order() -> void:
 	var preview = CombatController.combat_timeline.get_turn_preview(25)
 	for i in range(preview.size()):
 		var turn_event = preview[i]
+		var action_text := _get_planned_action_for_turn(preview, i, turn_event.combatant)
 		var entry = turn_order_entry_scene.instantiate()
 		turn_order_display.add_child(entry)
 		entry.update_display(
 			turn_event.get_display_name(),
 			turn_event.turn_time,
-			i == 0
+			i == 0,
+			action_text
 		)
 		entry.set_combatant_and_panel(turn_event.combatant, self)
+
+## For a given turn index in the preview, get the "planned" action text for that combatant.
+## Empty if they have no active cast, or "AbilityName - N turns" if channeled/delayed and still active.
+func _get_planned_action_for_turn(preview: Array, turn_index: int, combatant: CombatantData) -> String:
+	var timeline = CombatController.combat_timeline
+	if not timeline:
+		return ""
+	var cast = timeline.get_active_cast(combatant)
+	if not cast or not cast.ability:
+		return ""
+	# How many of this combatant's turns have already happened before this one in the preview?
+	var ticks_before_this_turn := 0
+	for j in range(turn_index):
+		if preview[j].combatant == combatant:
+			ticks_before_this_turn += 1
+	var remaining: int = cast.remaining_cast_time - ticks_before_this_turn
+	if remaining <= 0:
+		return ""
+	var turn_str := "turn" if remaining == 1 else "turns"
+	return "%s - %d %s" % [cast.ability.ability_name, remaining, turn_str]
 
 func highlight_entries_for_combatant(combatant: CombatantData) -> void:
 	if not turn_order_display:

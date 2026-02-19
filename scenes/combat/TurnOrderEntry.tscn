@@ -33,6 +33,10 @@ theme = ExtResource("2_oieu4")
 layout_mode = 2
 theme = ExtResource("2_oieu4")
 
+[node name="ActionLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_oieu4")
+
 [node name="HighlightRect" type="NinePatchRect" parent="."]
 visible = false
 layout_mode = 2

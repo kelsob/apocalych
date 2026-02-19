@@ -47,6 +47,7 @@ var biome: Biome = null
 
 # Town and road properties
 var is_town: bool = false  # Whether this node is a town
+var town_services: Array = []  # Subset of ["inn", "blacksmith", "merchant", "casino", "warmaster"]
 var is_exit_node: bool = false  # Whether this node connects to a different biome
 
 # Secret path properties
@@ -142,6 +143,7 @@ func _on_button_pressed() -> void:
 
 
 func _on_button_mouse_entered() -> void:
+	print("node hovered")
 	node_hovered.emit(self)
 
 func _on_button_mouse_exited() -> void:

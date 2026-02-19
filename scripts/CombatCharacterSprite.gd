@@ -3,9 +3,13 @@ class_name CombatCharacterSprite
 
 ## CombatCharacterSprite - Displays a combatant in combat with health, casting status, and targeting visuals
 
+var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tscn")
+var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
+
 @onready var character_sprite: TextureRect = $MarginContainer/VBoxContainer/CharacterSprite
 @onready var hp_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/HPProgressBar
 @onready var casting_label: Label = $MarginContainer/VBoxContainer/CastingLabel
+@onready var status_effects_container : HBoxContainer = $MarginContainer/VBoxContainer/StatusEffectsContainer
 
 # Targeting visuals (created in _ready so we don't require scene edits)
 var _selection_highlight: ColorRect = null
@@ -15,6 +19,9 @@ var _hover_highlight: ColorRect = null
 
 # Combatant reference (set by CombatScene)
 var combatant: CombatantData = null
+
+# How many combat texts are currently active (for vertical stacking)
+var _combat_text_active_count: int = 0
 
 func _ready():
 	# Hide casting label by default
@@ -73,9 +80,18 @@ func _notification(what: int):
 
 ## Initialize with combatant data
 func setup(combatant_data: CombatantData):
+	if combatant and combatant.combatant_stats:
+		if combatant.combatant_stats.status_applied.is_connected(_refresh_status_effects_display):
+			combatant.combatant_stats.status_applied.disconnect(_refresh_status_effects_display)
+		if combatant.combatant_stats.status_removed.is_connected(_refresh_status_effects_display):
+			combatant.combatant_stats.status_removed.disconnect(_refresh_status_effects_display)
 	combatant = combatant_data
 	update_health_display()
 	update_casting_display()
+	if combatant and combatant.combatant_stats:
+		combatant.combatant_stats.status_applied.connect(_refresh_status_effects_display)
+		combatant.combatant_stats.status_removed.connect(_refresh_status_effects_display)
+	_refresh_status_effects_display()
 
 ## Update health bar display
 func update_health_display():
@@ -106,7 +122,7 @@ func update_casting_display():
 		if active_cast:
 			casting_label.visible = true
 			var remaining = active_cast.remaining_cast_time
-			casting_label.text = "Casting: %s\n(%d turn%s)" % [
+			casting_label.text = "Casting: %s - %d turn%s" % [
 				active_cast.ability.ability_name,
 				remaining,
 				"s" if remaining != 1 else ""
@@ -140,3 +156,28 @@ func set_hover_highlight(visible: bool):
 func clear_targeting_state():
 	set_selected(false)
 	set_valid_target(false)
+
+## Spawn floating combat text (damage/heal/status) over this sprite. Stacks vertically if multiple at once.
+func spawn_combat_text(p_text: String, p_color: Color) -> void:
+	var inst = combat_text_scene.instantiate()
+	var slot := _combat_text_active_count
+	_combat_text_active_count += 1
+	if inst.has_signal("finished"):
+		inst.finished.connect(_on_combat_text_finished)
+	add_child(inst)
+	if inst.has_method("setup"):
+		inst.setup(p_text, p_color, slot)
+
+func _on_combat_text_finished() -> void:
+	_combat_text_active_count = max(0, _combat_text_active_count - 1)
+
+func _refresh_status_effects_display(_status: Variant = null) -> void:
+	if not status_effects_container or not combatant or not combatant.combatant_stats:
+		return
+	for child in status_effects_container.get_children():
+		child.queue_free()
+	for status in combatant.combatant_stats.active_statuses:
+		var icon = status_effect_icon_scene.instantiate()
+		status_effects_container.add_child(icon)
+		if icon.has_method("set_stack_count"):
+			icon.set_stack_count(status.stack_count)

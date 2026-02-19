@@ -1,0 +1,106 @@
+[
+  {
+    "id": "town_entry_forest",
+    "title": "Forest Gate",
+    "town_entry": true,
+    "biomes": ["forest"],
+    "weight": 1,
+    "text": "You reach a small settlement at the edge of the woods. A ranger at the gate eyes your party. \"Five gold to enter, or show me you belong here.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold to enter.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "Turn back.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_plains",
+    "title": "Plains Town Gate",
+    "town_entry": true,
+    "biomes": ["plains"],
+    "weight": 1,
+    "text": "The gates of a plains town stand before you. A guard steps forward. \"Entry is five gold per party, travellers.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll pass.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_coast",
+    "title": "Coastal Port",
+    "town_entry": true,
+    "biomes": ["coast"],
+    "weight": 1,
+    "text": "A port town bustles ahead. A dockmaster waves you over. \"Five gold if you're coming ashore, or show your papers.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll stay on the road.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_mountain",
+    "title": "Mountain Hold",
+    "town_entry": true,
+    "biomes": ["mountain"],
+    "weight": 1,
+    "text": "A fortified hold guards the pass. A stern sentry blocks the way. \"Five gold, or turn back.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll find another path.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_hills",
+    "title": "Hills Settlement",
+    "town_entry": true,
+    "biomes": ["hills"],
+    "weight": 1,
+    "text": "A hillside settlement lies ahead. A watchman calls out. \"Five gold to enter, friends.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll move on.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_swamp",
+    "title": "Swamp Outpost",
+    "town_entry": true,
+    "biomes": ["swamp"],
+    "weight": 1,
+    "text": "A weathered outpost rises from the swamp. A figure in a hood steps into view. \"Five gold to come inside, or keep to the mire.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll pass.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_badlands",
+    "title": "Badlands Waystation",
+    "town_entry": true,
+    "biomes": ["badlands"],
+    "weight": 1,
+    "text": "A fortified waystation stands in the badlands. A guard with a crossbow nods at you. \"Five gold to enter.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll keep moving.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  },
+  {
+    "id": "town_entry_ash_plains",
+    "title": "Ash Plains Refuge",
+    "town_entry": true,
+    "biomes": ["ash_plains"],
+    "weight": 1,
+    "text": "A refuge huddles in the ash. A sentry in a mask raises a hand. \"Five gold to enter the refuge.\"",
+    "choices": [
+      {"id": "pay", "text": "Pay 5 gold.", "condition": {"min_gold": 5}, "effects": [{"type": "pay_gold", "amount": 5}, {"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "free", "text": "Enter (no charge).", "effects": [{"type": "open_town"}], "next_event": null, "weight": 1},
+      {"id": "leave", "text": "We'll stay outside.", "effects": [], "next_event": null, "weight": 1}
+    ]
+  }
+]

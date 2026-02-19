@@ -188,16 +188,17 @@ func player_end_turn():
 	print("Player ended turn: %s" % _safe_display_name(current_turn_combatant))
 	_end_current_turn()
 
-## Attempt to flee from combat (called by UI)
+## Attempt to flee from combat (called by UI).
+## Currently always succeeds: ends combat, rewards screen shows XP only for enemies killed before fleeing (no gold).
 func attempt_flee() -> bool:
 	if not waiting_for_player_input:
 		return false
 	
-	# TODO: Implement flee chance calculation
-	# Could be based on party speed vs enemy speed, luck stat, etc.
-	# For now, just always fail
-	print("Flee attempt failed (not yet implemented)")
-	return false
+	# Immediately succeed and end combat with flee rewards (XP from killed enemies only, no gold)
+	waiting_for_player_input = false
+	current_turn_combatant = null
+	_end_combat_fled()
+	return true
 
 ## Execute ability cast
 func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Array) -> bool:
@@ -514,6 +515,34 @@ func _end_combat(victory: bool):
 	
 	combat_ended.emit(victory, rewards)
 	
+	combat_timeline = null
+	player_combatants.clear()
+	enemy_combatants.clear()
+	current_turn_combatant = null
+	current_encounter = null
+
+## End combat due to flee: same cleanup as _end_combat, but victory=false and rewards = XP only from killed enemies, no gold.
+func _end_combat_fled():
+	if not combat_active:
+		return
+	combat_active = false
+	waiting_for_player_input = false
+
+	print("=== COMBAT ENDED (FLED) ===")
+
+	# Sync combat state back to party members
+	for combatant in player_combatants:
+		combatant.sync_back_to_source()
+
+	# Rewards: only XP for enemies already killed; no gold, no bonus XP/gold
+	var rewards = {"victory": false, "xp": 0, "gold": 0, "fled": true}
+	if current_encounter:
+		for combatant in enemy_combatants:
+			if combatant.is_dead and combatant.source is Enemy:
+				rewards.xp += combatant.source.xp_reward
+
+	combat_ended.emit(false, rewards)
+
 	combat_timeline = null
 	player_combatants.clear()
 	enemy_combatants.clear()

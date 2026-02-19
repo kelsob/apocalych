@@ -60,6 +60,7 @@ func _ready():
 	CombatController.combatant_damaged.connect(_on_combatant_damaged)
 	CombatController.combatant_healed.connect(_on_combatant_healed)
 	CombatController.combatant_died.connect(_on_combatant_died)
+	CombatController.status_applied.connect(_on_status_applied)
 	
 	if turn_order_panel:
 		if turn_order_panel.has_signal("combatant_hover_highlighted"):
@@ -113,23 +114,27 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 func _on_combat_ended(victory: bool, rewards: Dictionary):
 	call_deferred("_deferred_combat_end", victory, rewards)
 
-## Runs after current frame so combat log shows damage and "X has fallen!" before VICTORY/DEFEAT
+## Runs after current frame so combat log shows damage and "X has fallen!" before VICTORY/DEFEAT/FLED
 func _deferred_combat_end(victory: bool, rewards: Dictionary):
+	var fled: bool = rewards.get("fled", false)
 	if victory:
 		_log_message("=== VICTORY ===")
+	elif fled:
+		_log_message("=== FLED ===")
 	else:
 		_log_message("=== DEFEAT ===")
-	
+
 	await get_tree().create_timer(2.0).timeout
-	
+
 	var root = get_tree().root
 	var main = null
 	for child in root.get_children():
 		if child.name == "Main":
 			main = child
 			break
-	
-	if victory and main and rewards.get("xp", 0) >= 0 and rewards.get("gold", 0) >= 0:
+
+	var show_rewards_panel: bool = (victory or fled) and main and rewards.get("xp", 0) >= 0 and rewards.get("gold", 0) >= 0
+	if show_rewards_panel:
 		var rewards_panel = combat_rewards_scene.instantiate()
 		add_child(rewards_panel)
 		rewards_panel.show_rewards(rewards, main.current_party_members)
@@ -139,7 +144,8 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 	if main:
 		main.map_generator.visible = true
 		main.ui_controller.map_ui.visible = true
-	
+		main.refresh_rest_button_visibility()
+
 	queue_free()
 
 ## Called when a turn starts
@@ -200,14 +206,14 @@ func _on_cast_started(cast):
 	var caster_name = _safe_combatant_name(cast.caster)
 	# Show different messages for delayed vs channeled
 	if cast.ability.ability_type == Ability.AbilityType.DELAYED_CAST:
-		_log_message("%s begins casting %s (%d turn%s)" % [
+		_log_message("%s begins casting %s - %d turn%s" % [
 			caster_name,
 			cast.ability.ability_name,
 			cast_time,
 			"s" if cast_time != 1 else ""
 		])
 	elif cast.ability.ability_type == Ability.AbilityType.CHANNELED:
-		_log_message("%s begins channeling %s (%d turn%s)" % [
+		_log_message("%s begins channeling %s - %d turn%s" % [
 			caster_name,
 			cast.ability.ability_name,
 			cast_time,
@@ -293,7 +299,7 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 			if has_active_cast:
 				# Still channeling - this is a tick
 				var active_cast = CombatController.combat_timeline.get_active_cast(caster)
-				_log_message("  %s channels %s (%d turn%s remaining)" % [
+				_log_message("  %s channels %s - %d turn%s remaining" % [
 					_safe_combatant_name(caster),
 					ability.ability_name,
 					active_cast.remaining_cast_time if active_cast else 0,
@@ -338,11 +344,25 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 func _on_combatant_damaged(combatant: CombatantData, amount: float, source: CombatantData):
 	# Don't log here - it's handled in ability_resolved
 	_update_combatant_health_display(combatant)
+	if combatant_sprites.has(combatant) and amount > 0:
+		combatant_sprites[combatant].spawn_combat_text(str(int(amount)), Color.RED)
 
 ## Called when a combatant is healed
 func _on_combatant_healed(combatant: CombatantData, amount: float, source: CombatantData):
 	# Don't log here - it's handled in ability_resolved
 	_update_combatant_health_display(combatant)
+	if combatant_sprites.has(combatant) and amount > 0:
+		combatant_sprites[combatant].spawn_combat_text(str(int(amount)), Color.GREEN)
+
+## Called when a status effect is applied (e.g. stun) - spawn pale gold status text
+func _on_status_applied(combatant: CombatantData, status: StatusEffect):
+	if not combatant or not status or not combatant_sprites.has(combatant):
+		return
+	var text := status.status_name if status.status_name else "Status"
+	if status.status_type == StatusEffect.StatusType.STUN:
+		text = "Stunned!"
+	var pale_gold := Color(0.95, 0.88, 0.55)
+	combatant_sprites[combatant].spawn_combat_text(text, pale_gold)
 
 ## Hover over a combat sprite: highlight that character's turn order entries
 func _on_combat_sprite_hover_entered(combatant: CombatantData):

@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3 uid="uid://bbywra8tsd1gj"]
+
+[ext_resource type="Script" uid="uid://c2vxdkd0lynor" path="res://scripts/town/TownScreen.gd" id="1_rrywn"]
+
+[node name="TownScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rrywn")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="InnButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Inn"
+
+[node name="BlacksmithButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Blacksmith"
+
+[node name="VendorButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Vendor"
+
+[node name="WarmasterButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Warmaster"
+
+[node name="CasinoButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Casino"
+
+[node name="LeaveButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Leave"

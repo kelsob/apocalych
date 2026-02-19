@@ -140,7 +140,13 @@ func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 					return false
 				if var_condition.has("max") and current_value > var_condition.max:
 					return false
-	
+
+	# min_gold: party must have at least this much gold (for town entry, etc.)
+	if condition.has("min_gold"):
+		var min_gold = condition.min_gold
+		if party.get("party_gold", 0) < min_gold:
+			return false
+
 	return true
 
 ## Pick an event for a node based on biome and prerequisites
@@ -150,14 +156,13 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
 	
-	# FORCE TEST COMBAT EVENT (for testing combat system)
-	# Try to return test combat event
+	# FORCE TOWN ENTRY EVENT (for testing town flow at all nodes - inaccurate, for testing only)
 	for event_id in events.keys():
-		if event_id.begins_with("test_combat_event"):
-			print("COMBAT TEST: EventManager forcing test combat event: %s" % event_id)
+		if event_id.begins_with("town_entry_"):
+			print("TOWN TEST: EventManager forcing town entry event: %s" % event_id)
 			return events[event_id]
-	
-	# Fallback to normal selection if no secret path events found
+
+	# Normal selection
 	var party_state_dict = _build_party_state(party)
 	
 	# Step 1: Filter events by biome match and prerequisites
@@ -177,7 +182,15 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 				# Check if current biome is in the event's biome list
 				if biome not in event_biomes:
 					continue  # Biome doesn't match, skip this event
-		
+
+		# When at a town node: only consider events marked as town_entry (subset within biome)
+		var is_town_node = node_state.get("is_town", false)
+		if is_town_node and not event.get("town_entry", false):
+			continue
+		# When not at a town: skip town_entry-only events so they don't appear on normal nodes
+		if not is_town_node and event.get("town_entry", false):
+			continue
+
 		# Check prerequisites (if event has them)
 		if event.has("prereqs"):
 			if not condition_passes(event.prereqs, party_state_dict):
@@ -292,6 +305,12 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 			
 			"reveal_secrets":
 				_apply_reveal_secrets(effect, party, node_state)
+
+			"pay_gold":
+				_apply_pay_gold(effect, party, node_state)
+
+			"open_town":
+				_apply_open_town(effect, party, node_state)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -317,6 +336,9 @@ func _build_party_state(party: Dictionary) -> Dictionary:
 		state.variables = party.variables
 	else:
 		state.variables = {}
+
+	# Party gold (for conditions like min_gold)
+	state.party_gold = party.get("party_gold", 0)
 	
 	# Party members info (for interpolation)
 	if party.has("members"):
@@ -518,6 +540,39 @@ func _apply_set_rest_state(effect: Dictionary, node_state: Dictionary):
 	current_node.can_rest_here = allow_rest
 	
 	print("EventManager: Set rest state to %s at node %d" % [allow_rest, current_node.node_index])
+
+func _apply_pay_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
+	var amount = effect.get("amount", 0)
+	if amount <= 0:
+		return
+	var main = _get_main_node()
+	if not main:
+		push_warning("EventManager: pay_gold could not find Main")
+		return
+	main.party_gold = max(0, main.party_gold - amount)
+	print("EventManager: Paid %d gold (remaining: %d)" % [amount, main.party_gold])
+
+func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Dictionary):
+	var current_node = node_state.get("current_node", null)
+	if current_node == null:
+		push_warning("EventManager: open_town effect requires current_node in node_state")
+		return
+	var main = _get_main_node()
+	if not main:
+		push_warning("EventManager: open_town could not find Main")
+		return
+	if main.ui_controller.event_window.visible:
+		main.ui_controller.event_window.close()
+	main.map_generator.visible = false
+	main.ui_controller.map_ui.visible = false
+	main.open_town_screen(current_node)
+
+func _get_main_node():
+	var root = get_tree().root
+	for child in root.get_children():
+		if child.name == "Main" or child.is_in_group("main"):
+			return child
+	return null
 
 func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	debug_print("SECRET PATH: === EventManager _apply_reveal_secrets() called ===")

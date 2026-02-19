@@ -7,6 +7,7 @@ extends PanelContainer
 @onready var character_name_label: Label = $MarginContainer/VBoxContainer/CharacterNameLabel
 @onready var turn_time_label: Label = $MarginContainer/VBoxContainer/TurnTimeLabel
 @onready var highlight_rect: NinePatchRect = $HighlightRect
+@onready var action_label : Label = $MarginContainer/VBoxContainer/ActionLabel
 
 # Is this the current/next turn?
 var is_current_turn: bool = false
@@ -34,7 +35,7 @@ func _on_mouse_exited() -> void:
 		turn_order_panel.unhighlight_all_entries()
 
 ## Update the display with turn information
-func update_display(character_name: String, turn_time: float, is_next_turn: bool = false):
+func update_display(character_name: String, turn_time: float, is_next_turn: bool = false, action_text: String = ""):
 	is_current_turn = is_next_turn
 	
 	# Update labels
@@ -44,6 +45,8 @@ func update_display(character_name: String, turn_time: float, is_next_turn: bool
 		character_name_label.text = character_name
 	
 	turn_time_label.text = "%.2f" % turn_time
+	if action_label:
+		action_label.text = action_text
 	
 	# Highlight if this is the next turn
 	if is_next_turn:
