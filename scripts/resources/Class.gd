@@ -7,3 +7,4 @@ class_name Class
 @export var description: String = ""
 @export var stat_modifiers: Dictionary = {}  # e.g., {"strength": 2, "intelligence": -1, ...}
 @export var abilities: Array[Ability] = []  # Combat abilities for this class
+@export var rest_abilities: Array[RestAbility] = []  ## 2 rest abilities from class

@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3 uid="uid://c2m35e3tyqxiv"]
+
+[ext_resource type="PackedScene" uid="uid://ye4mu42w7nqv" path="res://scenes/2d/PanelNinePatchRect.tscn" id="1_20n15"]
+[ext_resource type="Script" uid="uid://pci4htks7yj6" path="res://scripts/2d/RestAbilityButton.gd" id="1_qihda"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_qihda"]
+
+[node name="RestAbilityButton" type="PanelContainer"]
+script = ExtResource("1_qihda")
+
+[node name="PanelNinePatchRect" parent="." instance=ExtResource("1_20n15")]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 2
+theme = ExtResource("2_qihda")
+text = "rest ability 1"

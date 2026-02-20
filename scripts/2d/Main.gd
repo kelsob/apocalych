@@ -18,9 +18,10 @@ var current_state: GameState = GameState.MAIN_MENU
 var game_started: bool = false
 var current_world_name: String = ""
 var current_party_members: Array[PartyMember] = []
-var party_gold: int = 0
+var party_gold: int = 150  # Starting gold (for debugging)
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 var _town_node_for_rest: MapNode2D = null  # When in town, Inn rest returns here instead of map
+var _vendor_opened_from_town: bool = false
 
 func _ready():
 	# Connect menu signals automatically
@@ -45,14 +46,12 @@ func _ready():
 	# Connect event window signal to update rest button when event closes
 	ui_controller.event_window.event_closed.connect(_on_event_closed)
 
-	# Town screen (user adds TownScreen node under UIController; optional reference)
-	var town_screen = ui_controller.get_node_or_null("TownScreen")
-	if town_screen and town_screen.has_signal("town_closed"):
-		town_screen.town_closed.connect(_on_town_screen_closed)
-	if town_screen and town_screen.has_signal("rest_from_town_requested"):
-		town_screen.rest_from_town_requested.connect(_on_rest_from_town_requested)
-	if town_screen and town_screen.has_signal("warmaster_training_requested"):
-		town_screen.warmaster_training_requested.connect(_on_warmaster_training_requested)
+	ui_controller.town_screen.town_closed.connect(_on_town_screen_closed)
+	ui_controller.town_screen.rest_from_town_requested.connect(_on_rest_from_town_requested)
+	ui_controller.town_screen.warmaster_training_requested.connect(_on_warmaster_training_requested)
+	ui_controller.town_screen.vendor_requested.connect(_on_vendor_requested)
+	ui_controller.vendor_screen.vendor_closed.connect(_on_vendor_closed)
+	ui_controller.vendor_screen.party_gold_changed.connect(_on_vendor_gold_changed)
 	
 	CombatController.combat_ended.connect(_on_combat_ended)
 
@@ -309,8 +308,8 @@ func start_rest():
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
 	
-	# Show rest screen
-	ui_controller.rest_controller.start_rest()
+	# Show rest screen with party for rest abilities and healing
+	ui_controller.rest_controller.start_rest(current_party_members)
 
 ## Called when rest is complete - return to map or back to town if we rested from Inn
 func _on_rest_complete():
@@ -336,23 +335,15 @@ func _on_rest_complete():
 
 ## Open the town screen for the given town node (called by open_town effect)
 func open_town_screen(town_node: MapNode2D):
-	var town_screen = ui_controller.get_node_or_null("TownScreen")
-	if not town_screen:
-		push_warning("Main: TownScreen node not found under UIController; add and design the town scene")
-		map_generator.visible = true
-		ui_controller.map_ui.visible = true
-		return
 	town_node.can_rest_here = true
-	town_screen.open_town(town_node, current_party_members, party_gold)
-	town_screen.visible = true
+	ui_controller.town_screen.open_town(town_node, current_party_members, party_gold)
+	ui_controller.town_screen.visible = true
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
 
 ## Called when player leaves town
 func _on_town_screen_closed():
-	var town_screen = ui_controller.get_node_or_null("TownScreen")
-	if town_screen:
-		town_screen.visible = false
+	ui_controller.town_screen.visible = false
 	map_generator.visible = true
 	ui_controller.map_ui.visible = true
 
@@ -362,10 +353,8 @@ func _on_rest_from_town_requested(town_node: MapNode2D, gold_cost: int):
 		return
 	party_gold -= gold_cost
 	_town_node_for_rest = town_node
-	var town_screen = ui_controller.get_node_or_null("TownScreen")
-	if town_screen:
-		town_screen.visible = false
-	ui_controller.rest_controller.start_rest()
+	ui_controller.town_screen.visible = false
+	ui_controller.rest_controller.start_rest(current_party_members)
 	ui_controller.rest_controller.visible = true
 
 ## Called when player buys XP from Warmaster in town
@@ -376,6 +365,35 @@ func _on_warmaster_training_requested(member_index: int, gold_cost: int, xp_amou
 		return
 	party_gold -= gold_cost
 	current_party_members[member_index].gain_experience(xp_amount)
-	var town_screen = ui_controller.get_node_or_null("TownScreen")
-	if town_screen and town_screen.has_method("update_party_gold"):
-		town_screen.update_party_gold(party_gold)
+	ui_controller.town_screen.update_party_gold(party_gold)
+
+## Called when player requests vendor from town
+func _on_vendor_requested():
+	open_vendor_screen(null, [])
+
+## Open vendor screen. Pass optional vendor_item_ids to restrict inventory; empty = all items.
+## Called by EventManager (script_hook open_merchant_ui, open_vendor effect) or from town.
+func open_vendor_screen(_context_node: MapNode2D = null, vendor_item_ids: Array = []):
+	_vendor_opened_from_town = _context_node == null and ui_controller.town_screen.visible
+	ui_controller.vendor_screen.open_vendor(current_party_members, party_gold, vendor_item_ids)
+	ui_controller.vendor_screen.visible = true
+	map_generator.visible = false
+	ui_controller.map_ui.visible = false
+	if ui_controller.event_window.visible:
+		ui_controller.event_window.close()
+	if ui_controller.town_screen.visible:
+		ui_controller.town_screen.visible = false
+
+## Called when player closes vendor
+func _on_vendor_closed():
+	ui_controller.vendor_screen.visible = false
+	if _vendor_opened_from_town:
+		ui_controller.town_screen.visible = true
+	else:
+		map_generator.visible = true
+		ui_controller.map_ui.visible = true
+
+## Called when gold changes in vendor (buy/sell)
+func _on_vendor_gold_changed(new_gold: int):
+	party_gold = new_gold
+	ui_controller.town_screen.update_party_gold(party_gold)

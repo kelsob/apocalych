@@ -1,0 +1,61 @@
+[
+  {
+    "id": "health_potion",
+    "name": "Health Potion",
+    "rarity": "common",
+    "value": 30,
+    "description": "A red concoction that restores vitality. Common fare for adventurers.",
+    "class_restriction": null,
+    "item_type": "consumable",
+    "icon": "res://assets/items/flagon-1.png"
+  },
+  {
+    "id": "iron_luck_charm",
+    "name": "Iron Luck Charm",
+    "rarity": "common",
+    "value": 25,
+    "description": "A crude charm said to bring minor fortune.",
+    "class_restriction": null,
+    "icon": "res://assets/items/amulet-1.png"
+  },
+  {
+    "id": "faerie_tea",
+    "name": "Faerie Tea",
+    "rarity": "uncommon",
+    "value": 50,
+    "description": "Ethereal brew from the fae. Grants fleeting clarity and a hint of otherworldly blessing.",
+    "class_restriction": null,
+    "item_type": "consumable",
+    "icon": "res://assets/items/amphora-1.png"
+  },
+  {
+    "id": "dwarven_ale",
+    "name": "Dwarven Ale",
+    "rarity": "common",
+    "value": 15,
+    "description": "Stout mountain brew. Dwarves consider it essential for any journey.",
+    "class_restriction": null,
+    "item_type": "consumable",
+    "icon": "res://assets/items/barrel-1.png"
+  },
+  {
+    "id": "stolen_goods",
+    "name": "Stolen Goods",
+    "rarity": "common",
+    "value": 75,
+    "description": "An assortment of pilfered trinkets. Best sold quickly and quietly.",
+    "class_restriction": null,
+    "item_type": "misc",
+    "icon": "res://assets/items/pouch-1.png"
+  },
+  {
+    "id": "warden_signet",
+    "name": "Warden Signet",
+    "rarity": "rare",
+    "value": 200,
+    "description": "A seal of the Warden order. Only bearers of this ring may wield sanctioned warder arms.",
+    "class_restriction": ["warden"],
+    "item_type": "equipment",
+    "icon": "res://assets/items/finger-1.png"
+  }
+]

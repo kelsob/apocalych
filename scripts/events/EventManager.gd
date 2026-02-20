@@ -156,6 +156,16 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
 	
+	# FORCE MASTER TEST EVENT (for testing - remove when done)
+	if events.has("master_test"):
+		return events.master_test
+	
+	# FORCE VENDOR EVENT (for testing vendor - remove when done)
+	for event_id in events.keys():
+		if event_id.begins_with("wandering_vendor_"):
+			print("VENDOR TEST: EventManager forcing vendor event: %s" % event_id)
+			return events[event_id]
+
 	# FORCE TOWN ENTRY EVENT (for testing town flow at all nodes - inaccurate, for testing only)
 	for event_id in events.keys():
 		if event_id.begins_with("town_entry_"):
@@ -309,8 +319,14 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 			"pay_gold":
 				_apply_pay_gold(effect, party, node_state)
 
+			"give_gold":
+				_apply_give_gold(effect, party, node_state)
+
 			"open_town":
 				_apply_open_town(effect, party, node_state)
+
+			"open_vendor":
+				_apply_open_vendor(effect, party, node_state)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -419,9 +435,23 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 		push_warning("EventManager: give_item effect missing 'item_id' field")
 		return
 	
-	var count = effect.get("count", 1)
-	# TODO: Connect to inventory system
-	print("EventManager: Would give item %s x%d" % [effect.item_id, count])
+	var count: int = int(effect.get("count", 1))
+	var target_index: int = int(effect.get("target", 0))
+	var main: Node = _get_main_node()
+	if not main or main.current_party_members.is_empty():
+		push_warning("EventManager: give_item requires Main with party")
+		return
+	if not ItemDatabase.has_item(effect.item_id):
+		push_warning("EventManager: Unknown item_id '%s'" % effect.item_id)
+		return
+	var member: PartyMember = main.current_party_members[target_index]
+	var added := 0
+	for i in count:
+		if member.add_item(effect.item_id, 1):
+			added += 1
+	if added > 0:
+		var item := ItemDatabase.get_item(effect.item_id)
+		print("EventManager: Gave %s x%d to %s" % [item.name, added, member.member_name])
 
 func _apply_change_reputation(effect: Dictionary, party: Dictionary):
 	if not effect.has("faction") or not effect.has("amount"):
@@ -472,8 +502,8 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 		return
 	
 	# Get Main node to access party members
-	var root = get_tree().root
-	var main = null
+	var root: Window = get_tree().root
+	var main: Node = null
 	
 	for child in root.get_children():
 		if child.name == "Main" or child.is_in_group("main"):
@@ -520,9 +550,15 @@ func _apply_script_hook(effect: Dictionary, party: Dictionary, node_state: Dicti
 		push_warning("EventManager: script_hook effect missing 'hook_name' field")
 		return
 	
-	# TODO: Connect to named hook system
-	# This allows external systems to register named hooks
-	print("EventManager: Would call script hook '%s'" % effect.hook_name)
+	var main := _get_main_node()
+	if not main:
+		return
+	
+	match effect.hook_name:
+		"open_merchant_ui":
+			main.open_vendor_screen(null)
+		_:
+			push_warning("EventManager: Unknown script hook '%s'" % effect.hook_name)
 
 func _apply_set_rest_state(effect: Dictionary, node_state: Dictionary):
 	if not effect.has("allow_rest"):
@@ -542,22 +578,33 @@ func _apply_set_rest_state(effect: Dictionary, node_state: Dictionary):
 	print("EventManager: Set rest state to %s at node %d" % [allow_rest, current_node.node_index])
 
 func _apply_pay_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
-	var amount = effect.get("amount", 0)
+	var amount: int = int(effect.get("amount", 0))
 	if amount <= 0:
 		return
-	var main = _get_main_node()
+	var main: Node = _get_main_node()
 	if not main:
 		push_warning("EventManager: pay_gold could not find Main")
 		return
 	main.party_gold = max(0, main.party_gold - amount)
 	print("EventManager: Paid %d gold (remaining: %d)" % [amount, main.party_gold])
 
+func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
+	var amount: int = int(effect.get("amount", 0))
+	if amount <= 0:
+		return
+	var main: Node = _get_main_node()
+	if not main:
+		push_warning("EventManager: give_gold could not find Main")
+		return
+	main.party_gold = max(0, main.party_gold + amount)
+	print("EventManager: Gave %d gold (total: %d)" % [amount, main.party_gold])
+
 func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	var current_node = node_state.get("current_node", null)
 	if current_node == null:
 		push_warning("EventManager: open_town effect requires current_node in node_state")
 		return
-	var main = _get_main_node()
+	var main: Node = _get_main_node()
 	if not main:
 		push_warning("EventManager: open_town could not find Main")
 		return
@@ -567,8 +614,19 @@ func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Diction
 	main.ui_controller.map_ui.visible = false
 	main.open_town_screen(current_node)
 
-func _get_main_node():
-	var root = get_tree().root
+func _apply_open_vendor(effect: Dictionary, party: Dictionary, node_state: Dictionary):
+	var main: Node = _get_main_node()
+	if not main:
+		return
+	var vendor_item_ids: Array = effect.get("item_ids", [])
+	if main.ui_controller.event_window.visible:
+		main.ui_controller.event_window.close()
+	main.map_generator.visible = false
+	main.ui_controller.map_ui.visible = false
+	main.open_vendor_screen(null, vendor_item_ids)
+
+func _get_main_node() -> Node:
+	var root: Window = get_tree().root
 	for child in root.get_children():
 		if child.name == "Main" or child.is_in_group("main"):
 			return child
@@ -578,8 +636,8 @@ func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Di
 	debug_print("SECRET PATH: === EventManager _apply_reveal_secrets() called ===")
 	
 	# EventManager is an autoload, find Main node first
-	var root = get_tree().root
-	var main = null
+	var root: Window = get_tree().root
+	var main: Node = null
 	
 	# Search through root's children for Main
 	for child in root.get_children():
@@ -587,7 +645,7 @@ func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Di
 			main = child
 			break
 	
-	if not main:
+	if main == null:
 		push_warning("SECRET PATH: EventManager could not find Main node")
 		return
 	

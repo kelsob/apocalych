@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RestAbility" load_steps=2 format=3 uid="uid://cplace_class_1"]
+
+[ext_resource type="Script" path="res://scripts/resources/RestAbility.gd" id="1_rest"]
+
+[resource]
+script = ExtResource("1_rest")
+ability_name = "Battlefield Care"
+ability_id = "placeholder_class_1"
+description = "Placeholder (class 1)"
+available_durations = 1

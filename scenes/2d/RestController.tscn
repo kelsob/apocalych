@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bdgphw4taxtfq"]
+[gd_scene load_steps=3 format=3 uid="uid://bdgphw4taxtfq"]
 
 [ext_resource type="Script" uid="uid://b4ffq6mefqp4t" path="res://scripts/2d/RestController.gd" id="1_hndvf"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_ca6ah"]
 
 [node name="RestController" type="Control"]
 layout_mode = 3
@@ -11,24 +12,99 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_hndvf")
 
-[node name="UI" type="Control" parent="."]
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-
-[node name="RestButton" type="Button" parent="UI"]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 590.0
-offset_top = 598.0
-offset_right = 650.0
-offset_bottom = 640.0
+offset_left = -298.0
+offset_top = -136.0
+offset_right = 298.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 0
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Character1RestAbilities" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="Character2RestAbilities" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="Character3RestAbilities" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ca6ah")
+
+[node name="RestBenefitsLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer"]
+modulate = Color(0, 1, 0, 1)
+custom_minimum_size = Vector2(196, 0)
+layout_mode = 2
+size_flags_vertical = 0
+theme = ExtResource("2_ca6ah")
+text = "benefit"
+horizontal_alignment = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/PanelContainer"]
+layout_mode = 2
+theme = ExtResource("2_ca6ah")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer/VBoxContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="QuickRestButton" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "quick rest"
+
+[node name="MediumRestButton" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "medium rest"
+
+[node name="LongRestButton" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer/PanelContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "long rest"
+
+[node name="RestButton" type="Button" parent="VBoxContainer/HBoxContainer/VBoxContainer"]
+layout_mode = 2
 text = "Rest"
 
-[connection signal="pressed" from="UI/RestButton" to="." method="_on_rest_button_pressed"]
+[node name="MarginContainer2" type="MarginContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_ca6ah")
+
+[node name="RestRisksLabel" type="Label" parent="VBoxContainer/HBoxContainer/MarginContainer2"]
+modulate = Color(1, 0, 0, 1)
+custom_minimum_size = Vector2(196, 0)
+layout_mode = 2
+size_flags_vertical = 0
+theme = ExtResource("2_ca6ah")
+text = "risk"
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/VBoxContainer/RestButton" to="." method="_on_rest_button_pressed"]

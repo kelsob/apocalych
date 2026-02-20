@@ -1,0 +1,29 @@
+[
+  {
+    "id": "wandering_vendor_01",
+    "title": "Wandering Vendor",
+    "biomes": ["plains", "forest", "hills"],
+    "weight": 15,
+    "one_shot": false,
+    "prereqs": {"requires_tags": [], "forbids_tags": []},
+    "text": "A weathered vendor sets up a makeshift stall by the roadside. {{party.leader_name}} spots an assortment of curios and supplies.",
+    "choices": [
+      {
+        "id": "browse",
+        "text": "Browse wares",
+        "condition": {"requires_tags": [], "forbids_tags": []},
+        "effects": [{"type": "open_vendor"}],
+        "next_event": null,
+        "weight": 1
+      },
+      {
+        "id": "leave",
+        "text": "Continue on your way",
+        "condition": {"requires_tags": [], "forbids_tags": []},
+        "effects": [],
+        "next_event": null,
+        "weight": 1
+      }
+    ]
+  }
+]

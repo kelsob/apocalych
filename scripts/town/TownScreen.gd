@@ -6,6 +6,7 @@ extends Control
 signal town_closed()
 signal rest_from_town_requested(town_node: MapNode2D, gold_cost: int)
 signal warmaster_training_requested(member_index: int, gold_cost: int, xp_amount: int)
+signal vendor_requested()
 
 const INN_GOLD_COST := 5
 const WARMASTER_GOLD_PER_XP := 10
@@ -59,7 +60,7 @@ func _on_blacksmith_pressed():
 	print("TownScreen: Blacksmith - coming soon")
 
 func _on_vendor_pressed():
-	print("TownScreen: Merchant - coming soon")
+	vendor_requested.emit()
 
 func _on_casino_pressed():
 	print("TownScreen: Casino - coming soon")

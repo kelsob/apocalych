@@ -9,6 +9,8 @@ extends CanvasLayer
 @onready var event_window: EventWindow = $EventWindow
 @onready var rest_controller: RestController = $RestController
 @onready var map_ui: Control = $MapUI
+@onready var town_screen: Control = $TownScreen
+@onready var vendor_screen: Control = $VendorScreen
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0

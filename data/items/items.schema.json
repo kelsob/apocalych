@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "res://data/items/items.schema.json",
+  "title": "Item",
+  "description": "Schema for game item definitions",
+  "type": "object",
+  "required": ["id", "name", "rarity", "value", "description"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the item (snake_case)",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the item"
+    },
+    "rarity": {
+      "type": "string",
+      "enum": ["common", "uncommon", "rare", "legendary"],
+      "description": "Item rarity tier"
+    },
+    "value": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Base gold value"
+    },
+    "description": {
+      "type": "string",
+      "description": "Flavor/mechanical description"
+    },
+    "class_restriction": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Class IDs that can use this item; null = no restriction"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": ["misc", "consumable", "equipment", "quest", "currency"],
+      "default": "misc",
+      "description": "Category for future systems (equipment, consumables)"
+    },
+    "stack_size": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 99,
+      "description": "Max stack size; 1 = unique"
+    },
+    "extra": {
+      "type": "object",
+      "description": "Extensible key-value data for future features"
+    }
+  },
+  "additionalProperties": true
+}

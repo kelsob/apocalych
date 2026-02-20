@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="Race" load_steps=2 format=3 uid="uid://cy6s8tjfa6p6p"]
+[gd_resource type="Resource" script_class="Race" load_steps=3 format=3 uid="uid://cy6s8tjfa6p6p"]
 
 [ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+[ext_resource type="Resource" path="res://resources/rest_abilities/placeholder_race.tres" id="2_rest"]
 
 [resource]
 script = ExtResource("1_race")
@@ -15,3 +16,4 @@ base_stats = {
 "strength": 7,
 "wisdom": 12
 }
+rest_ability = ExtResource("2_rest")

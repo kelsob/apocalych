@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="RestAbility" load_steps=2 format=3 uid="uid://cplace_race_rest"]
+
+[ext_resource type="Script" path="res://scripts/resources/RestAbility.gd" id="1_rest"]
+
+[resource]
+script = ExtResource("1_rest")
+ability_name = "Vigorous"
+ability_id = "placeholder_race_1"
+description = "Placeholder (race)"
+available_durations = 0

@@ -17,6 +17,53 @@ class_name PartyMember
 @export var max_health: int = 10
 @export var current_health: int = 10
 
+# Character inventory: item_id -> count
+var inventory: Dictionary = {}
+
+## Add items to this character's inventory. Returns true if added.
+func add_item(item_id: String, count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	if not ItemDatabase.has_item(item_id):
+		push_warning("PartyMember.add_item: Unknown item_id '%s'" % item_id)
+		return false
+	var item := ItemDatabase.get_item(item_id)
+	var current: int = int(inventory.get(item_id, 0))
+	var can_add := mini(count, item.stack_size - current) if item.stack_size < 99 else count
+	if can_add <= 0:
+		return false
+	inventory[item_id] = current + can_add
+	return true
+
+## Remove items from this character's inventory. Returns true if removed (at least one).
+func remove_item(item_id: String, count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var current: int = int(inventory.get(item_id, 0))
+	if current <= 0:
+		return false
+	var to_remove := mini(count, current)
+	inventory[item_id] = current - to_remove
+	if inventory[item_id] <= 0:
+		inventory.erase(item_id)
+	return true
+
+## Get how many of an item this character has
+func get_item_count(item_id: String) -> int:
+	return inventory.get(item_id, 0)
+
+## Check if character has at least one of the item
+func has_item(item_id: String) -> bool:
+	return inventory.get(item_id, 0) > 0
+
+## Get all item IDs this character owns (with count > 0)
+func get_inventory_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for k in inventory.keys():
+		if inventory[k] > 0:
+			ids.append(str(k))
+	return ids
+
 ## Initialize a new party member with starting values based on their stats
 ## Call this after setting race and class
 func initialize():
@@ -66,6 +113,17 @@ func heal(amount: int):
 ## Check if character is alive
 func is_alive() -> bool:
 	return current_health > 0
+
+## Get all rest abilities for this character (1 from race, 2 from class)
+func get_rest_abilities() -> Array[RestAbility]:
+	var result: Array[RestAbility] = []
+	if race and race.rest_ability:
+		result.append(race.rest_ability)
+	if class_resource:
+		for ra in class_resource.rest_abilities:
+			if ra:
+				result.append(ra)
+	return result
 
 ## Gain experience and level up if threshold reached
 func gain_experience(amount: int):
