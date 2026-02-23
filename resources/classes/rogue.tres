@@ -10,6 +10,7 @@
 script = ExtResource("1_class")
 name = "Rogue"
 description = "A stealthy infiltrator and opportunist, skilled in deception and precision."
+weapon_type = "Dagger"
 stat_modifiers = {
 "charisma": 1,
 "constitution": 0,

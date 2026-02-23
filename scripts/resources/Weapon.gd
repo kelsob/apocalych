@@ -33,6 +33,12 @@ func get_slot_count() -> int:
 	return config.get("slots", 1)
 
 
+## ATK value from tier only (1 for copper, +1 per upgrade). Used for display.
+func get_atk() -> int:
+	var config = TIER_CONFIG.get(tier, TIER_CONFIG[Tier.COPPER])
+	return config.get("base_damage", 1)
+
+
 ## Total damage bonus: base from tier + sum of enchantments
 func get_damage_bonus() -> int:
 	var config = TIER_CONFIG.get(tier, TIER_CONFIG[Tier.COPPER])

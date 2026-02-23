@@ -10,7 +10,7 @@
       {
         "id": "enter_town",
         "text": "Enter town",
-        "effects": [{"type": "open_town"}],
+        "effects": [{"type": "open_town", "show_all_services": true}],
         "next_event": null,
         "weight": 1
       },

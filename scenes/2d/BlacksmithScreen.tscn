@@ -1,9 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://dm8ukp1vhijtc"]
+[gd_scene load_steps=7 format=3 uid="uid://dm8ukp1vhijtc"]
 
 [ext_resource type="Script" uid="uid://dqq6xighdjs1f" path="res://scripts/town/BlacksmithScreen.gd" id="1_ojcw7"]
-[ext_resource type="PackedScene" uid="uid://bmdfj0dmjf1w1" path="res://scenes/2d/CharacterWeaponPanel.tscn" id="1_ysjtm"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="4_ilbwl"]
+[ext_resource type="Texture2D" uid="uid://diikp321rd5bv" path="res://assets/items/axe-1.png" id="5_24dei"]
+[ext_resource type="Texture2D" uid="uid://bdva5v7okxik1" path="res://assets/items/coin-purse-1.png" id="6_68c0e"]
+[ext_resource type="Texture2D" uid="uid://bjoi6tuod7bjq" path="res://assets/items/armor-1.png" id="6_pia4c"]
+[ext_resource type="Texture2D" uid="uid://bjnq2f2tlmcty" path="res://assets/items/gem-13.png" id="7_psvnh"]
 
-[node name="BlacksmithScreen" type="PanelContainer"]
+[node name="BlacksmithScreen" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -13,6 +18,8 @@ script = ExtResource("1_ojcw7")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
+offset_right = 1280.0
+offset_bottom = 720.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
@@ -23,20 +30,171 @@ layout_mode = 2
 text = "blacksmith"
 horizontal_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="CharacterEquipmentPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 4
 alignment = 1
 
-[node name="CharacterWeaponPanel" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+[node name="CharacterWeaponPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel"]
+custom_minimum_size = Vector2(164, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="CharacterWeaponPanel2" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+[node name="WeaponTextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+texture = ExtResource("5_24dei")
+expand_mode = 5
+
+[node name="WeaponNameLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+text = "weapon name"
+horizontal_alignment = 1
+
+[node name="WeaponATKValueLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+text = "1 ATK"
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="CharacterWeaponPanel3" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "upgrade to:"
+horizontal_alignment = 2
+
+[node name="UpgradeTierLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "copper"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="GoldUpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "1000000"
+icon = ExtResource("6_68c0e")
+
+[node name="SharpeningStoneUpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterWeaponPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "100000"
+icon = ExtResource("7_psvnh")
+
+[node name="CharacterArmorPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel"]
+custom_minimum_size = Vector2(164, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ArmorTextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+texture = ExtResource("6_pia4c")
+expand_mode = 5
+
+[node name="ArmorNameLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+text = "weapon name"
+horizontal_alignment = 1
+
+[node name="ArmorDEFValueLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("4_ilbwl")
+text = "1  DEF"
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "upgrade to:"
+horizontal_alignment = 2
+
+[node name="UpgradeTierLabel" type="Label" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "copper"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="GoldUpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "1000000"
+icon = ExtResource("6_68c0e")
+
+[node name="SharpeningStoneUpgradeButton" type="Button" parent="MarginContainer/VBoxContainer/CharacterEquipmentPanel/CharacterArmorPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("4_ilbwl")
+text = "100000"
+icon = ExtResource("7_psvnh")
 
 [node name="Button" type="Button" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "leave"
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 160.0
+offset_top = -67.0
+offset_right = 293.0
+offset_bottom = 67.0
+grow_vertical = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="PanelContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="CharacterButton1" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "character 1"
+
+[node name="CharacterButton2" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "character 2"
+
+[node name="CharacterButton3" type="Button" parent="PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+toggle_mode = true
+text = "character 3"

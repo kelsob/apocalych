@@ -10,6 +10,7 @@
 script = ExtResource("1_class")
 name = "Warden"
 description = "A stalwart protector, combining defensive prowess with tactical awareness."
+weapon_type = "Sword"
 stat_modifiers = {
 "charisma": 0,
 "constitution": 3,

@@ -620,11 +620,12 @@ func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Diction
 	if not main:
 		push_warning("EventManager: open_town could not find Main")
 		return
+	var force_all_services: bool = effect.get("show_all_services", false)
 	if main.ui_controller.event_window.visible:
 		main.ui_controller.event_window.close()
 	main.map_generator.visible = false
 	main.ui_controller.map_ui.visible = false
-	main.open_town_screen(current_node)
+	main.open_town_screen(current_node, force_all_services)
 
 func _apply_open_vendor(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	var main: Node = _get_main_node()

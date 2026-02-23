@@ -3258,16 +3258,19 @@ func generate_towns():
 	
 	debug_print("TOWN: === Total towns generated: %d ===" % town_nodes.size())
 
-## Pick a random subset of town services (2-4 services per town)
+## Pick town services. For testing: every town gets all options. Restore random subset when done testing.
 func _pick_town_services() -> Array:
-	var all_services = ["inn", "blacksmith", "merchant", "casino", "warmaster"]
-	var count = randi_range(2, 4)
-	var result: Array = []
-	var indices = range(all_services.size())
-	indices.shuffle()
-	for i in range(mini(count, indices.size())):
-		result.append(all_services[indices[i]])
-	return result
+	# Testing: all towns have every option
+	return ["inn", "blacksmith", "merchant", "casino", "warmaster"]
+	# Original: random 2-4 services per town
+	# var all_services = ["inn", "blacksmith", "merchant", "casino", "warmaster"]
+	# var count = randi_range(2, 4)
+	# var result: Array = []
+	# var indices = range(all_services.size())
+	# indices.shuffle()
+	# for i in range(mini(count, indices.size())):
+	# 	result.append(all_services[indices[i]])
+	# return result
 
 ## Determine how many towns a region should have (0-2, mostly 1)
 func _determine_town_count() -> int:

@@ -15,6 +15,7 @@
 script = ExtResource("1_class")
 name = "Cleric"
 description = "A divine healer and support, channeling holy power to aid allies."
+weapon_type = "Mace"
 stat_modifiers = {
 "charisma": 2,
 "constitution": 1,

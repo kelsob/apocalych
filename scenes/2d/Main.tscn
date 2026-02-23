@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=34 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -26,6 +26,7 @@
 [ext_resource type="Texture2D" uid="uid://bjnq2f2tlmcty" path="res://assets/items/gem-13.png" id="22_ufufp"]
 [ext_resource type="Texture2D" uid="uid://dfu83h6ocomu6" path="res://assets/items/powder-1.png" id="23_xsycr"]
 [ext_resource type="Texture2D" uid="uid://fdvdwowy5wyw" path="res://assets/items/shard-3.png" id="24_ia0w3"]
+[ext_resource type="PackedScene" uid="uid://ddp8fjrwnisv0" path="res://scenes/2d/WorldClocktscn.tscn" id="25_y4ryl"]
 [ext_resource type="PackedScene" uid="uid://dm8ukp1vhijtc" path="res://scenes/2d/BlacksmithScreen.tscn" id="27_35772"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
@@ -376,6 +377,10 @@ theme = ExtResource("18_q52ow")
 theme_override_font_sizes/font_size = 32
 text = "0"
 vertical_alignment = 2
+
+[node name="WorldClock" parent="UIController/MapUI" instance=ExtResource("25_y4ryl")]
+layout_mode = 1
+mouse_filter = 2
 
 [node name="TownScreen" parent="UIController" instance=ExtResource("17_ialqc")]
 visible = false

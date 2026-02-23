@@ -44,12 +44,16 @@ var cache_dirty: bool = true
 # Weapon damage bonus (from PartyMember.weapon, affects damage dealt)
 var weapon_damage_bonus: float = 0.0
 
+# Armour defense bonus (from PartyMember.armour, reduces damage taken)
+var armour_defense_bonus: float = 0.0
+
 ## Initialize stats from a PartyMember
 func initialize_from_party_member(member: PartyMember):
 	max_health = member.max_health
 	current_health = member.current_health
 	core_stats = member.get_final_stats().duplicate()
 	weapon_damage_bonus = float(member.weapon.get_damage_bonus()) if member.weapon else 0.0
+	armour_defense_bonus = float(member.armour.get_defense_bonus()) if member.armour else 0.0
 	
 	# Calculate derived stats
 	base_speed = _calculate_speed_from_dex(core_stats.dexterity)
@@ -138,6 +142,9 @@ func take_damage(amount: float) -> Dictionary:
 				damage_absorbed += status.current_shield_amount
 				remaining_damage -= status.current_shield_amount
 				status.current_shield_amount = 0
+
+	# Armour reduces incoming damage (flat reduction)
+	remaining_damage = max(0.0, remaining_damage - armour_defense_bonus)
 	
 	var actual_health_damage = 0
 	

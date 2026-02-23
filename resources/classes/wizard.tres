@@ -15,6 +15,7 @@
 script = ExtResource("1_class")
 name = "Wizard"
 description = "A master of arcane magic, studying ancient tomes to unlock the secrets of reality."
+weapon_type = "Staff"
 stat_modifiers = {
 "charisma": 0,
 "constitution": 0,

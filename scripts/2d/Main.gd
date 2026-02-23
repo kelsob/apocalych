@@ -369,10 +369,11 @@ func _on_rest_complete():
 # TOWN SYSTEM
 # ============================================================================
 
-## Open the town screen for the given town node (called by open_town effect)
-func open_town_screen(town_node: MapNode2D):
+## Open the town screen for the given town node (called by open_town effect).
+## When force_all_services is true, show all town options (e.g. master/override event town).
+func open_town_screen(town_node: MapNode2D, force_all_services: bool = false):
 	town_node.can_rest_here = true
-	ui_controller.town_screen.open_town(town_node, current_party_members, party_gold)
+	ui_controller.town_screen.open_town(town_node, current_party_members, party_gold, force_all_services)
 	ui_controller.town_screen.visible = true
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false

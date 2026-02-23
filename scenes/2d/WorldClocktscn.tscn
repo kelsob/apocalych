@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3 uid="uid://ddp8fjrwnisv0"]
+
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_dwuyg"]
+[ext_resource type="Script" uid="uid://y26lq0imq7mx" path="res://scripts/2d/WorldClock.gd" id="1_pn8hr"]
+
+[node name="WorldClock" type="Container"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -256.0
+offset_top = 16.0
+offset_right = 256.0
+offset_bottom = 108.0
+grow_horizontal = 2
+script = ExtResource("1_pn8hr")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(512, 0)
+layout_mode = 2
+
+[node name="DateLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("1_dwuyg")
+horizontal_alignment = 1
+
+[node name="LunarCycleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("1_dwuyg")
+horizontal_alignment = 1

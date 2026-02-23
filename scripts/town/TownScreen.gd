@@ -33,12 +33,12 @@ func _ready():
 	casino_button.pressed.connect(_on_casino_pressed)
 	warmaster_button.pressed.connect(_on_warmaster_pressed)
 
-## Called by Main when opening town. Show only services in town_node.town_services.
-func open_town(town_node: MapNode2D, party_members: Array, party_gold: int):
+## Called by Main when opening town. Show only services in town_node.town_services, or all if force_all_services.
+func open_town(town_node: MapNode2D, party_members: Array, party_gold: int, force_all_services: bool = false):
 	_town_node = town_node
 	_party_members = party_members
 	_current_gold = party_gold
-	var services: Array = town_node.town_services
+	var services: Array = (["inn", "blacksmith", "merchant", "casino", "warmaster"] if force_all_services else town_node.town_services)
 	leave_button.visible = true
 	inn_button.visible = "inn" in services
 	blacksmith_button.visible = "blacksmith" in services

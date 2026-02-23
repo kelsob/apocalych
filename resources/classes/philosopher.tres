@@ -10,6 +10,7 @@
 script = ExtResource("1_class")
 name = "Philosopher"
 description = "A deep thinker and scholar, using knowledge and reason to understand the world."
+weapon_type = "Tome"
 stat_modifiers = {
 "charisma": 1,
 "constitution": 0,
