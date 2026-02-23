@@ -7,6 +7,13 @@ extends Node
 # Registry: item_id -> Item Resource
 var _items: Dictionary = {}
 
+## Item IDs that can appear in vendors with higher quantities (bulk stock).
+## Health potions, camping supplies, sharpening stones, magical dust.
+const BULK_LOOT_IDS: Array[String] = ["health_potion", "camping_supplies", "sharpening_stone", "magical_dust"]
+## Min/max quantity for bulk loot items when vendor has no explicit stock.
+const BULK_LOOT_QTY_MIN: int = 2
+const BULK_LOOT_QTY_MAX: int = 6
+
 # Default directory for item JSON files
 @export var items_directory: String = "res://data/items"
 
@@ -83,6 +90,10 @@ func get_all_ids() -> Array[String]:
 	for k in _items.keys():
 		ids.append(k)
 	return ids
+
+## Returns true if this item_id is in the bulk loot table (can appear with higher vendor quantities).
+func is_bulk_loot(item_id: String) -> bool:
+	return item_id in BULK_LOOT_IDS
 
 ## Get all loaded Items
 func get_all_items() -> Array[Item]:

@@ -106,5 +106,3 @@ layout_mode = 2
 size_flags_vertical = 0
 theme = ExtResource("2_ca6ah")
 text = "risk"
-
-[connection signal="pressed" from="VBoxContainer/HBoxContainer/VBoxContainer/RestButton" to="." method="_on_rest_button_pressed"]

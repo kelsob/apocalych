@@ -249,7 +249,7 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 
 signal map_generation_complete
 signal party_moved_to_node(node: MapNode2D)  # Emitted when party moves to a new node
-signal travel_completed(node: MapNode2D)  # Emitted when party finishes traveling to a node
+signal travel_completed(node: MapNode2D, path_distance: float)  # Emitted when party finishes traveling to a node
 
 # ============================================================================
 # INTERNAL VARIABLES
@@ -7522,7 +7522,8 @@ func _finish_party_travel():
 		debug_print("Party moved to node %d" % travel_target_node.node_index)
 		
 		# Emit travel completed signal (only when actual travel happened)
-		travel_completed.emit(travel_target_node)
+		var distance = travel_total_distance
+		travel_completed.emit(travel_target_node, distance)
 	
 	# Clear travel state
 	travel_path_points.clear()

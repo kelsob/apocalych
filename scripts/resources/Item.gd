@@ -18,6 +18,9 @@ const ITEM_TYPE_STRINGS := ["misc", "consumable", "equipment", "quest", "currenc
 @export var class_restriction: Array[String] = []
 @export var item_type: ItemType = ItemType.MISC
 @export var stack_size: int = 99
+@export var sellable: bool = true
+## Max amount the party can carry of this item (party-wide). 0 = unlimited.
+@export var capacity: int = 0
 @export var icon_path: String = ""
 @export var extra: Dictionary = {}
 
@@ -33,6 +36,8 @@ static func create_from_dict(data: Dictionary) -> Item:
 	item.item_type = _parse_item_type(data.get("item_type", "misc"))
 	item.stack_size = int(data.get("stack_size", 99))
 	item.stack_size = maxi(1, item.stack_size)
+	item.sellable = bool(data.get("sellable", true))
+	item.capacity = int(data.get("capacity", 0))
 	item.icon_path = str(data.get("icon", ""))
 	if data.has("extra") and data.extra is Dictionary:
 		item.extra = data.extra

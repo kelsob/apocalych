@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3 uid="uid://dm8ukp1vhijtc"]
+
+[ext_resource type="Script" uid="uid://dqq6xighdjs1f" path="res://scripts/town/BlacksmithScreen.gd" id="1_ojcw7"]
+[ext_resource type="PackedScene" uid="uid://bmdfj0dmjf1w1" path="res://scenes/2d/CharacterWeaponPanel.tscn" id="1_ysjtm"]
+
+[node name="BlacksmithScreen" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ojcw7")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "blacksmith"
+horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CharacterWeaponPanel" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+layout_mode = 2
+
+[node name="CharacterWeaponPanel2" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+layout_mode = 2
+
+[node name="CharacterWeaponPanel3" parent="MarginContainer/VBoxContainer/HBoxContainer" instance=ExtResource("1_ysjtm")]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "leave"

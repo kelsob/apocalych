@@ -22,6 +22,7 @@ var party_gold: int = 150  # Starting gold (for debugging)
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 var _town_node_for_rest: MapNode2D = null  # When in town, Inn rest returns here instead of map
 var _vendor_opened_from_town: bool = false
+var _blacksmith_opened_from_town: bool = false
 
 func _ready():
 	# Connect menu signals automatically
@@ -42,6 +43,7 @@ func _ready():
 	# Hide and connect rest controller
 	ui_controller.rest_controller.visible = false
 	ui_controller.rest_controller.rest_complete.connect(_on_rest_complete)
+	ui_controller.rest_controller.ambush_triggered.connect(_on_rest_ambush_triggered)
 	
 	# Connect event window signal to update rest button when event closes
 	ui_controller.event_window.event_closed.connect(_on_event_closed)
@@ -50,8 +52,11 @@ func _ready():
 	ui_controller.town_screen.rest_from_town_requested.connect(_on_rest_from_town_requested)
 	ui_controller.town_screen.warmaster_training_requested.connect(_on_warmaster_training_requested)
 	ui_controller.town_screen.vendor_requested.connect(_on_vendor_requested)
+	ui_controller.town_screen.blacksmith_requested.connect(_on_blacksmith_requested)
 	ui_controller.vendor_screen.vendor_closed.connect(_on_vendor_closed)
 	ui_controller.vendor_screen.party_gold_changed.connect(_on_vendor_gold_changed)
+	ui_controller.blacksmith_screen.blacksmith_closed.connect(_on_blacksmith_closed)
+	ui_controller.blacksmith_screen.party_gold_changed.connect(_on_blacksmith_gold_changed)
 	
 	CombatController.combat_ended.connect(_on_combat_ended)
 
@@ -119,7 +124,11 @@ func _on_party_select_back_pressed():
 ## Called when map generation is complete
 func _on_map_generation_complete():
 	print("Main: Map generation complete, starting game...")
+	# Give party starting camping supplies (10)
+	if current_party_members.size() > 0:
+		current_party_members[0].add_item("camping_supplies", 10)
 	ui_controller.map_ui.initialize_party_ui(current_party_members)
+	_refresh_map_resource_labels()
 	start_game()
 
 ## Start the game - enables player interaction and begins gameplay loop
@@ -129,6 +138,8 @@ func start_game():
 		return
 	
 	game_started = true
+	if TimeManager:
+		TimeManager.reset_time()
 	print("=== Game Started ===")
 	print("Party can now navigate the map by clicking on connected nodes")
 	
@@ -172,6 +183,7 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 	var node = map_generator.current_party_node
 	if node != null:
 		node.can_rest_here = victory
+	_refresh_map_resource_labels()
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found
@@ -273,8 +285,19 @@ func _on_party_moved_to_node(node: MapNode2D):
 ## Called when event window closes - update rest button visibility
 func _on_event_closed():
 	refresh_rest_button_visibility()
+	_refresh_map_resource_labels()
+
+const CAMPING_SUPPLIES_ITEM_ID: String = "camping_supplies"
+
+func _get_party_camping_supplies() -> int:
+	var total := 0
+	for m in current_party_members:
+		if m is PartyMember:
+			total += m.get_item_count(CAMPING_SUPPLIES_ITEM_ID)
+	return total
 
 ## Update rest button visibility from current node's rest state (safe to rest and not already rested here).
+## Wilderness rest requires at least 1 camping supply - hide Rest button when party has none.
 ## Call after events or when returning from combat.
 func refresh_rest_button_visibility():
 	var current_node = map_generator.current_party_node
@@ -282,10 +305,14 @@ func refresh_rest_button_visibility():
 		ui_controller.map_ui.update_rest_button_visibility(false)
 		return
 	var has_rested_here = current_node.node_index == map_generator.rested_at_node_index
-	ui_controller.map_ui.update_rest_button_visibility(current_node.can_rest_here and not has_rested_here)
+	var has_supplies_for_rest := _get_party_camping_supplies() >= 1
+	ui_controller.map_ui.update_rest_button_visibility(current_node.can_rest_here and not has_rested_here and has_supplies_for_rest)
 
-## Called when travel completes - launch event for the destination node
-func _on_travel_completed(node: MapNode2D):
+## Called when travel completes - advance time and launch event for the destination node
+func _on_travel_completed(node: MapNode2D, path_distance: float):
+	# Advance world time based on path length
+	if TimeManager:
+		TimeManager.advance_time_from_travel(path_distance)
 	# Launch event for this node after travel completes
 	_launch_node_event(node)
 
@@ -294,14 +321,18 @@ func _on_rest_requested():
 	start_rest()
 
 ## Start resting at the current node
-## Called when player clicks the rest button
+## Called when player clicks the rest button (wilderness rest - requires camping supplies)
 func start_rest():
 	# Check if party can rest at current location
 	var current_node = map_generator.current_party_node
 	if not current_node.can_rest_here:
 		print("Main: Cannot rest at current node")
 		return
-	
+	# Wilderness rest requires at least 1 camping supply - block entering rest screen if none
+	if _get_party_camping_supplies() < 1:
+		print("Main: Cannot rest - no camping supplies")
+		return
+
 	print("Main: Starting rest at node %d" % current_node.node_index)
 	
 	# Hide map and map UI
@@ -311,9 +342,14 @@ func start_rest():
 	# Show rest screen with party for rest abilities and healing
 	ui_controller.rest_controller.start_rest(current_party_members)
 
+## Called when rest is interrupted by nighttime ambush (before combat starts)
+func _on_rest_ambush_triggered():
+	_town_node_for_rest = null
+
 ## Called when rest is complete - return to map or back to town if we rested from Inn
 func _on_rest_complete():
 	print("Main: Rest complete")
+	_refresh_map_resource_labels()
 	# Mark that the party has rested at the current node
 	map_generator.mark_node_as_rested()
 	var current_node = map_generator.current_party_node
@@ -345,6 +381,7 @@ func open_town_screen(town_node: MapNode2D):
 func _on_town_screen_closed():
 	ui_controller.town_screen.visible = false
 	map_generator.visible = true
+	_refresh_map_resource_labels()
 	ui_controller.map_ui.visible = true
 
 ## Called when player uses Inn in town: start rest and return to town when done
@@ -354,7 +391,7 @@ func _on_rest_from_town_requested(town_node: MapNode2D, gold_cost: int):
 	party_gold -= gold_cost
 	_town_node_for_rest = town_node
 	ui_controller.town_screen.visible = false
-	ui_controller.rest_controller.start_rest(current_party_members)
+	ui_controller.rest_controller.start_rest(current_party_members, true)  # Inn = safe rest, no ambush
 	ui_controller.rest_controller.visible = true
 
 ## Called when player buys XP from Warmaster in town
@@ -392,8 +429,36 @@ func _on_vendor_closed():
 	else:
 		map_generator.visible = true
 		ui_controller.map_ui.visible = true
+	_refresh_map_resource_labels()
 
 ## Called when gold changes in vendor (buy/sell)
 func _on_vendor_gold_changed(new_gold: int):
 	party_gold = new_gold
 	ui_controller.town_screen.update_party_gold(party_gold)
+	_refresh_map_resource_labels()
+
+## Called when player requests blacksmith from town
+func _on_blacksmith_requested():
+	_blacksmith_opened_from_town = true
+	ui_controller.town_screen.visible = false
+	ui_controller.blacksmith_screen.open_blacksmith(current_party_members, party_gold)
+	ui_controller.blacksmith_screen.visible = true
+
+## Called when player closes blacksmith
+func _on_blacksmith_closed():
+	ui_controller.blacksmith_screen.visible = false
+	if _blacksmith_opened_from_town:
+		ui_controller.town_screen.visible = true
+	_blacksmith_opened_from_town = false
+	_refresh_map_resource_labels()
+
+## Called when gold changes in blacksmith (upgrade paid with gold)
+func _on_blacksmith_gold_changed(new_gold: int):
+	party_gold = new_gold
+	ui_controller.town_screen.update_party_gold(party_gold)
+	_refresh_map_resource_labels()
+
+## Refresh the MapUI resource count labels (gold + 4 bulk items)
+func _refresh_map_resource_labels():
+	if ui_controller.map_ui.has_method("update_resource_labels"):
+		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold)

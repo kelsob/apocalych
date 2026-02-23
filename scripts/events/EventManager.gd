@@ -327,6 +327,9 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 
 			"open_vendor":
 				_apply_open_vendor(effect, party, node_state)
+
+			"advance_time":
+				_apply_advance_time(effect)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -444,13 +447,22 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 	if not ItemDatabase.has_item(effect.item_id):
 		push_warning("EventManager: Unknown item_id '%s'" % effect.item_id)
 		return
+	var item := ItemDatabase.get_item(effect.item_id)
+	var party_total: int = 0
+	for m in main.current_party_members:
+		party_total += m.get_item_count(effect.item_id)
+	var capacity_headroom: int = 999
+	if item.capacity > 0:
+		capacity_headroom = item.capacity - party_total
+	if capacity_headroom <= 0:
+		return
 	var member: PartyMember = main.current_party_members[target_index]
+	var to_add: int = mini(count, capacity_headroom)
 	var added := 0
-	for i in count:
+	for i in to_add:
 		if member.add_item(effect.item_id, 1):
 			added += 1
 	if added > 0:
-		var item := ItemDatabase.get_item(effect.item_id)
 		print("EventManager: Gave %s x%d to %s" % [item.name, added, member.member_name])
 
 func _apply_change_reputation(effect: Dictionary, party: Dictionary):
@@ -624,6 +636,16 @@ func _apply_open_vendor(effect: Dictionary, party: Dictionary, node_state: Dicti
 	main.map_generator.visible = false
 	main.ui_controller.map_ui.visible = false
 	main.open_vendor_screen(null, vendor_item_ids)
+
+func _apply_advance_time(effect: Dictionary) -> void:
+	if not effect.has("amount"):
+		push_warning("EventManager: advance_time effect missing 'amount' field")
+		return
+	var amount: float = float(effect.amount)
+	if amount <= 0.0:
+		return
+	if TimeManager:
+		TimeManager.advance_time_from_event(amount)
 
 func _get_main_node() -> Node:
 	var root: Window = get_tree().root

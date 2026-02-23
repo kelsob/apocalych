@@ -7,6 +7,7 @@ signal town_closed()
 signal rest_from_town_requested(town_node: MapNode2D, gold_cost: int)
 signal warmaster_training_requested(member_index: int, gold_cost: int, xp_amount: int)
 signal vendor_requested()
+signal blacksmith_requested()
 
 const INN_GOLD_COST := 5
 const WARMASTER_GOLD_PER_XP := 10
@@ -57,7 +58,7 @@ func _on_inn_pressed():
 	rest_from_town_requested.emit(_town_node, INN_GOLD_COST)
 
 func _on_blacksmith_pressed():
-	print("TownScreen: Blacksmith - coming soon")
+	blacksmith_requested.emit()
 
 func _on_vendor_pressed():
 	vendor_requested.emit()

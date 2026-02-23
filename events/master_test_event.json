@@ -62,6 +62,13 @@
         "effects": [{"type": "give_gold", "amount": 100}],
         "next_event": null,
         "weight": 1
+      },
+      {
+        "id": "advance_time",
+        "text": "Lose time (advance +3 units)",
+        "effects": [{"type": "advance_time", "amount": 3}],
+        "next_event": null,
+        "weight": 1
       }
     ]
   }

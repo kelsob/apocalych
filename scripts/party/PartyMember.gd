@@ -20,6 +20,9 @@ class_name PartyMember
 # Character inventory: item_id -> count
 var inventory: Dictionary = {}
 
+# Equipped weapon (stat stick, tiered with enchantment slots)
+var weapon: Weapon = null
+
 ## Add items to this character's inventory. Returns true if added.
 func add_item(item_id: String, count: int = 1) -> bool:
 	if count <= 0:
@@ -70,6 +73,8 @@ func initialize():
 	level = 1
 	experience = 0
 	experience_to_next_level = 100
+	if weapon == null:
+		weapon = Weapon.create_default()
 	
 	# Calculate max health: base 10 + constitution modifier
 	var stats = get_final_stats()

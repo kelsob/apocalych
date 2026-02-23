@@ -41,11 +41,15 @@ var active_statuses: Array[StatusEffect] = []
 var cached_effective_stats: Dictionary = {}
 var cache_dirty: bool = true
 
+# Weapon damage bonus (from PartyMember.weapon, affects damage dealt)
+var weapon_damage_bonus: float = 0.0
+
 ## Initialize stats from a PartyMember
 func initialize_from_party_member(member: PartyMember):
 	max_health = member.max_health
 	current_health = member.current_health
 	core_stats = member.get_final_stats().duplicate()
+	weapon_damage_bonus = float(member.weapon.get_damage_bonus()) if member.weapon else 0.0
 	
 	# Calculate derived stats
 	base_speed = _calculate_speed_from_dex(core_stats.dexterity)

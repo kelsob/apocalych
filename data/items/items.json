@@ -7,6 +7,8 @@
     "description": "A red concoction that restores vitality. Common fare for adventurers.",
     "class_restriction": null,
     "item_type": "consumable",
+    "sellable": false,
+    "capacity": 10,
     "icon": "res://assets/items/flagon-1.png"
   },
   {
@@ -57,5 +59,41 @@
     "class_restriction": ["warden"],
     "item_type": "equipment",
     "icon": "res://assets/items/finger-1.png"
+  },
+  {
+    "id": "sharpening_stone",
+    "name": "Sharpening Stone",
+    "rarity": "common",
+    "value": 20,
+    "description": "A whetstone used by smiths to hone and upgrade equipment. Restores edge and reinforces blades.",
+    "class_restriction": null,
+    "item_type": "misc",
+    "sellable": false,
+    "capacity": 5,
+    "icon": "res://assets/items/tool-1.png"
+  },
+  {
+    "id": "magical_dust",
+    "name": "Magical Dust",
+    "rarity": "uncommon",
+    "value": 45,
+    "description": "Glittering residue of spent enchantments. Used to imbue equipment with magical properties and enhance item descriptions.",
+    "class_restriction": null,
+    "item_type": "misc",
+    "sellable": false,
+    "capacity": 5,
+    "icon": "res://assets/items/powder-1.png"
+  },
+  {
+    "id": "camping_supplies",
+    "name": "Camping Supplies",
+    "rarity": "common",
+    "value": 8,
+    "description": "Essentials for the road: firewood, cookware, and other camp necessities.",
+    "class_restriction": null,
+    "item_type": "misc",
+    "sellable": false,
+    "capacity": 15,
+    "icon": "res://assets/items/root-1.png"
   }
 ]

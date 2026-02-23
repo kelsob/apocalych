@@ -265,7 +265,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 	for effect in ability.effects:
 		match effect.effect_type:
 			AbilityEffect.EffectType.DAMAGE:
-				var potency = effect.calculate_final_potency(caster_stats)
+				var potency = effect.calculate_final_potency(caster_stats) + caster.combatant_stats.weapon_damage_bonus
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
 						var damage_result = target.take_damage(potency, caster)
@@ -512,6 +512,16 @@ func _end_combat(victory: bool):
 				rewards.gold += combatant.source.gold_reward
 		rewards.xp += current_encounter.bonus_xp
 		rewards.gold += current_encounter.bonus_gold
+		# Randomize gold by ±25%
+		var gold_mult: float = randf_range(0.75, 1.25)
+		rewards.gold = max(0, int(rewards.gold * gold_mult))
+	
+	# Advance world time based on combat duration (combat clock reflects turns × speed)
+	if combat_timeline and TimeManager:
+		var combat_duration: float = combat_timeline.global_time
+		var turn_count: int = combat_timeline.global_turn_counter
+		if combat_duration > 0.0:
+			TimeManager.advance_time_from_combat(combat_duration, turn_count)
 	
 	combat_ended.emit(victory, rewards)
 	
@@ -540,6 +550,13 @@ func _end_combat_fled():
 		for combatant in enemy_combatants:
 			if combatant.is_dead and combatant.source is Enemy:
 				rewards.xp += combatant.source.xp_reward
+	
+	# Advance world time based on combat duration (combat clock reflects turns × speed)
+	if combat_timeline and TimeManager:
+		var combat_duration: float = combat_timeline.global_time
+		var turn_count: int = combat_timeline.global_turn_counter
+		if combat_duration > 0.0:
+			TimeManager.advance_time_from_combat(combat_duration, turn_count)
 
 	combat_ended.emit(false, rewards)
 

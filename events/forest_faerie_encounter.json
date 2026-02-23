@@ -48,6 +48,7 @@
 				},
 				"effects": [
 					{ "type": "change_reputation", "faction": "fae", "amount": -50 },
+					{ "type": "advance_time", "amount": 2 },
 					{ "type": "start_combat", "encounter_id": "faerie_guardian" }
 				],
 				"next_event": null,

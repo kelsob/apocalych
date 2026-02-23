@@ -22,6 +22,7 @@ TagManager="*res://scripts/autoloads/TagManager.gd"
 ItemDatabase="*res://scripts/autoloads/ItemDatabase.gd"
 EventManager="*res://scripts/events/EventManager.gd"
 CombatController="*res://scripts/autoloads/CombatController.gd"
+TimeManager="*res://scripts/autoloads/TimeManager.gd"
 
 [display]
 

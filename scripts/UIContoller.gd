@@ -11,6 +11,7 @@ extends CanvasLayer
 @onready var map_ui: Control = $MapUI
 @onready var town_screen: Control = $TownScreen
 @onready var vendor_screen: Control = $VendorScreen
+@onready var blacksmith_screen: Control = $BlacksmithScreen
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0
