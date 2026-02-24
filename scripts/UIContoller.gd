@@ -12,6 +12,9 @@ extends CanvasLayer
 @onready var town_screen: Control = $TownScreen
 @onready var vendor_screen: Control = $VendorScreen
 @onready var blacksmith_screen: Control = $BlacksmithScreen
+@onready var character_details_screen: Control = $CharacterDetailsScreen
+
+var _character_details_displayed_member: PartyMember = null  # Member currently shown in CharacterDetailsScreen
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0
@@ -30,3 +33,29 @@ func update_ui_visibility(state: int) -> void:
 
 func _set_viewport_fx_visible(visible: bool) -> void:
 	viewport_fx.visible = visible
+
+func _ready() -> void:
+	_connect_character_details_buttons()
+	if character_details_screen and character_details_screen.has_signal("closed"):
+		character_details_screen.closed.connect(_on_character_details_screen_closed)
+
+func _connect_character_details_buttons() -> void:
+	var party_details: Node = get_node_or_null("MapUI/PartyDetails")
+	if not party_details:
+		return
+	for cd in [party_details.get_node_or_null("CharacterDetails"), party_details.get_node_or_null("CharacterDetails2"), party_details.get_node_or_null("CharacterDetails3")]:
+		if cd and cd.has_signal("character_clicked"):
+			cd.character_clicked.connect(_on_character_clicked)
+
+func _on_character_clicked(member: PartyMember) -> void:
+	if not member or not character_details_screen:
+		return
+	if character_details_screen.visible and member == _character_details_displayed_member:
+		character_details_screen.close()
+		return
+	if character_details_screen.has_method("open_character"):
+		_character_details_displayed_member = member
+		character_details_screen.open_character(member)
+
+func _on_character_details_screen_closed() -> void:
+	_character_details_displayed_member = null

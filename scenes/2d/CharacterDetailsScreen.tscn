@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://b2wt4bys3bd20"]
+[gd_scene load_steps=7 format=3 uid="uid://b2wt4bys3bd20"]
 
+[ext_resource type="Script" uid="uid://bpg05vrbvftgi" path="res://scripts/2d/CharacterDetailsScreen.gd" id="1_dktvo"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_tqkr6"]
 [ext_resource type="Texture2D" uid="uid://dovh23ohyjb7e" path="res://assets/icons/slash.png" id="2_dktvo"]
 [ext_resource type="Texture2D" uid="uid://diikp321rd5bv" path="res://assets/items/axe-1.png" id="3_ia0tq"]
 [ext_resource type="Texture2D" uid="uid://bjoi6tuod7bjq" path="res://assets/items/armor-1.png" id="4_4fnao"]
-[ext_resource type="Texture2D" uid="uid://71boqqod01h" path="res://assets/items/ring-2.png" id="5_rgyxd"]
+[ext_resource type="PackedScene" uid="uid://cnhqf1rffqjj5" path="res://scenes/2d/ItemSlotDisplay.tscn" id="5_tqkr6"]
 
 [node name="CharacterDetailsScreen" type="Control"]
 z_index = 51
@@ -21,6 +22,7 @@ offset_right = 384.0
 offset_bottom = 256.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_dktvo")
 
 [node name="PanelContainer" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -36,10 +38,10 @@ theme = ExtResource("1_tqkr6")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer"]
 layout_mode = 2
+alignment = 1
 
 [node name="LeftPanel" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="IdentityContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
@@ -64,56 +66,162 @@ layout_mode = 2
 size_flags_horizontal = 8
 text = "Class"
 
-[node name="HPXPStatsContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
+[node name="Stats" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
+layout_mode = 2
+text = "Stats"
+horizontal_alignment = 1
+
+[node name="HPXPContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
 
-[node name="HBoxContainer3" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer"]
+[node name="HBoxContainer3" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer"]
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3"]
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3/HBoxContainer"]
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer"]
 layout_mode = 2
 text = "HP:"
 
-[node name="CurrentHPLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3/HBoxContainer"]
+[node name="CurrentHPLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer"]
 layout_mode = 2
 text = "0"
 
-[node name="Control" type="Control" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3/HBoxContainer"]
+[node name="Control" type="Control" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer"]
 custom_minimum_size = Vector2(6, 9)
 layout_mode = 2
 
-[node name="Sprite2D" type="Sprite2D" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3/HBoxContainer/Control"]
+[node name="Sprite2D" type="Sprite2D" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer/Control"]
 position = Vector2(0, 13)
 scale = Vector2(0.25, 0.25)
 texture = ExtResource("2_dktvo")
 centered = false
 
-[node name="MaxHPLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3/HBoxContainer"]
+[node name="MaxHPLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer"]
 layout_mode = 2
 text = "0"
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer/HBoxContainer3"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer"]
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "XP to Lvl"
 horizontal_alignment = 2
 
-[node name="NextLvlLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer"]
+[node name="NextLvlLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer"]
 layout_mode = 2
 text = "2:"
 horizontal_alignment = 2
 
-[node name="XPToLvlLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPStatsContainer"]
+[node name="XPToLvlLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer"]
 layout_mode = 2
 text = "0"
+
+[node name="StatsContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ATK:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MAG:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SPD:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "DEF:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MAG-DEF:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
+
+[node name="HBoxContainer3" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LUK:"
+horizontal_alignment = 2
+
+[node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer3"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+horizontal_alignment = 1
 
 [node name="EquipmentLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
@@ -211,14 +319,84 @@ layout_mode = 2
 [node name="MarginContainer" type="MarginContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer"]
 layout_mode = 2
 
-[node name="GridContainer" type="GridContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer"]
+[node name="InventoryContainer" type="GridContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer"]
 layout_mode = 2
-columns = 6
+columns = 10
 
-[node name="ItemTextureRect" type="TextureRect" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/GridContainer"]
+[node name="ItemSlotDisplay" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
 layout_mode = 2
-texture = ExtResource("5_rgyxd")
+
+[node name="ItemSlotDisplay2" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay3" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay4" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay5" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay6" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay7" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay8" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay9" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay10" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay11" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay12" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay13" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay14" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay15" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay16" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay17" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay18" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay19" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay20" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer" instance=ExtResource("5_tqkr6")]
+layout_mode = 2
 
 [node name="RightPanel" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer"]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -16.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = 16.0
+grow_horizontal = 0
+theme = ExtResource("1_tqkr6")
+text = "X"

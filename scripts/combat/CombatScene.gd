@@ -145,6 +145,7 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 		main.map_generator.visible = true
 		main.ui_controller.map_ui.visible = true
 		main.refresh_rest_button_visibility()
+		main.refresh_town_button_visibility()
 
 	queue_free()
 

@@ -1,12 +1,14 @@
 extends Control
 
-## MapUI - Overlay UI for map gameplay (RestButton, LocationDetailDisplay, PartyDetails)
+## MapUI - Overlay UI for map gameplay (RestButton, TownButton, LocationDetailDisplay, PartyDetails)
 
 signal rest_requested()
+signal town_requested()
 
 @onready var location_detail_display: Control = $LocationDetailDisplay
-@onready var party_details: Control = $PartyDetails
+@onready var party_details: VBoxContainer = $PartyDetails
 @onready var rest_button: Button = $HBoxContainer/RestButton
+@onready var town_button: Button = $HBoxContainer/TownButton
 @onready var reset_map_button: Button = $HBoxContainer/ResetMapButton
 
 @onready var gold_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer/MarginContainer/HBoxContainer/CountLabel
@@ -18,6 +20,8 @@ signal rest_requested()
 func _ready():
 	rest_button.pressed.connect(_on_rest_button_pressed)
 	rest_button.visible = false
+	town_button.pressed.connect(_on_town_button_pressed)
+	town_button.visible = false
 	reset_map_button.pressed.connect(_on_reset_map_button_pressed)
 
 func _on_reset_map_button_pressed():
@@ -29,6 +33,13 @@ func _on_rest_button_pressed():
 
 func update_rest_button_visibility(can_rest: bool):
 	rest_button.visible = can_rest
+
+func update_town_button_visibility(can_show: bool):
+	if town_button:
+		town_button.visible = can_show
+
+func _on_town_button_pressed():
+	town_requested.emit()
 
 func initialize_party_ui(members: Array[PartyMember]) -> void:
 	party_details.initialize_party(members)

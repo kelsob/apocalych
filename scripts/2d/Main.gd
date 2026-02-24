@@ -23,6 +23,7 @@ var party_has_traveled: bool = false  # Track if party has actually traveled (no
 var _town_node_for_rest: MapNode2D = null  # When in town, Inn rest returns here instead of map
 var _vendor_opened_from_town: bool = false
 var _blacksmith_opened_from_town: bool = false
+var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns player has been granted entry to
 
 func _ready():
 	# Connect menu signals automatically
@@ -35,10 +36,12 @@ func _ready():
 	map_generator.visible = false
 	map_generator.map_generation_complete.connect(_on_map_generation_complete)
 	map_generator.party_moved_to_node.connect(_on_party_moved_to_node)
+	map_generator.travel_started.connect(_on_travel_started)
 	map_generator.travel_completed.connect(_on_travel_completed)
 	
-	# MapUI emits rest_requested (RestButton is now in MapUI under UIController)
+	# MapUI emits rest_requested and town_requested
 	ui_controller.map_ui.rest_requested.connect(_on_rest_requested)
+	ui_controller.map_ui.town_requested.connect(_on_town_requested)
 	
 	# Hide and connect rest controller
 	ui_controller.rest_controller.visible = false
@@ -121,9 +124,10 @@ func _on_party_select_start_pressed(party_members: Array[PartyMember], world_nam
 func _on_party_select_back_pressed():
 	show_menu(GameState.MAIN_MENU)
 
-## Called when map generation is complete
+## Called when map generation is complete (initial or after reset)
 func _on_map_generation_complete():
 	print("Main: Map generation complete, starting game...")
+	_town_node_indices_granted_entry.clear()
 	# Give party starting camping supplies (10)
 	if current_party_members.size() > 0:
 		current_party_members[0].add_item("camping_supplies", 10)
@@ -282,9 +286,10 @@ func _calculate_average_party_level() -> int:
 func _on_party_moved_to_node(node: MapNode2D):
 	pass  # Rest button visibility is handled by MapGenerator2D
 
-## Called when event window closes - update rest button visibility
+## Called when event window closes - update rest and town button visibility
 func _on_event_closed():
 	refresh_rest_button_visibility()
+	refresh_town_button_visibility()
 	_refresh_map_resource_labels()
 
 const CAMPING_SUPPLIES_ITEM_ID: String = "camping_supplies"
@@ -298,7 +303,7 @@ func _get_party_camping_supplies() -> int:
 
 ## Update rest button visibility from current node's rest state (safe to rest and not already rested here).
 ## Wilderness rest requires at least 1 camping supply - hide Rest button when party has none.
-## Call after events or when returning from combat.
+## At towns, hide Rest button (use Inn via Town button instead).
 func refresh_rest_button_visibility():
 	var current_node = map_generator.current_party_node
 	if current_node == null:
@@ -306,7 +311,12 @@ func refresh_rest_button_visibility():
 		return
 	var has_rested_here = current_node.node_index == map_generator.rested_at_node_index
 	var has_supplies_for_rest := _get_party_camping_supplies() >= 1
-	ui_controller.map_ui.update_rest_button_visibility(current_node.can_rest_here and not has_rested_here and has_supplies_for_rest)
+	var at_town: bool = current_node.is_town
+	ui_controller.map_ui.update_rest_button_visibility(not at_town and current_node.can_rest_here and not has_rested_here and has_supplies_for_rest)
+
+## Called when player clicks a node and travel begins - hide Town button immediately
+func _on_travel_started(_from_node: MapNode2D, _target_node: MapNode2D):
+	ui_controller.map_ui.update_town_button_visibility(false)
 
 ## Called when travel completes - advance time and launch event for the destination node
 func _on_travel_completed(node: MapNode2D, path_distance: float):
@@ -369,10 +379,13 @@ func _on_rest_complete():
 # TOWN SYSTEM
 # ============================================================================
 
-## Open the town screen for the given town node (called by open_town effect).
+## Open the town screen for the given town node (called by open_town effect or Town button).
 ## When force_all_services is true, show all town options (e.g. master/override event town).
+## Marks the town as granted entry so the Town button can re-open it later.
 func open_town_screen(town_node: MapNode2D, force_all_services: bool = false):
 	town_node.can_rest_here = true
+	if _town_node_indices_granted_entry.find(town_node.node_index) < 0:
+		_town_node_indices_granted_entry.append(town_node.node_index)
 	ui_controller.town_screen.open_town(town_node, current_party_members, party_gold, force_all_services)
 	ui_controller.town_screen.visible = true
 	map_generator.visible = false
@@ -383,7 +396,27 @@ func _on_town_screen_closed():
 	ui_controller.town_screen.visible = false
 	map_generator.visible = true
 	_refresh_map_resource_labels()
+	refresh_rest_button_visibility()
+	refresh_town_button_visibility()
 	ui_controller.map_ui.visible = true
+
+## Town button pressed - re-enter the current town (only shown when at a granted-entry town)
+func _on_town_requested():
+	var current_node: MapNode2D = map_generator.current_party_node
+	if not current_node or not current_node.is_town:
+		return
+	if _town_node_indices_granted_entry.find(current_node.node_index) < 0:
+		return
+	open_town_screen(current_node)
+
+## Update Town button visibility. Visible when at a town node the player has been granted entry to.
+func refresh_town_button_visibility():
+	var current_node: MapNode2D = map_generator.current_party_node
+	if current_node == null:
+		ui_controller.map_ui.update_town_button_visibility(false)
+		return
+	var can_show: bool = current_node.is_town and _town_node_indices_granted_entry.has(current_node.node_index)
+	ui_controller.map_ui.update_town_button_visibility(can_show)
 
 ## Called when player uses Inn in town: start rest and return to town when done
 func _on_rest_from_town_requested(town_node: MapNode2D, gold_cost: int):

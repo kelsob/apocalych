@@ -249,6 +249,7 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 
 signal map_generation_complete
 signal party_moved_to_node(node: MapNode2D)  # Emitted when party moves to a new node
+signal travel_started(from_node: MapNode2D, target_node: MapNode2D)  # Emitted when party begins traveling
 signal travel_completed(node: MapNode2D, path_distance: float)  # Emitted when party finishes traveling to a node
 
 # ============================================================================
@@ -7406,6 +7407,7 @@ func navigate_party_to_node(target_node: MapNode2D):
 	# Request redraw to show trail
 	queue_redraw()
 	
+	travel_started.emit(from_node, target_node)
 	debug_print("Party started traveling to node %d" % target_node.node_index)
 
 ## Process party movement when in PARTY_MOVING state
