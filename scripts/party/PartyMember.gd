@@ -96,6 +96,12 @@ func get_weapon_type() -> String:
 		return class_resource.weapon_type
 	return "Weapon"
 
+## Armour type name from class for display (e.g. "Tunic", "Plate", "Robes"). Default "Armour" if no class or unset.
+func get_armour_type() -> String:
+	if class_resource and class_resource.armour_type and not class_resource.armour_type.is_empty():
+		return class_resource.armour_type
+	return "Armour"
+
 ## Get final stats combining race base stats and class modifiers
 func get_final_stats() -> Dictionary:
 	var stats = {}

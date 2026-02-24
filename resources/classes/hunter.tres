@@ -11,6 +11,7 @@ script = ExtResource("1_class")
 name = "Hunter"
 description = "A skilled tracker and ranged combatant, adept at survival and precision strikes."
 weapon_type = "Bow"
+armour_type = "Tunic"
 stat_modifiers = {
 "charisma": 0,
 "constitution": 0,

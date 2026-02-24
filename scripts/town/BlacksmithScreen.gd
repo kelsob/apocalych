@@ -153,7 +153,7 @@ func _refresh_equipment_panels() -> void:
 	var a_tier: int = armour.tier
 	var a_target: int = a_tier + 1
 	var a_max: bool = a_target > Armour.Tier.MITHRIL
-	armor_name_label.text = "%s's %s Armour" % [member.member_name, armour.get_tier_name()]
+	armor_name_label.text = "%s's %s %s" % [member.member_name, armour.get_tier_name(), member.get_armour_type()]
 	armor_def_label.text = "+%d DEF" % armour.get_def()
 	armor_upgrade_tier_label.text = "Max tier" if a_max else Armour.TIER_NAMES[a_target]
 	var a_gold: int = 0
@@ -227,6 +227,7 @@ func _on_armour_upgrade_hover_started() -> void:
 	var a_target: int = armour.tier + 1
 	if a_target > Armour.Tier.MITHRIL:
 		return
+	armor_name_label.text = "%s's %s %s" % [member.member_name, Armour.TIER_NAMES[a_target], member.get_armour_type()]
 	armor_def_label.text = "+%d DEF" % a_target
 	armor_def_label.modulate = PREVIEW_GREEN
 

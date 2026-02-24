@@ -11,6 +11,7 @@ script = ExtResource("1_class")
 name = "Warlock"
 description = "A practitioner of dark magic, wielding forbidden power through pacts and curses."
 weapon_type = "Staff"
+armour_type = "Robes"
 stat_modifiers = {
 "charisma": 3,
 "constitution": 0,

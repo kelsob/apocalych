@@ -17,6 +17,7 @@ script = ExtResource("1_class")
 name = "Champion"
 description = "A master of melee combat, excelling in strength and martial prowess."
 weapon_type = "Sword"
+armour_type = "Plate"
 stat_modifiers = {
 "charisma": 1,
 "constitution": 2,

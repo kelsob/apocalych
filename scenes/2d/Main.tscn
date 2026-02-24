@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=35 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://bdgphw4taxtfq" path="res://scenes/2d/RestController.tscn" id="12_7iead"]
 [ext_resource type="Script" uid="uid://dcicsb0rvsjk8" path="res://scripts/MapUI.gd" id="13_wb52w"]
 [ext_resource type="PackedScene" uid="uid://di8lw32eg75di" path="res://scenes/2d/LocationDetailDisplay.tscn" id="14_ialqc"]
+[ext_resource type="PackedScene" uid="uid://b2wt4bys3bd20" path="res://scenes/2d/CharacterDetailsScreen.tscn" id="14_mnjbk"]
 [ext_resource type="Script" uid="uid://b2rhg4hu8m8sa" path="res://scripts/PartyDetails.gd" id="15_kabjb"]
 [ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="16_ynnhv"]
 [ext_resource type="PackedScene" uid="uid://bbywra8tsd1gj" path="res://scenes/2d/TownScreen.tscn" id="17_ialqc"]
@@ -184,6 +185,9 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("13_wb52w")
 
+[node name="CharacterDetailsScreen" parent="UIController/MapUI" instance=ExtResource("14_mnjbk")]
+layout_mode = 1
+
 [node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI"]
 layout_mode = 1
 anchors_preset = 7
@@ -209,7 +213,7 @@ text = "Rest"
 
 [node name="LocationDetailDisplay" parent="UIController/MapUI" instance=ExtResource("14_ialqc")]
 unique_name_in_owner = true
-z_index = 100
+z_index = 50
 layout_mode = 1
 
 [node name="PartyDetails" type="VBoxContainer" parent="UIController/MapUI"]
