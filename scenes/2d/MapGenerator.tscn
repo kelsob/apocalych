@@ -32,6 +32,7 @@ node_base_color = Color(0.784852, 0.662272, 0.487773, 1)
 coast_line_color = Color(0.3, 0.1878, 0.096, 1)
 coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
 ripple_base_color = Color(0.54902, 0.45098, 0.321569, 1)
+mountain_color = Color(0.419318, 0.338669, 0.193858, 1)
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
 river_color = Color(0.371397, 0.459768, 0.592817, 1)
 line_width = 1.0
@@ -81,15 +82,19 @@ mouse_filter = 2
 
 [node name="MapDetails" type="VBoxContainer" parent="."]
 z_index = 10
-layout_mode = 0
-offset_left = 39.0
-offset_top = 48.0
-offset_right = 293.0
-offset_bottom = 300.0
-scale = Vector2(0.75, 0.75)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -278.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 276.0
+grow_horizontal = 0
 theme_override_constants/separation = 2
 
 [node name="Label" type="Label" parent="MapDetails"]
+modulate = Color(0.803922, 0.686275, 0.490196, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_shadow_color = Color(0.588235, 0.482353, 0.298039, 1)
@@ -110,6 +115,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Label2" type="Label" parent="MapDetails/Control"]
+modulate = Color(0.803922, 0.686275, 0.490196, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("3_du8ac")
@@ -135,6 +141,7 @@ layout_mode = 2
 theme_override_constants/separation = 0
 
 [node name="Label4" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer"]
+modulate = Color(0.804977, 0.685359, 0.489496, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 theme = ExtResource("3_du8ac")
@@ -149,6 +156,7 @@ theme_override_constants/separation = 8
 alignment = 1
 
 [node name="Label5" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+modulate = Color(0.803922, 0.686275, 0.490196, 1)
 custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -172,6 +180,7 @@ text = "100"
 horizontal_alignment = 1
 
 [node name="Label7" type="Label" parent="MapDetails/VBoxContainer2/VBoxContainer/HBoxContainer"]
+modulate = Color(0.803922, 0.686275, 0.490196, 1)
 custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -234,13 +243,11 @@ offset = Vector2(0, 1)
 
 [node name="ThereBeDagrons" type="Sprite2D" parent="MapSprites"]
 modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
 position = Vector2(148, 575)
 texture = ExtResource("6_o2kik")
 
 [node name="ThereBeOctopi" type="Sprite2D" parent="MapSprites"]
 modulate = Color(0.588235, 0.482353, 0.298039, 1)
-z_index = 10
 position = Vector2(1108, 135)
 scale = Vector2(1.5, 1.5)
 texture = ExtResource("4_ldstu")

@@ -32,6 +32,18 @@ const MOON_PHASES: Array[String] = [
 	"Waning Crescent"
 ]
 
+# Icon paths per phase index
+const MOON_ICON_PATHS: Array[String] = [
+	"res://assets/map/moon/new-moon.png",
+	"res://assets/map/moon/waxing-crescent.png",
+	"res://assets/map/moon/half-moon-first-quarter.png",
+	"res://assets/map/moon/waxing-gibbous.png",
+	"res://assets/map/moon/full-moon.png",
+	"res://assets/map/moon/waning-gibbous.png",
+	"res://assets/map/moon/half-moon-last-quarter.png",
+	"res://assets/map/moon/waning-crescent.png"
+]
+
 @export var game_time_per_day: float = 1.0
 @export var days_per_month: int = 30
 @export var months_per_year: int = 12
@@ -39,7 +51,8 @@ const MOON_PHASES: Array[String] = [
 
 @onready var progress_bar: ProgressBar = $MarginContainer/VBoxContainer/ProgressBar
 @onready var date_label: Label = $MarginContainer/VBoxContainer/DateLabel
-@onready var lunar_cycle_label: Label = $MarginContainer/VBoxContainer/LunarCycleLabel
+@onready var lunar_cycle_icon: TextureRect = $MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer/LunarCycleIcon
+@onready var lunar_cycle_label: Label = $MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer/LunarCycleLabel
 
 func _ready() -> void:
 	# Progress bar left blank for world-demise progress; do not set value here.
@@ -82,18 +95,32 @@ func set_calendar_from_total_days(total_days: int) -> void:
 
 ## Set the displayed date from explicit calendar values.
 ## day_of_week: 0–5 (Elenya … Valanya). month: 0–11. day_of_month: 1–days_per_month.
+## Date label may be hidden; we still track internally.
 func set_calendar_date(day_of_week: int, day_of_month: int, month: int, year: int) -> void:
-	if not date_label:
-		return
-	var day_name: String = DAY_NAMES[day_of_week % DAY_NAMES.size()]
-	var month_name: String = MONTH_NAMES[month % MONTH_NAMES.size()]
-	date_label.text = "%s, %s the %d — Year %d" % [day_name, month_name, day_of_month, year]
+	if date_label:
+		var day_name: String = DAY_NAMES[day_of_week % DAY_NAMES.size()]
+		var month_name: String = MONTH_NAMES[month % MONTH_NAMES.size()]
+		date_label.text = "%s, %s the %d — Year %d" % [day_name, month_name, day_of_month, year]
 
 
 func _set_lunar_phase(total_days: int) -> void:
-	if not lunar_cycle_label or MOON_PHASES.is_empty() or days_per_lunar_phase <= 0:
+	if MOON_PHASES.is_empty() or days_per_lunar_phase <= 0:
 		return
 	var cycle_length: int = MOON_PHASES.size() * days_per_lunar_phase
 	var day_in_cycle: int = total_days % cycle_length
 	var phase_index: int = (day_in_cycle / days_per_lunar_phase) % MOON_PHASES.size()
-	lunar_cycle_label.text = MOON_PHASES[phase_index]
+
+	if lunar_cycle_label:
+		lunar_cycle_label.text = MOON_PHASES[phase_index]
+		lunar_cycle_label.modulate = _get_lunar_modulate(phase_index)
+
+	if lunar_cycle_icon and phase_index < MOON_ICON_PATHS.size():
+		var path: String = MOON_ICON_PATHS[phase_index]
+		var tex: Texture2D = load(path) as Texture2D if not path.is_empty() else null
+		lunar_cycle_icon.texture = tex
+
+
+func _get_lunar_modulate(phase_index: int) -> Color:
+	if ProjectColors.LUNAR_PHASE_COLORS.is_empty():
+		return Color.WHITE
+	return ProjectColors.LUNAR_PHASE_COLORS[phase_index % ProjectColors.LUNAR_PHASE_COLORS.size()]

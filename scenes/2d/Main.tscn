@@ -19,10 +19,10 @@
 [ext_resource type="PackedScene" uid="uid://cwhqifgnimimb" path="res://scenes/2d/CharacterDetails.tscn" id="16_ynnhv"]
 [ext_resource type="PackedScene" uid="uid://bbywra8tsd1gj" path="res://scenes/2d/TownScreen.tscn" id="17_ialqc"]
 [ext_resource type="PackedScene" uid="uid://b877unqi7keyn" path="res://scenes/2d/ResourcesDisplay.tscn" id="17_s7d5n"]
-[ext_resource type="PackedScene" uid="uid://ye4mu42w7nqv" path="res://scenes/2d/PanelNinePatchRect.tscn" id="18_0xnvu"]
 [ext_resource type="PackedScene" uid="uid://dnx4pvug24tpe" path="res://scenes/2d/VendorScreen.tscn" id="18_kabjb"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="18_q52ow"]
 [ext_resource type="Texture2D" uid="uid://bdva5v7okxik1" path="res://assets/items/coin-purse-1.png" id="20_5k84n"]
+[ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="20_mnjbk"]
 [ext_resource type="Texture2D" uid="uid://bv17nma7msnel" path="res://assets/items/meat-2.png" id="21_5k84n"]
 [ext_resource type="Texture2D" uid="uid://bjnq2f2tlmcty" path="res://assets/items/gem-13.png" id="22_ufufp"]
 [ext_resource type="Texture2D" uid="uid://dfu83h6ocomu6" path="res://assets/items/powder-1.png" id="23_xsycr"]
@@ -87,6 +87,7 @@ unique_name_in_owner = true
 script = ExtResource("3_myh0h")
 
 [node name="ViewportFX" type="Control" parent="UIController"]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -221,17 +222,16 @@ z_index = 50
 layout_mode = 1
 
 [node name="PartyDetails" type="VBoxContainer" parent="UIController/MapUI"]
-custom_minimum_size = Vector2(256, 256)
+custom_minimum_size = Vector2(256, 0)
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 32.0
-offset_top = -108.0
-offset_right = 288.0
-offset_bottom = 364.0
-grow_vertical = 2
-scale = Vector2(0.8, 0.8)
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -236.0
+offset_right = 280.0
+offset_bottom = -24.0
+grow_vertical = 0
 script = ExtResource("15_kabjb")
 
 [node name="CharacterDetails" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
@@ -243,152 +243,174 @@ layout_mode = 2
 [node name="CharacterDetails3" parent="UIController/MapUI/PartyDetails" instance=ExtResource("16_ynnhv")]
 layout_mode = 2
 
-[node name="ResourcesDisplay" parent="UIController/MapUI/PartyDetails" instance=ExtResource("17_s7d5n")]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay"]
-layout_mode = 2
-text = "resources"
-horizontal_alignment = 1
-
-[node name="GridContainer" type="GridContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay"]
-layout_mode = 2
-mouse_filter = 2
-columns = 2
-
-[node name="GoldDisplayContainer" type="PanelContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PanelNinePatchRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer" instance=ExtResource("18_0xnvu")]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer"]
-layout_mode = 2
-theme = ExtResource("18_q52ow")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-texture = ExtResource("20_5k84n")
-
-[node name="CountLabel" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("18_q52ow")
-theme_override_font_sizes/font_size = 32
-text = "0"
-vertical_alignment = 2
-
-[node name="HealthPotionDisplayContainer" type="PanelContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PanelNinePatchRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer" instance=ExtResource("18_0xnvu")]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer"]
-layout_mode = 2
-theme = ExtResource("18_q52ow")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-texture = ExtResource("24_ia0w3")
-
-[node name="CountLabel" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("18_q52ow")
-theme_override_font_sizes/font_size = 32
-text = "0"
-vertical_alignment = 2
-
-[node name="CampingSuppliesDisplayContainer" type="PanelContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PanelNinePatchRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer" instance=ExtResource("18_0xnvu")]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer"]
-layout_mode = 2
-theme = ExtResource("18_q52ow")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-texture = ExtResource("21_5k84n")
-
-[node name="CountLabel" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("18_q52ow")
-theme_override_font_sizes/font_size = 32
-text = "0"
-vertical_alignment = 2
-
-[node name="SharpeningStonesDisplayContainer" type="PanelContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PanelNinePatchRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer" instance=ExtResource("18_0xnvu")]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer"]
-layout_mode = 2
-theme = ExtResource("18_q52ow")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-texture = ExtResource("22_ufufp")
-
-[node name="CountLabel" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("18_q52ow")
-theme_override_font_sizes/font_size = 32
-text = "0"
-vertical_alignment = 2
-
-[node name="ArcanePowderDisplayContainer" type="PanelContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PanelNinePatchRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer" instance=ExtResource("18_0xnvu")]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer"]
-layout_mode = 2
-theme = ExtResource("18_q52ow")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-texture = ExtResource("23_xsycr")
-
-[node name="CountLabel" type="Label" parent="UIController/MapUI/PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme = ExtResource("18_q52ow")
-theme_override_font_sizes/font_size = 32
-text = "0"
-vertical_alignment = 2
-
 [node name="WorldClock" parent="UIController/MapUI" instance=ExtResource("25_y4ryl")]
 layout_mode = 1
 mouse_filter = 2
+
+[node name="ResourcesDisplay" parent="UIController/MapUI" instance=ExtResource("17_s7d5n")]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 156.0
+offset_bottom = 310.0
+
+[node name="Label" type="Label" parent="UIController/MapUI/ResourcesDisplay"]
+modulate = Color(0.367984, 0.29503, 0.167069, 1)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "resources"
+horizontal_alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/Label"]
+modulate = Color(1, 1, 1, 0.34902)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 3
+
+[node name="GridContainer" type="VBoxContainer" parent="UIController/MapUI/ResourcesDisplay"]
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer"]
+layout_mode = 2
+theme = ExtResource("18_q52ow")
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer"]
+modulate = Color(1, 1, 1, 0.364706)
+layout_mode = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("20_5k84n")
+
+[node name="CountLabel" type="Label" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("18_q52ow")
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer"]
+layout_mode = 2
+theme = ExtResource("18_q52ow")
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer2"]
+modulate = Color(1, 1, 1, 0.364706)
+layout_mode = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer2/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("24_ia0w3")
+
+[node name="CountLabel" type="Label" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer2/HBoxContainer"]
+custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("18_q52ow")
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="Button" type="Button" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer2"]
+layout_mode = 2
+flat = true
+
+[node name="MarginContainer3" type="MarginContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer"]
+layout_mode = 2
+theme = ExtResource("18_q52ow")
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer3"]
+modulate = Color(1, 1, 1, 0.364706)
+layout_mode = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer3"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer3/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("22_ufufp")
+
+[node name="CountLabel" type="Label" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer3/HBoxContainer"]
+custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("18_q52ow")
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="MarginContainer4" type="MarginContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer"]
+layout_mode = 2
+theme = ExtResource("18_q52ow")
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer4"]
+modulate = Color(1, 1, 1, 0.364706)
+layout_mode = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer4"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer4/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("21_5k84n")
+
+[node name="CountLabel" type="Label" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer4/HBoxContainer"]
+custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("18_q52ow")
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="MarginContainer5" type="MarginContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer"]
+layout_mode = 2
+theme = ExtResource("18_q52ow")
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer5"]
+modulate = Color(1, 1, 1, 0.364706)
+layout_mode = 2
+texture = ExtResource("20_mnjbk")
+expand_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer5"]
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer5/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("23_xsycr")
+
+[node name="CountLabel" type="Label" parent="UIController/MapUI/ResourcesDisplay/GridContainer/MarginContainer5/HBoxContainer"]
+custom_minimum_size = Vector2(16, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("18_q52ow")
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 2
 
 [node name="TownScreen" parent="UIController" instance=ExtResource("17_ialqc")]
 visible = false

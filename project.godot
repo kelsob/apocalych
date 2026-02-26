@@ -23,6 +23,7 @@ ItemDatabase="*res://scripts/autoloads/ItemDatabase.gd"
 EventManager="*res://scripts/events/EventManager.gd"
 CombatController="*res://scripts/autoloads/CombatController.gd"
 TimeManager="*res://scripts/autoloads/TimeManager.gd"
+ProjectColors="*res://scripts/autoloads/ProjectColors.gd"
 
 [display]
 

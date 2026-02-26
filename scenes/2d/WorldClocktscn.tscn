@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://ddp8fjrwnisv0"]
+[gd_scene load_steps=5 format=3 uid="uid://ddp8fjrwnisv0"]
 
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_dwuyg"]
 [ext_resource type="Script" uid="uid://y26lq0imq7mx" path="res://scripts/2d/WorldClock.gd" id="1_pn8hr"]
+[ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="3_37fam"]
+[ext_resource type="Texture2D" uid="uid://douwlm5pxyhwg" path="res://assets/map/moon/full-moon.png" id="4_rggn3"]
 
 [node name="WorldClock" type="Container"]
 anchors_preset = 5
@@ -25,11 +27,60 @@ custom_minimum_size = Vector2(512, 0)
 layout_mode = 2
 
 [node name="DateLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+visible = false
 layout_mode = 2
 theme = ExtResource("1_dwuyg")
 horizontal_alignment = 1
 
-[node name="LunarCycleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(256, 68)
 layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/VBoxContainer/Control"]
+modulate = Color(1, 1, 1, 0.356863)
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -90.3529
+offset_top = -24.0
+offset_right = 90.3529
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+texture = ExtResource("3_37fam")
+expand_mode = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/Control"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -26.5
+offset_top = -24.0
+offset_right = 26.5
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
 theme = ExtResource("1_dwuyg")
-horizontal_alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Control/MarginContainer"]
+layout_mode = 2
+
+[node name="LunarCycleIcon" type="TextureRect" parent="MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer"]
+modulate = Color(0.954954, 0.911668, 0.839937, 1)
+layout_mode = 2
+texture = ExtResource("4_rggn3")
+
+[node name="LunarCycleLabel" type="Label" parent="MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(112, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme = ExtResource("1_dwuyg")

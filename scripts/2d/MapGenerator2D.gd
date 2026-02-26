@@ -267,6 +267,7 @@ var expanded_coast_lines: Array = []  # Array of [pos_a, pos_b] for expanded coa
 var expanded_coast_positions: Dictionary = {}  # node_index -> expanded Vector2 position (cached)
 var coast_expansion_factors: Dictionary = {}  # node_index -> expansion factor (0.0-1.0) for variance
 var map_features: Array = []  # Array of feature dictionaries (trees, rocks, etc.)
+var _mountain_filler_sprites: Array = []  # Decorative mountain sprites between connected mountain pairs
 var rivers: Array = []  # Array of river dictionaries
 var astar: AStar2D
 
@@ -441,6 +442,10 @@ func generate_map():
 		debug_print("Step 12.55: Centering mountain nodes...")
 		center_mountain_nodes()
 		
+		# Step 12.58: Spawn decorative mountain sprites between connected mountain pairs
+		debug_print("Step 12.58: Spawning mountain filler sprites...")
+		spawn_mountain_filler_sprites()
+		
 		# Step 12.6: Disconnect ONLY mountain-to-mountain connections (prevent rivers through mountains)
 		debug_print("Step 12.6: Disconnecting inter-mountain connections...")
 		disconnect_inter_mountain_connections()
@@ -576,6 +581,12 @@ func clear_existing_nodes():
 	regions.clear()
 	river_data.clear()
 	
+	# Free decorative mountain filler sprites
+	for sprite in _mountain_filler_sprites:
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	_mountain_filler_sprites.clear()
+
 	# Hide decoration sprites during regeneration
 	if dagron_sprite:
 		dagron_sprite.visible = false
@@ -2668,6 +2679,51 @@ func center_mountain_nodes():
 			debug_print("  Centering pass %d/%d complete" % [iteration + 1, iterations])
 	
 	debug_print("  Centered %d mountain nodes (%d iterations)" % [mountain_nodes.size(), iterations])
+
+# ============================================================================
+# STEP 12.58: MOUNTAIN FILLER SPRITES (aesthetic polish)
+# ============================================================================
+
+const MOUNTAIN_SHEET_PATH: String = "res://assets/map/mountains-sheet.png"
+const MOUNTAIN_FILLER_SCALE: Vector2 = Vector2(0.55, 0.55)
+
+## Spawn decorative mountain sprites at midpoint of each connected mountain pair.
+## Purely aesthetic; adds density to mountain ranges. Called before disconnect_inter_mountain_connections.
+func spawn_mountain_filler_sprites():
+	if not enable_mountains or not mapnodes:
+		print("[Mountain filler] Skipped: enable_mountains=%s, mapnodes=%s" % [enable_mountains, mapnodes != null])
+		return
+	var tex: Texture2D = load(MOUNTAIN_SHEET_PATH) as Texture2D
+	if not tex:
+		print("[Mountain filler] ERROR: Could not load texture: %s" % MOUNTAIN_SHEET_PATH)
+		return
+	var processed_pairs: Dictionary = {}  # "minIdx_maxIdx" -> true to avoid duplicate edges
+	for node in map_nodes:
+		if not node.is_mountain:
+			continue
+		for neighbor in node.connections:
+			if not neighbor.is_mountain:
+				continue
+			var key: String = "%d_%d" % [min(node.node_index, neighbor.node_index), max(node.node_index, neighbor.node_index)]
+			if processed_pairs.has(key):
+				continue
+			processed_pairs[key] = true
+			var center_a: Vector2 = node.position + (node.size / 2.0)
+			var center_b: Vector2 = neighbor.position + (neighbor.size / 2.0)
+			var midpoint: Vector2 = (center_a + center_b) / 2.0
+			var sprite: Sprite2D = Sprite2D.new()
+			sprite.texture = tex
+			sprite.hframes = 15
+			sprite.frame = randi() % 15
+			sprite.scale = MOUNTAIN_FILLER_SCALE
+			sprite.modulate = mountain_color
+			sprite.position = midpoint
+			sprite.z_index = 0
+			sprite.centered = true
+			_mountain_filler_sprites.append(sprite)
+			mapnodes.call_deferred("add_child", sprite)
+	print("[Mountain filler] Spawned %d filler sprites (from %d mountain-mountain pairs)" % [_mountain_filler_sprites.size(), processed_pairs.size()])
+	debug_print("  Spawned %d mountain filler sprites" % _mountain_filler_sprites.size())
 
 # ============================================================================
 # STEP 12.6: DISCONNECT MOUNTAIN NODES
@@ -7150,7 +7206,10 @@ func update_node_visibility():
 	for node in map_nodes:
 		if node.is_mountain or node.is_town:
 			node.visible = true
-			node.modulate = Color(1, 1, 1, 1)
+			if node.is_mountain:
+				node.modulate = node.node_color  # Preserve mountain_color from export
+			else:
+				node.modulate = Color(1, 1, 1, 1)
 		elif _is_node_party_visible(node):
 			pass  # set below
 		elif use_mouse_reveal:
@@ -7166,19 +7225,19 @@ func update_node_visibility():
 	
 	# Show current node and party-visible neighbors (never faded)
 	current_party_node.visible = true
-	current_party_node.modulate = Color(1, 1, 1, 1)
+	current_party_node.modulate = current_party_node.node_color if current_party_node.is_mountain else Color(1, 1, 1, 1)
 	
 	for neighbor in current_party_node.connections:
 		if is_edge_secret_and_hidden(current_party_node, neighbor):
 			continue
 		neighbor.visible = true
-		neighbor.modulate = Color(1, 1, 1, 1)
+		neighbor.modulate = neighbor.node_color if neighbor.is_mountain else Color(1, 1, 1, 1)
 	
 	# Mouse reveal: show and modulate nodes that are NOT party-visible but within radius
 	if use_mouse_reveal:
 		for node in map_nodes:
-			if _is_node_party_visible(node):
-				continue
+			if _is_node_party_visible(node) or node.is_mountain:
+				continue  # Mountains keep their color from first block
 			var center = node.position + (node.size / 2.0)
 			var dist = mouse_pos.distance_to(center)
 			if dist < mouse_reveal_node_radius:

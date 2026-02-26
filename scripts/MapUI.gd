@@ -4,6 +4,7 @@ extends Control
 
 signal rest_requested()
 signal town_requested()
+signal health_potion_use_requested()
 
 @onready var location_detail_display: Control = $LocationDetailDisplay
 @onready var party_details: VBoxContainer = $PartyDetails
@@ -11,11 +12,13 @@ signal town_requested()
 @onready var town_button: Button = $HBoxContainer/TownButton
 @onready var reset_map_button: Button = $HBoxContainer/ResetMapButton
 
-@onready var gold_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/GoldDisplayContainer/MarginContainer/HBoxContainer/CountLabel
-@onready var health_potion_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/HealthPotionDisplayContainer/MarginContainer/HBoxContainer/CountLabel
-@onready var camping_supplies_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/CampingSuppliesDisplayContainer/MarginContainer/HBoxContainer/CountLabel
-@onready var sharpening_stones_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/SharpeningStonesDisplayContainer/MarginContainer/HBoxContainer/CountLabel
-@onready var arcane_powder_count_label: Label = $PartyDetails/ResourcesDisplay/GridContainer/ArcanePowderDisplayContainer/MarginContainer/HBoxContainer/CountLabel
+@onready var gold_count_label: Label = $ResourcesDisplay/GridContainer/MarginContainer/HBoxContainer/CountLabel
+@onready var health_potion_count_label: Label = $ResourcesDisplay/GridContainer/MarginContainer2/HBoxContainer/CountLabel
+@onready var camping_supplies_count_label: Label = $ResourcesDisplay/GridContainer/MarginContainer4/HBoxContainer/CountLabel
+@onready var sharpening_stones_count_label: Label = $ResourcesDisplay/GridContainer/MarginContainer3/HBoxContainer/CountLabel
+@onready var arcane_powder_count_label: Label = $ResourcesDisplay/GridContainer/MarginContainer5/HBoxContainer/CountLabel
+
+@onready var health_potion_button: Button = $ResourcesDisplay/GridContainer/MarginContainer2/Button
 
 func _ready():
 	rest_button.pressed.connect(_on_rest_button_pressed)
@@ -23,6 +26,19 @@ func _ready():
 	town_button.pressed.connect(_on_town_button_pressed)
 	town_button.visible = false
 	reset_map_button.pressed.connect(_on_reset_map_button_pressed)
+	if health_potion_button:
+		health_potion_button.pressed.connect(_on_health_potion_button_pressed)
+
+func _on_health_potion_button_pressed():
+	health_potion_use_requested.emit()
+
+func enter_potion_target_selection_mode():
+	if party_details and party_details.has_method("enter_potion_target_mode"):
+		party_details.enter_potion_target_mode()
+
+func exit_potion_target_selection_mode():
+	if party_details and party_details.has_method("exit_potion_target_mode"):
+		party_details.exit_potion_target_mode()
 
 func _on_reset_map_button_pressed():
 	if has_node("%MapGenerator"):

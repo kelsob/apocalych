@@ -1,11 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://cwhqifgnimimb"]
+[gd_scene load_steps=5 format=3 uid="uid://cwhqifgnimimb"]
 
 [ext_resource type="Script" uid="uid://bd1o2erw4uynk" path="res://scripts/2d/CharacterDetails.gd" id="1_6a65j"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="1_jm4yu"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_pw4xs"]
+[ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="4_yotrc"]
 
 [node name="CharacterDetails" type="Control"]
-custom_minimum_size = Vector2(256, 90)
+custom_minimum_size = Vector2(256, 68)
 layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
@@ -13,89 +14,90 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -128.0
-offset_top = -45.0
+offset_top = -34.0
 offset_right = 128.0
-offset_bottom = 45.0
+offset_bottom = 34.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_6a65j")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="TextureRect" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0.47451)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -19.0
+offset_top = -3.0
+offset_right = 37.0
+offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 4
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
-theme_override_constants/margin_bottom = 4
+texture = ExtResource("4_yotrc")
+expand_mode = 3
 
-[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
-layout_mode = 2
-color = Color(0.768627, 0.678431, 0.54902, 1)
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -28.0
+offset_right = 120.0
+offset_bottom = 28.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_vertical = 4
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+[node name="NinePatchRect" type="NinePatchRect" parent="HBoxContainer"]
+custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-theme_override_constants/margin_left = 4
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
-theme_override_constants/margin_bottom = 4
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/MarginContainer"]
-layout_mode = 2
-
-[node name="NinePatchRect" type="NinePatchRect" parent="MarginContainer/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(74, 74)
-layout_mode = 2
+size_flags_vertical = 4
 texture = ExtResource("1_jm4yu")
 patch_margin_left = 8
 patch_margin_top = 8
 patch_margin_right = 8
 patch_margin_bottom = 8
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
+size_flags_vertical = 0
 theme_override_constants/separation = 0
 
-[node name="NameLabel" type="Label" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="NameLabel" type="Label" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
+theme = ExtResource("2_pw4xs")
 text = "Character"
 vertical_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="LevelLabel" type="Label" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="LevelLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
+theme_override_font_sizes/font_size = 24
 text = "Level 1"
 
-[node name="RaceLabel" type="Label" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="RaceLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
+theme_override_font_sizes/font_size = 24
 text = "Race"
 
-[node name="ClassLabel" type="Label" parent="MarginContainer/MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="ClassLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
+theme_override_font_sizes/font_size = 24
 text = "Class"
 
-[node name="NinePatchRect" type="NinePatchRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = ExtResource("1_jm4yu")
-patch_margin_left = 16
-patch_margin_top = 16
-patch_margin_right = 16
-patch_margin_bottom = 16
+[node name="HPProgressBar" type="ProgressBar" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme = ExtResource("2_pw4xs")
+show_percentage = false
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 1

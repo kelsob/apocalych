@@ -20,7 +20,6 @@ texture = ExtResource("2_55e5g")
 
 [node name="MountainSprite" type="Sprite2D" parent="."]
 visible = false
-modulate = Color(0.756863, 0.635294, 0.466667, 1)
 scale = Vector2(0.55, 0.55)
 texture = ExtResource("3_0fbw0")
 hframes = 7
