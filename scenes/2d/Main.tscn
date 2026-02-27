@@ -1,14 +1,9 @@
-[gd_scene load_steps=35 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=25 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://dcvwoi7v48gnx" path="res://scripts/UIContoller.gd" id="3_myh0h"]
-[ext_resource type="Shader" uid="uid://b4r6nxw850pm1" path="res://shaders/painterly_effect.gdshader" id="4_f0bfo"]
-[ext_resource type="Shader" uid="uid://bvjyqap5w41co" path="res://shaders/edge_fade.gdshader" id="5_voiwj"]
-[ext_resource type="Shader" uid="uid://c5xfrccv38m8m" path="res://shaders/corner_radial_fade.gdshader" id="6_2dj7u"]
-[ext_resource type="Shader" uid="uid://dxnnrrvo4hvd1" path="res://shaders/painterly_v2_watercolor.gdshader" id="7_p3fih"]
 [ext_resource type="PackedScene" uid="uid://b6w065e18g03u" path="res://scenes/2d/MainMenu.tscn" id="8_kpsef"]
-[ext_resource type="Shader" uid="uid://8bnmel8upwc3" path="res://shaders/pixel_art.gdshader" id="8_wb52w"]
 [ext_resource type="PackedScene" uid="uid://bjjpm0xn570qo" path="res://scenes/2d/PartySelectMenu.tscn" id="9_mifn2"]
 [ext_resource type="PackedScene" uid="uid://73neomc4wcah" path="res://scenes/2d/EventWindow.tscn" id="11_niih8"]
 [ext_resource type="PackedScene" uid="uid://bdgphw4taxtfq" path="res://scenes/2d/RestController.tscn" id="12_7iead"]
@@ -30,44 +25,6 @@
 [ext_resource type="PackedScene" uid="uid://ddp8fjrwnisv0" path="res://scenes/2d/WorldClocktscn.tscn" id="25_y4ryl"]
 [ext_resource type="PackedScene" uid="uid://dm8ukp1vhijtc" path="res://scenes/2d/BlacksmithScreen.tscn" id="27_35772"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_voiwj"]
-shader = ExtResource("4_f0bfo")
-shader_parameter/edge_distortion = 0.0
-shader_parameter/color_variation = 0.015
-shader_parameter/texture_overlay_strength = 0.013
-shader_parameter/texture_scale = 6.466
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_mifn2"]
-shader = ExtResource("7_p3fih")
-shader_parameter/bleed_amount = 0.01
-shader_parameter/edge_darken = 0.05
-shader_parameter/color_variation = 0.015
-shader_parameter/paper_texture = 0.015
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_2dj7u"]
-shader = ExtResource("5_voiwj")
-shader_parameter/fade_distance = 12.0
-shader_parameter/edge_color = Color(0.611765, 0.317647, 0.152941, 0.619608)
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_p3fih"]
-shader = ExtResource("6_2dj7u")
-shader_parameter/corner_fade_distance = 80.0
-shader_parameter/corner_color = Color(0.611765, 0.317647, 0.152941, 0.584314)
-shader_parameter/corner_intensity = 0.6
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_kpsef"]
-shader = ExtResource("8_wb52w")
-shader_parameter/pixel_size = 1.0
-shader_parameter/enable_palette_reduction = true
-shader_parameter/color_depth = 32
-shader_parameter/enable_dithering = true
-shader_parameter/dither_strength = 0.125
-shader_parameter/saturation = 1.1
-shader_parameter/contrast = 1.2
-shader_parameter/enable_outline = false
-shader_parameter/outline_thickness = 0.5
-shader_parameter/outline_color = Color(0, 0, 0, 1)
-
 [node name="Main" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -85,82 +42,6 @@ mouse_reveal_radius = 64.0
 [node name="UIController" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
 script = ExtResource("3_myh0h")
-
-[node name="ViewportFX" type="Control" parent="UIController"]
-visible = false
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="PainterlyEffect" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_voiwj")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="PainterlyEffect2" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_mifn2")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="EdgeReddeningEffect" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_2dj7u")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="RadialReddeningEffect" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_p3fih")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="BlurEffect" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_kpsef")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="PixelArtEffect" type="ColorRect" parent="UIController/ViewportFX"]
-z_index = 50
-material = SubResource("ShaderMaterial_kpsef")
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
 
 [node name="MainMenu" parent="UIController" instance=ExtResource("8_kpsef")]
 visible = false
@@ -256,9 +137,10 @@ offset_right = 156.0
 offset_bottom = 310.0
 
 [node name="Label" type="Label" parent="UIController/MapUI/ResourcesDisplay"]
-modulate = Color(0.367984, 0.29503, 0.167069, 1)
+modulate = Color(0.712967, 0.59503, 0.391606, 1)
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_shadow_color = Color(0.301961, 0.188235, 0.0941176, 1)
 text = "resources"
 horizontal_alignment = 1
 

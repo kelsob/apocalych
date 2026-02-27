@@ -12,16 +12,20 @@ var _vendor_stock: Dictionary = {}
 ## item_id -> sale_price. Set when vendor opens; two random items on sale (25% off). If both land on same item, 50% off (super sale).
 var _sale_prices: Dictionary = {}
 
+
+@onready var _resource_inventory_container: VBoxContainer = $MarginContainer/VBoxContainer/HBoxContainer/MarginContainer/VBoxContainer/ResourceInventoryContainer
 @onready var _gold_label: Label = $MarginContainer/VBoxContainer/MarginContainer/HBoxContainer/HBoxContainer/PartyGoldLabel
 @onready var _close_button: Button = $MarginContainer/VBoxContainer/CloseButton
-@onready var _buy_tab: VBoxContainer = $MarginContainer/VBoxContainer/TabContainer/Buy
-@onready var _sell_tab: VBoxContainer = $MarginContainer/VBoxContainer/TabContainer/Sell
+@onready var _buy_tab: VBoxContainer = $MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/TabContainer/Buy
+@onready var _sell_tab: VBoxContainer = $MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/TabContainer/Sell
 
 func _ready() -> void:
 	visible = false
 	_close_button.pressed.connect(_on_close_pressed)
 
 ## items_to_sell: Array of item_id strings (or {item_id, qty}). Empty = all items. Default qty 1 per item.
+## Resource items (health potion, camping supplies, sharpening stone, magical dust) go in the left resource panel; others in Buy tab.
+## Vendors always have at least 3 of the 4 resource types.
 func open_vendor(party_members: Array, party_gold: int, items_to_sell: Array = []) -> void:
 	_party_members = party_members
 	_party_gold = party_gold
@@ -42,7 +46,9 @@ func open_vendor(party_members: Array, party_gold: int, items_to_sell: Array = [
 				var id_key: String = str(x)
 				if not id_key.is_empty():
 					_vendor_stock[id_key] = _vendor_stock.get(id_key, 0) + 1
+		_ensure_minimum_resource_stock(3)
 	_pick_sale_items()
+	_populate_resource_inventory_container()
 	_populate_buy_tab()
 	_populate_sell_tab()
 	_update_gold_label()
@@ -55,6 +61,49 @@ func close_vendor() -> void:
 func _clear_tab(tab: VBoxContainer) -> void:
 	for c in tab.get_children():
 		c.queue_free()
+
+func _ensure_minimum_resource_stock(min_count: int) -> void:
+	var resource_ids: Array[String] = []
+	for id in ItemDatabase.BULK_LOOT_IDS:
+		if ItemDatabase.has_item(id):
+			resource_ids.append(id)
+	if resource_ids.is_empty():
+		return
+	var stock_with_qty: int = 0
+	for id in resource_ids:
+		if _vendor_stock.get(id, 0) > 0:
+			stock_with_qty += 1
+	var ids_without_stock: Array[String] = []
+	for id in resource_ids:
+		if _vendor_stock.get(id, 0) <= 0:
+			ids_without_stock.append(id)
+	var to_add: int = mini(min_count - stock_with_qty, ids_without_stock.size())
+	ids_without_stock.shuffle()
+	for i in range(to_add):
+		if i >= ids_without_stock.size():
+			break
+		var add_id: String = ids_without_stock[i]
+		_vendor_stock[add_id] = randi_range(ItemDatabase.BULK_LOOT_QTY_MIN, ItemDatabase.BULK_LOOT_QTY_MAX)
+
+func _populate_resource_inventory_container() -> void:
+	if not _resource_inventory_container:
+		return
+	_clear_tab(_resource_inventory_container)
+	for item_id in ItemDatabase.BULK_LOOT_IDS:
+		if _vendor_stock.get(item_id, 0) <= 0:
+			continue
+		var item := ItemDatabase.get_item(item_id)
+		if not item:
+			continue
+		var price: int = _sale_prices.get(item_id, item.value)
+		var sale_label_text: String = ""
+		if _sale_prices.has(item_id):
+			sale_label_text = "SUPER SALE!" if price <= item.value / 2 else "SALE!"
+		var at_capacity: bool = item.capacity > 0 and _get_party_item_count(item_id) >= item.capacity
+		var btn: MarginContainer = VENDOR_ITEM_BUTTON_SCENE.instantiate()
+		_resource_inventory_container.add_child(btn)
+		btn.setup_buy(item_id, item.name, price, _vendor_stock[item_id], item.icon_path, sale_label_text, at_capacity)
+		btn.buy_clicked.connect(_on_buy_clicked)
 
 func _pick_sale_items() -> void:
 	_sale_prices.clear()
@@ -83,6 +132,8 @@ func _populate_buy_tab() -> void:
 	_clear_tab(_buy_tab)
 	for item_id in _vendor_stock.keys():
 		if _vendor_stock[item_id] <= 0:
+			continue
+		if ItemDatabase.is_bulk_loot(item_id):
 			continue
 		var item := ItemDatabase.get_item(item_id)
 		if not item:
@@ -144,6 +195,7 @@ func _on_buy_clicked(item_id: String) -> void:
 	_vendor_stock[item_id] = _vendor_stock[item_id] - 1
 	_party_gold -= price
 	_update_gold_label()
+	_populate_resource_inventory_container()
 	_populate_buy_tab()
 	_populate_sell_tab()
 	party_gold_changed.emit(_party_gold)

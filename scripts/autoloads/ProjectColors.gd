@@ -1,4 +1,4 @@
-extends RefCounted
+extends Node
 
 ## ProjectColors - Central color definitions for the project.
 ## Add as autoload (Project → Project Settings → Autoload) with path: res://scripts/autoloads/ProjectColors.gd

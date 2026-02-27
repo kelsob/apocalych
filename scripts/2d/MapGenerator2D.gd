@@ -132,6 +132,7 @@ class_name MapGenerator2D
 
 @export_group("Mountains")
 @export var enable_mountains: bool = true
+@export_range(0.1, 2.0) var mountain_display_scale: float = 0.65  # Render mountains at 65% size; full texture detail preserved for zoom
 
 @export_group("Biome Blobs")
 @export var enable_biome_blobs: bool = true
@@ -141,6 +142,7 @@ class_name MapGenerator2D
 
 @export_group("Map Features")
 @export var enable_map_features: bool = true
+@export_range(0.02, 0.5) var tree_sprite_scale: float = 0.1  # Scale for tree sprites (32x48 texture); full detail preserved for zoom
 @export var enable_rivers: bool = false
 @export var river_source_width: float = 4.0  # Width at river source (mountain)
 @export var river_end_width: float = 2.0  # Width at river end (coast/lake)
@@ -175,6 +177,7 @@ class_name MapGenerator2D
 @export_group("Performance")
 @export var use_static_rendering: bool = true  # Bake static elements to texture
 @export var map_resolution_scale: float = 2.0  # Scale factor for static map texture (higher = crisper when zoomed)
+@export var use_background_layer: bool = true  # Render background (ColorRect + baked map) to separate layer for selective ViewportFX
 
 @export_group("Error Handling")
 @export var auto_regenerate_on_error: bool = true
@@ -235,6 +238,14 @@ var current_travel_path: PackedVector2Array = PackedVector2Array()  # Path curre
 @onready var static_map_viewport: SubViewport = $StaticMapViewport
 @onready var static_map_renderer: StaticMapRenderer = $StaticMapViewport/StaticMapRenderer
 @onready var static_map_sprite: Sprite2D = $MapSprites/StaticMapSprite
+@onready var color_rect: ColorRect = $ColorRect
+
+# Two-layer rendering (background separate from foreground for selective ViewportFX)
+var _background_layer_container: Control = null
+var _background_viewport: SubViewport = null
+var _background_content: CanvasLayer = null
+var _background_color_rect: ColorRect = null
+var _background_map_texture: TextureRect = null
 @onready var dagron_sprite: Sprite2D = $MapSprites/ThereBeDagrons
 @onready var octopi_sprite: Sprite2D = $MapSprites/ThereBeOctopi
 @onready var waves_east_sprite: Sprite2D = $MapSprites/WavesE
@@ -316,6 +327,61 @@ func debug_print(message: String):
 	if enable_debug_output:
 		print(message)
 
+func _setup_background_layer():
+	if not use_background_layer or not use_static_rendering or not is_inside_tree():
+		return
+	# Create container for background layer (TextureRect displays viewport output)
+	_background_layer_container = Control.new()
+	_background_layer_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_background_layer_container.z_index = -2
+	add_child(_background_layer_container)
+	move_child(_background_layer_container, 0)
+	# TextureRect to display the background viewport (added to container, fills it)
+	var display_rect := TextureRect.new()
+	display_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	display_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	display_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	_background_layer_container.add_child(display_rect)
+	# SubViewport renders the background (ColorRect + baked map texture)
+	_background_viewport = SubViewport.new()
+	_background_viewport.transparent_bg = false
+	_background_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	add_child(_background_viewport)
+	# Content inside viewport: ColorRect + TextureRect for baked map
+	_background_content = CanvasLayer.new()
+	_background_content.layer = 0
+	_background_viewport.add_child(_background_content)
+	_background_color_rect = ColorRect.new()
+	_background_color_rect.color = color_rect.color if color_rect else Color(0.717647, 0.670588, 0.439216, 1)
+	_background_content.add_child(_background_color_rect)
+	_background_map_texture = TextureRect.new()
+	_background_map_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_background_map_texture.stretch_mode = TextureRect.STRETCH_SCALE
+	_background_content.add_child(_background_map_texture)
+	# Wire viewport texture to display (display_rect shows it in main tree)
+	display_rect.texture = _background_viewport.get_texture()
+	_resize_background_viewport()
+	# Hide original background elements (now drawn in background layer)
+	if color_rect:
+		color_rect.visible = false
+	if static_map_sprite:
+		static_map_sprite.visible = false
+
+func _resize_background_viewport():
+	if not _background_viewport or not is_inside_tree():
+		return
+	var viewport_size := Vector2i(size * map_resolution_scale)
+	if viewport_size.x > 0 and viewport_size.y > 0:
+		_background_viewport.size = viewport_size
+		if _background_color_rect:
+			_background_color_rect.size = Vector2(viewport_size)
+		if _background_map_texture:
+			_background_map_texture.size = Vector2(viewport_size)
+
+func _notification(what: int):
+	if what == NOTIFICATION_RESIZED and use_background_layer and _background_viewport:
+		_resize_background_viewport()
+
 func _ready():
 	# Set to fill the screen
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -323,6 +389,9 @@ func _ready():
 	z_index = 1
 	# Load biome resources
 	_load_biome_resources()
+	# Two-layer background setup (deferred so size is ready)
+	if use_background_layer:
+		call_deferred("_setup_background_layer")
 	
 	# Initialize coast expansion noise for spatially coherent variance
 	coast_noise = FastNoiseLite.new()
@@ -581,6 +650,13 @@ func clear_existing_nodes():
 	regions.clear()
 	river_data.clear()
 	
+	# Restore original background visibility when not using layered system (e.g. after toggling use_background_layer off)
+	if not use_background_layer:
+		if color_rect:
+			color_rect.visible = true
+		if static_map_sprite:
+			static_map_sprite.visible = true
+
 	# Free decorative mountain filler sprites
 	for sprite in _mountain_filler_sprites:
 		if is_instance_valid(sprite):
@@ -2581,7 +2657,7 @@ func generate_mountains_at_borders():
 			for node in target_nodes:
 				node.is_mountain = true
 				node.set_mountain_color(mountain_color)
-				node.become_mountain(get_next_mountain_frame.call())
+				node.become_mountain(get_next_mountain_frame.call(), mountain_display_scale)
 				# Assign mountain biome
 				node.biome = biome_mountain
 				nodes_made_mountains += 1
@@ -2595,7 +2671,7 @@ func generate_mountains_at_borders():
 			for i in range(1, target_nodes.size() - 1):
 				target_nodes[i].is_mountain = true
 				target_nodes[i].set_mountain_color(mountain_color)
-				target_nodes[i].become_mountain(get_next_mountain_frame.call())
+				target_nodes[i].become_mountain(get_next_mountain_frame.call(), mountain_display_scale)
 				# Assign mountain biome
 				target_nodes[i].biome = biome_mountain
 				nodes_made_mountains += 1
@@ -2611,7 +2687,7 @@ func generate_mountains_at_borders():
 				if i != exclude_idx:
 					target_nodes[i].is_mountain = true
 					target_nodes[i].set_mountain_color(mountain_color)
-					target_nodes[i].become_mountain(get_next_mountain_frame.call())
+					target_nodes[i].become_mountain(get_next_mountain_frame.call(), mountain_display_scale)
 					# Assign mountain biome
 					target_nodes[i].biome = biome_mountain
 					nodes_made_mountains += 1
@@ -2686,6 +2762,7 @@ func center_mountain_nodes():
 
 const MOUNTAIN_SHEET_PATH: String = "res://assets/map/mountains-sheet.png"
 const MOUNTAIN_FILLER_SCALE: Vector2 = Vector2(0.55, 0.55)
+const TREE_TEXTURE_PATH: String = "res://assets/map/tree.png"
 
 ## Spawn decorative mountain sprites at midpoint of each connected mountain pair.
 ## Purely aesthetic; adds density to mountain ranges. Called before disconnect_inter_mountain_connections.
@@ -2715,7 +2792,7 @@ func spawn_mountain_filler_sprites():
 			sprite.texture = tex
 			sprite.hframes = 15
 			sprite.frame = randi() % 15
-			sprite.scale = MOUNTAIN_FILLER_SCALE
+			sprite.scale = MOUNTAIN_FILLER_SCALE * mountain_display_scale
 			sprite.modulate = mountain_color
 			sprite.position = midpoint
 			sprite.z_index = 0
@@ -2965,10 +3042,10 @@ func generate_forest_features(nodes: Array, landmass_polygon: PackedVector2Array
 	var features = []
 	var forest_radius = 25.0
 	
-	# Grid spacing - 2x lower density (3.6x instead of 1.8x)
+	# Grid spacing - 3x density (tighter spacing)
 	var avg_foliage_radius = 2.1
-	var spacing_x = avg_foliage_radius * 2.88  # Horizontal spacing (20% tighter)
-	var spacing_y = avg_foliage_radius * 3.6  # Vertical spacing
+	var spacing_x = avg_foliage_radius * 1.66  # ~3x denser than previous
+	var spacing_y = avg_foliage_radius * 2.08  # ~3x denser
 	
 	# Find all contiguous forest regions
 	var forest_nodes = []
@@ -3088,11 +3165,11 @@ func find_connected_regions(nodes: Array) -> Array:
 	
 	return regions
 
-## Generate trees for plains biome - DEAD SIMPLE, NO CHECKS
+## Generate trees for plains biome - DEAD SIMPLE, LOW DENSITY (1/4 of original)
 func generate_plains_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	var features = []
 	var plains_radius = 25.0
-	var trees_per_node = 5
+	var trees_per_node = 1  # Was 5; ~1/4 density
 	
 	# For each plains node, just place 5 trees around it - NO CHECKS
 	for node in nodes:
@@ -3124,111 +3201,21 @@ func generate_plains_features(nodes: Array, landmass_polygon: PackedVector2Array
 	
 	return features
 
-## Generate scraggly trees for swamp biome - VERY SPARSE
+## Swamp biome - no trees
 func generate_swamp_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
-	var features = []
-	var swamp_radius = 25.0
-	var trees_per_node = 2  # Very sparse
-	
-	for node in nodes:
-		if node.biome == null or node.biome.biome_name != "swamp":
-			continue
-		
-		var node_center = node.position + (node.size / 2.0)
-		
-		for i in range(trees_per_node):
-			var angle = randf() * TAU
-			var distance = randf_range(0, swamp_radius)
-			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
-			
-			features.append({
-				"type": "tree",
-				"biome": "swamp",
-				"data": {
-					"position": pos,
-					"vertical_stretch": 1.0 + randf_range(-0.2, 0.5),
-				"foliage_radius": randf_range(0.575, 0.85),  # 50% smaller
-			"foliage_color": Color(0.55, 0.50, 0.42),  # Lighter murky brown
-			"trunk_color": Color(0.45, 0.40, 0.35),  # Lighter dark brown
-			"trunk_width": 1.5,  # 25% thinner
-			"trunk_length": randf_range(2.125, 3.5),  # 25% longer
-			"outline_width": 1.0
-				}
-			})
-	
-	return features
+	return []
 
-## Generate trees around mountain nodes - RADIAL PLACEMENT
+## Mountain biome - no trees
 func generate_mountain_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
-	var features = []
-	var mountain_radius = 30.0
-	var trees_per_mountain = 5  # Few trees around each mountain
-	
-	for node in nodes:
-		if node.biome == null or node.biome.biome_name != "mountain":
-			continue
-		
-		var node_center = node.position + (node.size / 2.0)
-		
-		for i in range(trees_per_mountain):
-			var angle = (float(i) / float(trees_per_mountain)) * TAU + randf_range(-0.3, 0.3)
-			var distance = randf_range(20, mountain_radius)
-			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
-			
-			features.append({
-				"type": "tree",
-				"biome": "mountain",
-				"data": {
-					"position": pos,
-					"vertical_stretch": 1.0 + randf_range(0.3, 0.8),
-				"foliage_radius": randf_range(0.7, 0.975),  # 50% smaller
-			"foliage_color": Color(0.70, 0.62, 0.48),  # Lighter tan
-			"trunk_color": Color(0.55, 0.42, 0.32),  # Lighter brown
-			"trunk_width": 1.5,  # 25% thinner
-			"trunk_length": randf_range(1.4375, 2.125),  # 25% longer
-			"outline_width": 1.0
-				}
-			})
-	
-	return features
+	return []
 
 ## Generate NO trees for ash plains biome - BARREN
 func generate_ash_plains_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
 	return []  # Completely barren
 
-## Generate dead/dying trees for badlands biome - VERY SPARSE
+## Badlands biome - no trees
 func generate_badlands_features(nodes: Array, landmass_polygon: PackedVector2Array, connection_lines: Array) -> Array:
-	var features = []
-	var badlands_radius = 25.0
-	var trees_per_node = 2  # Very sparse
-	
-	for node in nodes:
-		if node.biome == null or node.biome.biome_name != "badlands":
-			continue
-		
-		var node_center = node.position + (node.size / 2.0)
-		
-		for i in range(trees_per_node):
-			var angle = randf() * TAU
-			var distance = randf_range(0, badlands_radius)
-			var pos = node_center + Vector2(cos(angle), sin(angle)) * distance
-			
-			features.append({
-				"type": "tree",
-				"biome": "badlands",
-				"data": {
-					"position": pos,
-					"vertical_stretch": 1.0 + randf_range(0.0, 0.3),
-				"foliage_radius": randf_range(0.575, 0.8),  # 50% smaller
-			"foliage_color": Color(0.65, 0.58, 0.50),  # Lighter grey-brown
-			"trunk_color": Color(0.55, 0.48, 0.42),  # Lighter grey trunk
-			"trunk_width": 1.5,  # 25% thinner
-			"trunk_length": randf_range(1.0625, 1.75),  # 25% longer
-			"outline_width": 1.0
-				}
-			})
-	
-	return features
+	return []
 
 # ============================================================================
 # STEP 12.75: TOWN GENERATION
@@ -6000,6 +5987,56 @@ func render_river_to_static_map(river: Dictionary):
 		
 		debug_print("RIVER:     Lake rendered with %d segments (%d layers)" % [segments_added, layers])
 
+## Collect river segments in map coords for WaterOverlay (unscaled)
+func _collect_river_segments_for_overlay(river: Dictionary, out_segments: Array) -> void:
+	_collect_segments_for_overlay(river.get("segments", []), out_segments)
+	if river.get("is_lake_river", false) and river.get("lake_position") != null:
+		var lake_pos: Vector2 = river.lake_position
+		var lake_rad_x: float = river.get("lake_radius_x", lake_radius_x)
+		var lake_rad_y: float = river.get("lake_radius_y", lake_radius_y)
+		var layers := 8
+		for layer in range(layers):
+			var t := 1.0 - (float(layer) / float(layers))
+			var rad_x := lake_rad_x * t
+			var rad_y := lake_rad_y * t
+			var circle_segments := 24
+			for i in range(circle_segments):
+				var angle1 := (float(i) / circle_segments) * TAU
+				var angle2 := (float(i + 1) / circle_segments) * TAU
+				var point_a := lake_pos + Vector2(cos(angle1) * rad_x, sin(angle1) * rad_y)
+				var point_b := lake_pos + Vector2(cos(angle2) * rad_x, sin(angle2) * rad_y)
+				out_segments.append({
+					"pos_a": point_a,
+					"pos_b": point_b,
+					"width": max(lake_rad_x, lake_rad_y) * 0.15,
+					"color": river_color
+				})
+
+func _collect_segments_for_overlay(segments: Array, out_segments: Array) -> void:
+	for segment in segments:
+		if segment.type in ["main_channel", "tributary", "inter_region_connector"]:
+			var waypoints = segment.waypoints
+			var segment_widths = segment.get("segment_widths", [])
+			for i in range(waypoints.size() - 1):
+				var point_a: Vector2 = waypoints[i]
+				var point_b: Vector2 = waypoints[i + 1]
+				var width: float = segment.width
+				if segment_widths.size() > i:
+					width = segment_widths[i]
+				if river_horizontal_width_multiplier != 1.0:
+					var direction: Vector2 = (point_b - point_a).normalized()
+					var horizontal_factor: float = absf(direction.x)
+					var width_multiplier: float = lerpf(1.0, river_horizontal_width_multiplier, horizontal_factor)
+					width *= width_multiplier
+				out_segments.append({
+					"pos_a": point_a,
+					"pos_b": point_b,
+					"width": width,
+					"color": river_color
+				})
+		elif segment.type == "tributary_branch":
+			_collect_segments_for_overlay(segment.segments, out_segments)
+
 ## Helper: Render segments recursively
 func render_segments_to_static_map(segments: Array):
 	for segment in segments:
@@ -6087,25 +6124,96 @@ func bake_static_map():
 	}
 	static_map_renderer.set_config(config)
 	
-	# Pass rivers data FIRST (bottom layer under everything)
-	if enable_rivers and rivers.size() > 0:
-		for river in rivers:
-			render_river_to_static_map(river)
+	# Rivers, lakes, coast ripples: bake into static map OR draw via WaterOverlay (above trees)
+	var water_overlay: Node2D = get_node_or_null("WaterOverlay")
+	var use_water_overlay: bool = water_overlay != null
+	if use_water_overlay:
+		var river_segs: Array = []
+		var coastal_blobs: Array = []
+		var ripple_lines: Array = []
+		if enable_rivers and rivers.size() > 0:
+			for river in rivers:
+				_collect_river_segments_for_overlay(river, river_segs)
+		if enable_coastal_water_blobs and coastal_nodes.size() > 0 and coastal_water_circles > 0:
+			for node in coastal_nodes:
+				coastal_blobs.append({
+					"node_center": node.position + (node.size / 2.0),
+					"away_direction": node.away_direction
+				})
+		if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
+			for ripple_index in range(ripple_count - 1, -1, -1):
+				var additional_ripple_distance = 0.0
+				for i in range(ripple_index + 1):
+					additional_ripple_distance += ripple_base_spacing if i == 0 else ripple_base_spacing * pow(ripple_spacing_growth, i)
+				var ripple_width = ripple_base_width * pow(ripple_width_decay, ripple_index)
+				var color_offset = ripple_color_fade * ripple_index
+				var ripple_alpha = ripple_base_color.a * pow(ripple_alpha_decay, ripple_index)
+				var ripple_color = Color(
+					min(ripple_base_color.r + color_offset, 1.0),
+					min(ripple_base_color.g + color_offset, 1.0),
+					min(ripple_base_color.b + color_offset, 1.0),
+					ripple_alpha
+				)
+				var ripple_positions: Dictionary = {}
+				for node in coastal_nodes:
+					var node_center = node.position + (node.size / 2.0)
+					var away_vector = Vector2(cos(node.away_direction), sin(node.away_direction))
+					var expansion_factor = coast_expansion_factors.get(node.node_index, 0.5)
+					var expansion_distance = lerp(coast_expansion_min, coast_expansion_max, expansion_factor)
+					var cumulative_distance = expansion_distance + additional_ripple_distance
+					ripple_positions[node.node_index] = node_center + away_vector * cumulative_distance
+				for connection in coastal_connections:
+					var node_a = connection[0]
+					var node_b = connection[1]
+					var pos_a = ripple_positions.get(node_a.node_index)
+					var pos_b = ripple_positions.get(node_b.node_index)
+					if pos_a != null and pos_b != null:
+						ripple_lines.append({
+							"pos_a": pos_a,
+							"pos_b": pos_b,
+							"color": ripple_color,
+							"width": get_orientation_adjusted_width(ripple_width, pos_a, pos_b)
+						})
+		var water_config = {
+			"coastal_water_expansion": coastal_water_expansion,
+			"coastal_water_radius": coastal_water_radius,
+			"coastal_water_circles": coastal_water_circles,
+			"coastal_water_color": coastal_water_color,
+			"coastal_water_alpha_max": coastal_water_alpha_max
+		}
+		water_overlay.set_water_data(river_segs, coastal_blobs, ripple_lines, water_config)
+	else:
+		if enable_rivers and rivers.size() > 0:
+			for river in rivers:
+				render_river_to_static_map(river)
 	
-	# Pass feature data (trees, etc.) so they render above rivers
+	# Spawn tree sprites (Trees YSort child of MapGenerator) - skip static map tree drawing
 	if enable_map_features and map_features.size() > 0:
-		for feature in map_features:
-			match feature.type:
-				"tree":
-					# Scale tree data
-					var tree_data = feature.data.duplicate()
-					tree_data["position"] = tree_data["position"] * map_resolution_scale
-					tree_data["foliage_radius"] = tree_data["foliage_radius"] * map_resolution_scale
-					tree_data["trunk_width"] = tree_data["trunk_width"] * map_resolution_scale
-					tree_data["trunk_length"] = tree_data["trunk_length"] * map_resolution_scale
-					tree_data["outline_width"] = tree_data["outline_width"] * map_resolution_scale
-					static_map_renderer.add_tree(tree_data)
-				# Future: add other feature types here
+		var trees_container: Node2D = get_node_or_null("Trees")
+		if trees_container:
+			trees_container.z_index = 0  # Below WaterOverlay (z_index = 1)
+			# Clear previous tree sprites
+			for child in trees_container.get_children():
+				child.queue_free()
+			var tree_tex: Texture2D = load(TREE_TEXTURE_PATH) as Texture2D
+			if tree_tex:
+				for feature in map_features:
+					if feature.get("type", "") != "tree":
+						continue
+					var tree_data: Dictionary = feature.data
+					var pos: Vector2 = tree_data.get("position", Vector2.ZERO)
+					var foliage_color: Color = tree_data.get("foliage_color", Color(0.2, 0.5, 0.2))
+					var sprite: Sprite2D = Sprite2D.new()
+					sprite.texture = tree_tex
+					sprite.centered = true
+					sprite.scale = Vector2(tree_sprite_scale, tree_sprite_scale)
+					sprite.modulate = foliage_color
+					sprite.position = pos
+					trees_container.call_deferred("add_child", sprite)
+			else:
+				push_warning("MapGenerator: Could not load tree texture: %s" % TREE_TEXTURE_PATH)
+		else:
+			push_warning("MapGenerator: Trees YSort node not found - add Trees (YSort) as child of MapGenerator for sprite-based trees")
 	
 	# Pass connection lines data (ONLY ROADS - regular paths drawn dynamically)
 	var processed_edges = {}
@@ -6192,8 +6300,8 @@ func bake_static_map():
 			
 			static_map_renderer.add_connection_line_highlight(highlight_data)
 	
-	# Pass coastal water blobs data (scale positions)
-	if enable_coastal_water_blobs and coastal_nodes.size() > 0 and coastal_water_circles > 0:
+	# Pass coastal water blobs (skip if using WaterOverlay)
+	if not use_water_overlay and enable_coastal_water_blobs and coastal_nodes.size() > 0 and coastal_water_circles > 0:
 		for node in coastal_nodes:
 			var node_center = node.position + (node.size / 2.0)
 			var blob_data = {
@@ -6224,8 +6332,8 @@ func bake_static_map():
 			}
 			static_map_renderer.add_biome_blob(blob_data)
 	
-	# Pass coast ripple lines data
-	if enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
+	# Pass coast ripple lines (skip if using WaterOverlay)
+	if not use_water_overlay and enable_coast_ripples and ripple_count > 0 and coastal_nodes.size() > 0 and coastal_connections.size() > 0:
 		# For each ripple layer (outermost first)
 		for ripple_index in range(ripple_count - 1, -1, -1):
 			# Calculate additional distance for this ripple (beyond the coast expansion)
@@ -6317,16 +6425,23 @@ func bake_static_map():
 	await RenderingServer.frame_post_draw
 	
 	# Capture texture and display (scale sprite down to original size)
-	static_map_sprite.texture = static_map_viewport.get_texture()
+	var baked_texture: Texture2D = static_map_viewport.get_texture()
+	static_map_sprite.texture = baked_texture
 	static_map_sprite.scale = Vector2.ONE / map_resolution_scale  # Scale down to compensate for high-res texture
-	static_map_sprite.visible = true
+	if use_background_layer and _background_map_texture:
+		_background_map_texture.texture = baked_texture
+		_background_map_texture.visible = true
+		_resize_background_viewport()
+		# Original elements stay hidden (hidden in _setup_background_layer)
+	else:
+		static_map_sprite.visible = true
 	
 	var water_blob_count = coastal_nodes.size() if (enable_coastal_water_blobs and coastal_water_circles > 0) else 0
 	var landmass_points = static_map_renderer.landmass_polygon.size()
 	var biome_blob_count = static_map_renderer.biome_blobs_data.size()
 	var ripple_line_count = static_map_renderer.coast_ripple_lines_data.size()
 	var coast_line_count = static_map_renderer.expanded_coast_lines_data.size()
-	var tree_count = static_map_renderer.trees_data.size()
+	var tree_count = map_features.filter(func(f): return f.get("type", "") == "tree").size()
 	var river_count = rivers.size()
 	debug_print("Static map baked successfully: %d rivers, %d connection lines, %d coastal water blobs, landmass (%d pts), %d biome blobs, %d trees, %d coast ripples, %d coast lines" % [river_count, processed_edges.size(), water_blob_count, landmass_points, biome_blob_count, tree_count, ripple_line_count, coast_line_count])
 

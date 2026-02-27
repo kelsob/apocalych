@@ -84,9 +84,6 @@ func show_menu(state: GameState):
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
 	
-	# Update UI visibility based on game state
-	ui_controller.update_ui_visibility(state)
-	
 	# Show the appropriate menu
 	match state:
 		GameState.MAIN_MENU:

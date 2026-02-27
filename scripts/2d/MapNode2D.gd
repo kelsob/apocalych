@@ -125,7 +125,7 @@ func set_mountain_color(color: Color = Color(0.588, 0.482, 0.298)):
 	node_color = color
 	modulate = node_color
 
-func become_mountain(frame: int = -1):
+func become_mountain(frame: int = -1, scale_multiplier: float = 1.0):
 	# Called when this node is designated as a mountain
 	# Set hframes to match sprite sheet (15 frames)
 	sprite_mountain.hframes = 15
@@ -136,6 +136,10 @@ func become_mountain(frame: int = -1):
 		sprite_mountain.frame = frame
 	else:
 		sprite_mountain.frame = randi() % sprite_mountain.hframes
+	# Scale multiplier (e.g. 0.65 = 65% size); full texture detail preserved for zoom-in
+	if scale_multiplier != 1.0:
+		var base_scale: float = sprite_mountain.scale.x  # Use scene/base scale
+		sprite_mountain.scale = Vector2(base_scale * scale_multiplier, base_scale * scale_multiplier)
 
 func _on_button_pressed() -> void:
 	# Emit signal to notify MapGenerator2D
