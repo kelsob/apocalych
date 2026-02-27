@@ -19,6 +19,9 @@ var game_started: bool = false
 var current_world_name: String = ""
 var current_party_members: Array[PartyMember] = []
 var party_gold: int = 150  # Starting gold (for debugging)
+## Party-wide resources (item_id -> count). Bulk items: health_potion, camping_supplies, sharpening_stone, magical_dust.
+## Not tied to any character; don't occupy item slots.
+var party_resources: Dictionary = {}
 var party_has_traveled: bool = false  # Track if party has actually traveled (not just initial spawn)
 var _town_node_for_rest: MapNode2D = null  # When in town, Inn rest returns here instead of map
 var _vendor_opened_from_town: bool = false
@@ -27,6 +30,7 @@ var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns p
 var _in_potion_target_mode: bool = false  # True when awaiting character click to apply health potion
 
 func _ready():
+	add_to_group("main")
 	# Connect menu signals automatically
 	_connect_menu_signals()
 	
@@ -128,10 +132,9 @@ func _on_party_select_back_pressed():
 func _on_map_generation_complete():
 	print("Main: Map generation complete, starting game...")
 	_town_node_indices_granted_entry.clear()
-	# Give party starting supplies
-	if current_party_members.size() > 0:
-		current_party_members[0].add_item("camping_supplies", 10)
-		current_party_members[0].add_item("health_potion", 1)
+	# Give party starting supplies (party-wide resources)
+	add_party_resource("camping_supplies", 10)
+	add_party_resource("health_potion", 1)
 	ui_controller.map_ui.initialize_party_ui(current_party_members)
 	_refresh_map_resource_labels()
 	start_game()
@@ -297,6 +300,38 @@ const CAMPING_SUPPLIES_ITEM_ID: String = "camping_supplies"
 const HEALTH_POTION_ITEM_ID: String = "health_potion"
 const HEALTH_POTION_HEAL_PERCENT: int = 50  # Heals 50% of max HP
 
+## Add to party-wide resources (bulk items only). Returns true if added.
+func add_party_resource(item_id: String, count: int = 1) -> bool:
+	if count <= 0 or not ItemDatabase.is_bulk_loot(item_id):
+		return false
+	var item := ItemDatabase.get_item(item_id)
+	if not item:
+		return false
+	var current: int = int(party_resources.get(item_id, 0))
+	var cap := item.capacity if item.capacity > 0 else 999
+	var can_add := mini(count, cap - current)
+	if can_add <= 0:
+		return false
+	party_resources[item_id] = current + can_add
+	return true
+
+## Remove from party-wide resources. Returns true if removed.
+func remove_party_resource(item_id: String, count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var current: int = int(party_resources.get(item_id, 0))
+	if current <= 0:
+		return false
+	var to_remove := mini(count, current)
+	party_resources[item_id] = current - to_remove
+	if party_resources[item_id] <= 0:
+		party_resources.erase(item_id)
+	return true
+
+## Get party-wide count for a resource item.
+func get_party_resource_count(item_id: String) -> int:
+	return int(party_resources.get(item_id, 0))
+
 func _input(event: InputEvent) -> void:
 	if _in_potion_target_mode and event.is_action_pressed("ui_cancel"):
 		_in_potion_target_mode = false
@@ -304,25 +339,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _get_party_camping_supplies() -> int:
-	var total := 0
-	for m in current_party_members:
-		if m is PartyMember:
-			total += m.get_item_count(CAMPING_SUPPLIES_ITEM_ID)
-	return total
+	return get_party_resource_count(CAMPING_SUPPLIES_ITEM_ID)
 
 func _get_party_health_potion_count() -> int:
-	var total := 0
-	for m in current_party_members:
-		if m is PartyMember:
-			total += m.get_item_count(HEALTH_POTION_ITEM_ID)
-	return total
+	return get_party_resource_count(HEALTH_POTION_ITEM_ID)
 
 func _spend_party_health_potion() -> bool:
-	for m in current_party_members:
-		if m is PartyMember and m.get_item_count(HEALTH_POTION_ITEM_ID) > 0:
-			m.remove_item(HEALTH_POTION_ITEM_ID, 1)
-			return true
-	return false
+	return remove_party_resource(HEALTH_POTION_ITEM_ID, 1)
 
 ## Called when health potion display/button is clicked - enter target selection mode
 func _on_health_potion_use_requested():
@@ -343,7 +366,7 @@ func _on_potion_target_selected(member: PartyMember):
 	member.heal(heal_amount)
 	_refresh_map_resource_labels()
 	if ui_controller.map_ui and ui_controller.map_ui.has_method("update_resource_labels"):
-		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold)
+		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold, party_resources)
 
 ## Update rest button visibility from current node's rest state (safe to rest and not already rested here).
 ## Wilderness rest requires at least 1 camping supply - hide Rest button when party has none.
@@ -539,4 +562,4 @@ func _on_blacksmith_gold_changed(new_gold: int):
 ## Refresh the MapUI resource count labels (gold + 4 bulk items)
 func _refresh_map_resource_labels():
 	if ui_controller.map_ui.has_method("update_resource_labels"):
-		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold)
+		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold, party_resources)

@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3 uid="uid://cvjrahf76ssj5"]
+[gd_scene load_steps=7 format=3 uid="uid://cvjrahf76ssj5"]
 
 [ext_resource type="Script" uid="uid://6u6iw0lnjdwi" path="res://scripts/combat/CombatScene.gd" id="1_cetgp"]
 [ext_resource type="Script" uid="uid://lutcgeggr2oh" path="res://scripts/combat/TurnOrderPanel.gd" id="2_0x2iq"]
 [ext_resource type="PackedScene" uid="uid://ye4mu42w7nqv" path="res://scenes/2d/PanelNinePatchRect.tscn" id="2_7pc1q"]
+[ext_resource type="Texture2D" uid="uid://cnnieely0ertt" path="res://assets/combat-scenes/combatscene-forest.png" id="2_gvrxc"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_2ussv"]
+[ext_resource type="Texture2D" uid="uid://41hb1okdv1y6" path="res://assets/icons/frame-npr-4.png" id="6_i18os"]
 
 [node name="CombatScene" type="Control"]
 layout_mode = 3
@@ -13,6 +15,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_cetgp")
+combat_start_delay = 1.0
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 512.0
+grow_horizontal = 2
+texture = ExtResource("2_gvrxc")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -21,12 +32,22 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_2ussv")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 
-[node name="CurrentTurnLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/PanelContainer"]
+layout_mode = 2
+
+[node name="CurrentTurnLabel" type="Label" parent="MarginContainer/VBoxContainer/PanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+horizontal_alignment = 1
 
 [node name="TurnOrderPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -48,40 +69,22 @@ vertical_scroll_mode = 0
 
 [node name="TurnOrderDisplay" type="HBoxContainer" parent="MarginContainer/VBoxContainer/TurnOrderPanel/VBoxContainer/ScrollContainer"]
 layout_mode = 2
-
-[node name="CombatAreaPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
-layout_mode = 2
-
-[node name="PlayerPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel"]
-layout_mode = 2
-text = "Party"
-horizontal_alignment = 1
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel"]
+[node name="CombatAreaPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="EnemyPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer"]
+[node name="PlayerPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
+alignment = 1
 
-[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel"]
+[node name="EnemyPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
 layout_mode = 2
-text = "Enemies"
-horizontal_alignment = 1
-
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel"]
-layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
 alignment = 1
 
 [node name="CombatPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
@@ -91,6 +94,11 @@ size_flags_vertical = 3
 [node name="PartyPanel" parent="MarginContainer/VBoxContainer/CombatPanel" instance=ExtResource("2_7pc1q")]
 layout_mode = 2
 size_flags_horizontal = 3
+texture = ExtResource("6_i18os")
+patch_margin_left = 0
+patch_margin_top = 0
+patch_margin_right = 0
+patch_margin_bottom = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CombatPanel/PartyPanel"]
 layout_mode = 1
@@ -100,14 +108,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("3_2ussv")
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+alignment = 1
 
 [node name="AbilityPanel" parent="MarginContainer/VBoxContainer/CombatPanel" instance=ExtResource("2_7pc1q")]
 layout_mode = 2
 size_flags_horizontal = 3
+texture = ExtResource("6_i18os")
+patch_margin_left = 0
+patch_margin_top = 0
+patch_margin_right = 0
+patch_margin_bottom = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CombatPanel/AbilityPanel"]
 layout_mode = 1
@@ -117,14 +135,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("3_2ussv")
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 0
+alignment = 1
 
 [node name="CombatLogPanel" parent="MarginContainer/VBoxContainer/CombatPanel" instance=ExtResource("2_7pc1q")]
 layout_mode = 2
 size_flags_horizontal = 3
+texture = ExtResource("6_i18os")
+patch_margin_left = 0
+patch_margin_top = 0
+patch_margin_right = 0
+patch_margin_bottom = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel"]
 layout_mode = 1
@@ -134,6 +162,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("3_2ussv")
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
 
 [node name="CombatLogContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer"]
 layout_mode = 2
@@ -144,4 +176,25 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme = ExtResource("3_2ussv")
+theme_override_colors/default_color = Color(0.431373, 0.341176, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
+bbcode_enabled = true
 scroll_following = true
+
+[node name="TurnAnnouncerLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = -33.0
+offset_bottom = 33.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(640, 33)
+theme_override_colors/font_outline_color = Color(0.303799, 0.198803, 0.0540074, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 32
+text = "X's Turn"
+horizontal_alignment = 1

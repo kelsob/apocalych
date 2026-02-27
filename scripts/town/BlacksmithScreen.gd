@@ -186,23 +186,20 @@ func _clear_equipment_panels() -> void:
 	armor_stone_upgrade_button.disabled = true
 
 func _get_party_stone_count() -> int:
-	var total := 0
-	for m in _party_members:
-		if m is PartyMember:
-			total += m.get_item_count(SHARPENING_STONE_ITEM_ID)
-	return total
+	var main := _get_main_node()
+	return main.get_party_resource_count(SHARPENING_STONE_ITEM_ID) if main else 0
 
 func _spend_party_stones(amount: int) -> void:
-	var remaining: int = amount
-	for m in _party_members:
-		if remaining <= 0:
-			break
-		if m is PartyMember:
-			var has: int = m.get_item_count(SHARPENING_STONE_ITEM_ID)
-			var to_take: int = mini(has, remaining)
-			if to_take > 0:
-				m.remove_item(SHARPENING_STONE_ITEM_ID, to_take)
-				remaining -= to_take
+	var main := _get_main_node()
+	if main:
+		main.remove_party_resource(SHARPENING_STONE_ITEM_ID, amount)
+
+func _get_main_node() -> Node:
+	var root := get_tree().root
+	for child in root.get_children():
+		if child.name == "Main" or child.is_in_group("main"):
+			return child
+	return null
 
 func _on_weapon_upgrade_hover_started() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():

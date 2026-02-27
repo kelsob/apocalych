@@ -3,14 +3,35 @@ extends Control
 ## CombatScene - UI controller for combat
 ## Displays combat state, handles player input, and shows animations
 
+# --- Combat timing (exports override CombatController when this scene is in the tree) ---
+@export_group("Combat Delays")
+## Delay before the first turn begins (seconds). Overrides CombatController when set > 0.
+@export var combat_start_delay: float = 3.0
+## Delay after a player's turn ends, before the next character's turn (seconds). Overrides CombatController when set >= 0.
+@export var turn_end_delay_after_player: float = 1.0
+## Delay after VICTORY/DEFEAT/FLED message before showing rewards or returning to map (seconds).
+@export var combat_end_delay: float = 2.0
+
+@export_group("Turn Announcer Animation")
+## Turn announcer fade-in duration (seconds).
+@export var turn_announcer_fade_in: float = 0.25
+## Turn announcer scale-in duration (seconds).
+@export var turn_announcer_scale_in: float = 0.5
+## Turn announcer fade-out duration (seconds).
+@export var turn_announcer_fade_out: float = 0.35
+## Turn announcer scale-out duration (seconds).
+@export var turn_announcer_scale_out: float = 0.35
+
 # Node references
-@onready var current_turn_label: Label = $MarginContainer/VBoxContainer/CurrentTurnLabel
+@onready var current_turn_label: Label = $MarginContainer/VBoxContainer/PanelContainer/MarginContainer/CurrentTurnLabel
 @onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
-@onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/PlayerPanel/HBoxContainer
-@onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/HBoxContainer/EnemyPanel/HBoxContainer
+@onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel
+@onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/EnemyPanel
 @onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
 @onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer/VBoxContainer
 @onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer/CombatLogContainer/CombatLogLabel
+@onready var turn_announcer_label: Label = $TurnAnnouncerLabel
+
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
@@ -38,6 +59,7 @@ var _pending_death_logs: Array = []  # [CombatantData, ...]
 
 func _ready():
 	print("CombatScene _ready() called")
+	add_to_group("combat_scene")
 	
 	# Verify all node references are valid
 	if not current_turn_label:
@@ -68,7 +90,36 @@ func _ready():
 		if turn_order_panel.has_signal("combatant_hover_unhighlighted"):
 			turn_order_panel.combatant_hover_unhighlighted.connect(_on_turn_order_combatant_unhighlighted)
 	
+	if turn_announcer_label:
+		turn_announcer_label.visible = false
+	
+	if combat_log:
+		combat_log.bbcode_enabled = true
+	
 	print("CombatScene initialized and signals connected")
+
+## Show turn announcer: "X's Turn" with color, fade in/out, scale grow.
+func _show_turn_announcer(combatant: CombatantData) -> void:
+	if not turn_announcer_label:
+		return
+	var base_color: Color = Color(0.2, 1.0, 0.3) if combatant.is_player else Color(1.0, 0.2, 0.2)
+	turn_announcer_label.text = "%s's Turn" % _safe_combatant_name(combatant)
+	turn_announcer_label.visible = true
+	turn_announcer_label.modulate = Color(base_color.r, base_color.g, base_color.b, 0.0)
+	turn_announcer_label.scale = Vector2(0.7, 0.7)
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(turn_announcer_label, "modulate", Color(base_color.r, base_color.g, base_color.b, 1.0), turn_announcer_fade_in)
+	tween.tween_property(turn_announcer_label, "scale", Vector2(1.0, 1.0), turn_announcer_scale_in)
+	await tween.finished
+	tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(turn_announcer_label, "modulate", Color(base_color.r, base_color.g, base_color.b, 0.0), turn_announcer_fade_out)
+	tween.tween_property(turn_announcer_label, "scale", Vector2(1.2, 1.2), turn_announcer_scale_out)
+	await tween.finished
+	turn_announcer_label.visible = false
+	turn_announcer_label.modulate = base_color
+	turn_announcer_label.scale = Vector2(1.0, 1.0)
 
 ## Safe display name for logging; avoids Nil access when target died or was removed
 func _safe_combatant_name(c) -> String:
@@ -87,7 +138,7 @@ func _flush_pending_death_logs():
 ## Called when combat starts
 func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	print("CombatScene: _on_combat_started called with %d players, %d enemies" % [player_combatants.size(), enemy_combatants.size()])
-	_log_message("=== COMBAT START ===")
+	_log_message("=== COMBAT START ===", true)
 	
 	# Clear previous data
 	combatant_sprites.clear()
@@ -118,13 +169,13 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 func _deferred_combat_end(victory: bool, rewards: Dictionary):
 	var fled: bool = rewards.get("fled", false)
 	if victory:
-		_log_message("=== VICTORY ===")
+		_log_message("=== VICTORY ===", true)
 	elif fled:
-		_log_message("=== FLED ===")
+		_log_message("=== FLED ===", true)
 	else:
-		_log_message("=== DEFEAT ===")
+		_log_message("=== DEFEAT ===", true)
 
-	await get_tree().create_timer(2.0).timeout
+	await get_tree().create_timer(combat_end_delay).timeout
 
 	var root = get_tree().root
 	var main = null
@@ -155,7 +206,11 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 		return
 	# Flush any deaths from previous turn (e.g. DoT kill) before showing "X's Turn"
 	_flush_pending_death_logs()
-	_log_message("--- %s's Turn ---" % _safe_combatant_name(combatant))
+	
+	# Show turn announcer (animate in/out)
+	await _show_turn_announcer(combatant)
+	
+	_log_message("--- %s's Turn ---" % _safe_combatant_name(combatant), true)
 	
 	current_turn_label.text = "%s's Turn" % _safe_combatant_name(combatant)
 	
@@ -484,17 +539,14 @@ func _show_abilities_for_combatant(combatant: CombatantData):
 	spacer.custom_minimum_size = Vector2(0, 10)
 	ability_panel_container.add_child(spacer)
 	
-	# Add "Pass Turn" button
-	var pass_turn_button = Button.new()
-	pass_turn_button.text = "Pass Turn"
-	pass_turn_button.custom_minimum_size = Vector2(150, 40)
+	# Add "Pass Turn" and "Flee" using same button scene as abilities
+	var pass_turn_button = combat_ability_option_scene.instantiate()
+	pass_turn_button.setup_simple("Pass Turn")
 	pass_turn_button.pressed.connect(_on_pass_turn_pressed)
 	ability_panel_container.add_child(pass_turn_button)
 	
-	# Add "Flee" button
-	var flee_button = Button.new()
-	flee_button.text = "Flee"
-	flee_button.custom_minimum_size = Vector2(150, 40)
+	var flee_button = combat_ability_option_scene.instantiate()
+	flee_button.setup_simple("Flee")
 	flee_button.pressed.connect(_on_flee_pressed)
 	ability_panel_container.add_child(flee_button)
 
@@ -671,7 +723,10 @@ func _unhandled_input(event: InputEvent):
 		selected_ability = null
 		get_viewport().set_input_as_handled()
 
-## Log a message to combat log
-func _log_message(message: String):
+## Log a message to combat log. Set centered=true for section headers (combat start, turns, victory/defeat).
+func _log_message(message: String, centered: bool = false):
 	print("[Combat] " + message)
-	combat_log.text += message + "\n"
+	if centered:
+		combat_log.text += "[center]" + message + "[/center]\n"
+	else:
+		combat_log.text += message + "\n"

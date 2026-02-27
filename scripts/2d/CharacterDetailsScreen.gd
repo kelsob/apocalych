@@ -28,7 +28,7 @@ const ARMOUR_ICON_PATH: String = "res://assets/items/armor-1.png"
 @onready var _armour_texture: TextureRect = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer/MarginContainer/ArmorTextureRect
 @onready var _armour_name_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2/MarginContainer/VBoxContainer/ArmorName
 @onready var _armour_def_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2/MarginContainer/VBoxContainer/DEFLabel
-@onready var _inventory_container: GridContainer = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/InventoryContainer
+@onready var _inventory_container: GridContainer = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/CharacterInventoryContainer
 @onready var close_button: Button = $CloseButton
 
 var _hp_progress_bar: ProgressBar = null  # Optional: add HPProgressBar as child of HPXPContainer to show HP bar
@@ -122,23 +122,5 @@ func _populate_equipment(member: PartyMember) -> void:
 		_armour_def_label.text = "+%d DEF" % armour.get_def()
 
 func _populate_inventory(member: PartyMember) -> void:
-	if not _inventory_container:
-		return
-	var ids: Array[String] = member.get_inventory_ids()
-	var slots: Array[Node] = []
-	for c in _inventory_container.get_children():
-		slots.append(c)
-	for i in range(slots.size()):
-		var slot: Node = slots[i]
-		var item_texture: TextureRect = slot.get_node_or_null("ItemTextureRect") as TextureRect
-		if i < ids.size():
-			var item_id: String = ids[i]
-			var item: Item = ItemDatabase.get_item(item_id) if ItemDatabase else null
-			var count: int = member.get_item_count(item_id)
-			if item_texture and item and not item.icon_path.is_empty():
-				var tex: Texture2D = load(item.icon_path) as Texture2D
-				item_texture.texture = tex
-			elif item_texture:
-				item_texture.texture = null
-		elif item_texture:
-			item_texture.texture = null
+	if _inventory_container:
+		_inventory_container.populate_from_member(member)

@@ -1,0 +1,68 @@
+[gd_scene load_steps=3 format=3 uid="uid://dfemdm81srhxn"]
+
+[ext_resource type="PackedScene" uid="uid://cnhqf1rffqjj5" path="res://scenes/2d/ItemSlotDisplay.tscn" id="1_0p6cx"]
+[ext_resource type="Script" uid="uid://ekh3jx40lqp5" path="res://scripts/2d/CharacterInventoryContainer.gd" id="1_vnnvy"]
+
+[node name="CharacterInventoryContainer" type="GridContainer"]
+columns = 10
+script = ExtResource("1_vnnvy")
+
+[node name="ItemSlotDisplay" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay2" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay3" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay4" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay5" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay6" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay7" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay8" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay9" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay10" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay11" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay12" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay13" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay14" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay15" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay16" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay17" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay18" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay19" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2
+
+[node name="ItemSlotDisplay20" parent="." instance=ExtResource("1_0p6cx")]
+layout_mode = 2

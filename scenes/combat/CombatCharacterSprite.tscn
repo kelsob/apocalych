@@ -1,8 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://y6uccakbo1wi"]
+[gd_scene load_steps=3 format=3 uid="uid://y6uccakbo1wi"]
 
 [ext_resource type="Script" uid="uid://woweburf2uf1" path="res://scripts/CombatCharacterSprite.gd" id="1_6jn31"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_qmbjl"]
-[ext_resource type="Texture2D" uid="uid://da075esvsqt8f" path="res://assets/icons/compassrose.png" id="3_wxo40"]
 
 [node name="CombatCharacterSprite" type="Control"]
 custom_minimum_size = Vector2(128, 160)
@@ -19,7 +18,7 @@ offset_bottom = 80.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
-size_flags_vertical = 4
+size_flags_vertical = 3
 script = ExtResource("1_6jn31")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
@@ -33,10 +32,10 @@ theme = ExtResource("2_qmbjl")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
+alignment = 1
 
 [node name="CharacterSprite" type="TextureRect" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-texture = ExtResource("3_wxo40")
 expand_mode = 5
 
 [node name="HPProgressBar" type="ProgressBar" parent="MarginContainer/VBoxContainer"]

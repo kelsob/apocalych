@@ -48,7 +48,8 @@ var biome_blob_alpha_max: float = 0.175
 
 # Tree configuration
 var tree_foliage_radius: float = 3.5
-var tree_foliage_color: Color = Color(0.2, 0.5, 0.2, 1.0)
+var tree_foliage_color: Color = Color(0.78, 0.82, 0.65, 1.0)  # Light brownish green
+var tree_foliage_outline_color: Color = Color(0.12, 0.22, 0.14, 1.0)  # Dark forest green
 var tree_foliage_outline_width: float = 0.8
 var tree_trunk_width: float = 1.0
 var tree_trunk_length: float = 2.5
@@ -165,6 +166,8 @@ func set_config(config: Dictionary):
 		tree_foliage_radius = config["tree_foliage_radius"]
 	if config.has("tree_foliage_color"):
 		tree_foliage_color = config["tree_foliage_color"]
+	if config.has("tree_foliage_outline_color"):
+		tree_foliage_outline_color = config["tree_foliage_outline_color"]
 	if config.has("tree_foliage_outline_width"):
 		tree_foliage_outline_width = config["tree_foliage_outline_width"]
 	if config.has("tree_trunk_width"):
@@ -256,6 +259,7 @@ func _draw_trees():
 		var vertical_stretch: float = tree_data.get("vertical_stretch", 1.0)
 		var foliage_radius: float = tree_data.get("foliage_radius", tree_foliage_radius)
 		var foliage_color: Color = tree_data.get("foliage_color", tree_foliage_color)
+		var outline_color: Color = tree_data.get("outline_color", tree_foliage_outline_color)
 		var trunk_color: Color = tree_data.get("trunk_color", tree_trunk_color)
 		var trunk_width: float = tree_data.get("trunk_width", tree_trunk_width)
 		var trunk_length: float = tree_data.get("trunk_length", tree_trunk_length)
@@ -274,16 +278,16 @@ func _draw_trees():
 		# If stretching is needed, we'll approximate with a polygon
 		if abs(vertical_stretch - 1.0) < 0.01:
 			# No significant stretching, just draw circles
-			# Draw outline first (larger circle with trunk color)
+			# Draw outline first (larger circle with outline color - dark forest green)
 			if outline_width > 0:
-				draw_circle(position, foliage_radius + outline_width, trunk_color)
+				draw_circle(position, foliage_radius + outline_width, outline_color)
 			# Draw main foliage on top
 			draw_circle(position, foliage_radius, foliage_color)
 		else:
 			# Draw stretched circle as polygons
 			var segments = 24
 			
-			# Draw outline first (trunk color, slightly larger)
+			# Draw outline first (outline color - dark forest green)
 			if outline_width > 0:
 				var outline_points: PackedVector2Array = []
 				var outline_radius_x = radius_x + outline_width
@@ -293,7 +297,7 @@ func _draw_trees():
 					var x = position.x + cos(angle) * outline_radius_x
 					var y = position.y + sin(angle) * outline_radius_y
 					outline_points.append(Vector2(x, y))
-				draw_colored_polygon(outline_points, trunk_color)
+				draw_colored_polygon(outline_points, outline_color)
 			
 			# Draw main foliage on top
 			var points: PackedVector2Array = []

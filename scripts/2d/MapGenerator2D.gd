@@ -3120,12 +3120,13 @@ func generate_forest_features(nodes: Array, landmass_polygon: PackedVector2Array
 					"data": {
 						"position": pos,
 						"vertical_stretch": 1.0 + randf_range(0.0, 1.0),
-					"foliage_radius": randf_range(0.85, 1.275),  # 50% smaller
-					"foliage_color": Color(0.75, 0.65, 0.50),  # Lighter brown/tan
-					"trunk_color": Color(0.60, 0.45, 0.35),  # Lighter brown
-					"trunk_width": 1.5,  # 25% thinner
-					"trunk_length": randf_range(1.4375, 2.4375),  # 25% longer
-					"outline_width": 1.0
+						"foliage_radius": randf_range(0.85, 1.275),
+						"foliage_color": Color(0.78, 0.82, 0.65),  # Light brownish green
+						"outline_color": Color(0.12, 0.22, 0.14),  # Dark forest green
+						"trunk_color": Color(0.45, 0.35, 0.25),  # Brown
+						"trunk_width": 1.5,
+						"trunk_length": randf_range(1.4375, 2.4375),
+						"outline_width": 1.0
 					}
 				})
 				
@@ -3190,12 +3191,13 @@ func generate_plains_features(nodes: Array, landmass_polygon: PackedVector2Array
 				"data": {
 					"position": pos,
 					"vertical_stretch": 1.0 + randf_range(0.1, 0.8),
-				"foliage_radius": randf_range(0.85, 1.125),  # 50% smaller
-			"foliage_color": Color(0.75, 0.65, 0.50),  # Lighter brown/tan
-			"trunk_color": Color(0.60, 0.45, 0.35),  # Lighter brown
-			"trunk_width": 1.5,  # 25% thinner
-			"trunk_length": randf_range(1.4375, 2.125),  # 25% longer
-			"outline_width": 1.0
+					"foliage_radius": randf_range(0.85, 1.125),
+					"foliage_color": Color(0.78, 0.82, 0.65),  # Light brownish green
+					"outline_color": Color(0.12, 0.22, 0.14),  # Dark forest green
+					"trunk_color": Color(0.45, 0.35, 0.25),  # Brown
+					"trunk_width": 1.5,
+					"trunk_length": randf_range(1.4375, 2.125),
+					"outline_width": 1.0
 				}
 			})
 	
@@ -6187,33 +6189,29 @@ func bake_static_map():
 			for river in rivers:
 				render_river_to_static_map(river)
 	
-	# Spawn tree sprites (Trees YSort child of MapGenerator) - skip static map tree drawing
+	# Draw trees via StaticMapRenderer (draw function) - clears any previous sprite-based trees
 	if enable_map_features and map_features.size() > 0:
 		var trees_container: Node2D = get_node_or_null("Trees")
 		if trees_container:
-			trees_container.z_index = 0  # Below WaterOverlay (z_index = 1)
-			# Clear previous tree sprites
 			for child in trees_container.get_children():
 				child.queue_free()
-			var tree_tex: Texture2D = load(TREE_TEXTURE_PATH) as Texture2D
-			if tree_tex:
-				for feature in map_features:
-					if feature.get("type", "") != "tree":
-						continue
-					var tree_data: Dictionary = feature.data
-					var pos: Vector2 = tree_data.get("position", Vector2.ZERO)
-					var foliage_color: Color = tree_data.get("foliage_color", Color(0.2, 0.5, 0.2))
-					var sprite: Sprite2D = Sprite2D.new()
-					sprite.texture = tree_tex
-					sprite.centered = true
-					sprite.scale = Vector2(tree_sprite_scale, tree_sprite_scale)
-					sprite.modulate = foliage_color
-					sprite.position = pos
-					trees_container.call_deferred("add_child", sprite)
-			else:
-				push_warning("MapGenerator: Could not load tree texture: %s" % TREE_TEXTURE_PATH)
-		else:
-			push_warning("MapGenerator: Trees YSort node not found - add Trees (YSort) as child of MapGenerator for sprite-based trees")
+		for feature in map_features:
+			if feature.get("type", "") != "tree":
+				continue
+			var tree_data: Dictionary = feature.data
+			var pos: Vector2 = tree_data.get("position", Vector2.ZERO)
+			var scaled_tree_data = {
+				"position": pos * map_resolution_scale,
+				"vertical_stretch": tree_data.get("vertical_stretch", 1.0),
+				"foliage_radius": tree_data.get("foliage_radius", 3.5) * map_resolution_scale,
+				"foliage_color": tree_data.get("foliage_color", Color(0.78, 0.82, 0.65)),
+				"outline_color": tree_data.get("outline_color", Color(0.12, 0.22, 0.14)),
+				"trunk_color": tree_data.get("trunk_color", Color(0.4, 0.25, 0.15)),
+				"trunk_width": tree_data.get("trunk_width", 1.0) * map_resolution_scale,
+				"trunk_length": tree_data.get("trunk_length", 2.5) * map_resolution_scale,
+				"outline_width": tree_data.get("outline_width", 0.8) * map_resolution_scale
+			}
+			static_map_renderer.add_tree(scaled_tree_data)
 	
 	# Pass connection lines data (ONLY ROADS - regular paths drawn dynamically)
 	var processed_edges = {}

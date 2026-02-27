@@ -4,106 +4,124 @@
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_32hsn"]
 [ext_resource type="Texture2D" uid="uid://dovh23ohyjb7e" path="res://assets/icons/slash.png" id="3_x4gb5"]
 
-[node name="CharacterCombatInformationPanel" type="PanelContainer"]
-anchors_preset = 15
+[node name="CharacterCombatInformationPanel" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 32)
+anchors_preset = 14
+anchor_top = 0.5
 anchor_right = 1.0
-anchor_bottom = 1.0
+anchor_bottom = 0.5
+offset_top = -19.5
+offset_bottom = 19.5
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
+size_flags_vertical = 4
+theme = ExtResource("2_32hsn")
 script = ExtResource("1_3l8fb")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
-layout_mode = 2
-theme = ExtResource("2_32hsn")
-
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 16
+alignment = 1
 
-[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="NameLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_color = Color(0.431373, 0.341176, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 vertical_alignment = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 alignment = 2
 
-[node name="APLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="APLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = "1"
 horizontal_alignment = 2
 vertical_alignment = 2
 
-[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(6, 9)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer/Control"]
+[node name="Sprite2D" type="Sprite2D" parent="VBoxContainer/HBoxContainer/HBoxContainer/Control"]
 position = Vector2(0, 13)
 scale = Vector2(0.25, 0.25)
 texture = ExtResource("3_x4gb5")
 centered = false
 
-[node name="APMaxLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="APMaxLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = "10"
 vertical_alignment = 2
 
-[node name="APLabel2" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer"]
+[node name="APLabel2" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer"]
 modulate = Color(0, 1, 0, 1)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = " AP"
 vertical_alignment = 2
 
-[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
-[node name="HealthLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+[node name="HealthLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = "1"
 horizontal_alignment = 2
 vertical_alignment = 2
 
-[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+[node name="Control" type="Control" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
 custom_minimum_size = Vector2(6, 9)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="Sprite2D" type="Sprite2D" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2/Control"]
+[node name="Sprite2D" type="Sprite2D" parent="VBoxContainer/HBoxContainer/HBoxContainer2/Control"]
 position = Vector2(0, 13)
 scale = Vector2(0.25, 0.25)
 texture = ExtResource("3_x4gb5")
 centered = false
 
-[node name="HealthMaxLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+[node name="HealthMaxLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
 layout_mode = 2
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = "10"
 vertical_alignment = 2
 
-[node name="HPLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/HBoxContainer2"]
+[node name="HPLabel" type="Label" parent="VBoxContainer/HBoxContainer/HBoxContainer2"]
 modulate = Color(1, 0, 0, 1)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_32hsn")
+theme_override_colors/font_outline_color = Color(0.796078, 0.666667, 0.466667, 1)
+theme_override_constants/outline_size = 4
 text = " HP"
 vertical_alignment = 2

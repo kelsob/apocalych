@@ -1,9 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://cnhqf1rffqjj5"]
+[gd_scene load_steps=3 format=3 uid="uid://cnhqf1rffqjj5"]
 
+[ext_resource type="Script" uid="uid://cicuyuatu1u5v" path="res://scripts/2d/ItemSlotDisplay.gd" id="2_h3i11"]
 [ext_resource type="Texture2D" uid="uid://dv4ivs8inoqyk" path="res://assets/icons/frame-npr.png" id="5_oouo1"]
 
 [node name="ItemSlotDisplay" type="TextureRect"]
 texture = ExtResource("5_oouo1")
+script = ExtResource("2_h3i11")
 
 [node name="ItemTextureRect" type="TextureRect" parent="."]
 layout_mode = 1

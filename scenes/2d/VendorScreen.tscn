@@ -1,7 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://dnx4pvug24tpe"]
+[gd_scene load_steps=7 format=3 uid="uid://dnx4pvug24tpe"]
 
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_o71dq"]
 [ext_resource type="Script" uid="uid://bk1a1bdbuag1d" path="res://scripts/town/VendorScreen.gd" id="2_yo6hm"]
+[ext_resource type="PackedScene" uid="uid://dfemdm81srhxn" path="res://scenes/2d/CharacterInventoryContainer.tscn" id="3_yo6hm"]
+[ext_resource type="Script" uid="uid://14kv3kvdolbn" path="res://scripts/town/VendorSellBox.gd" id="4_cpn1h"]
+[ext_resource type="Texture2D" uid="uid://dv4ivs8inoqyk" path="res://assets/icons/frame-npr.png" id="5_6s3tq"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="5_kaory"]
 
 [node name="VendorScreen" type="Control"]
 layout_mode = 3
@@ -89,17 +93,87 @@ layout_mode = 2
 layout_mode = 2
 text = "Items"
 
-[node name="TabContainer" type="TabContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
+[node name="TabContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-current_tab = 0
 
 [node name="Buy" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/TabContainer"]
 layout_mode = 2
-metadata/_tab_index = 0
 
-[node name="Sell" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer2/VBoxContainer/TabContainer"]
-visible = false
+[node name="MarginContainer3" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-metadata/_tab_index = 1
+size_flags_vertical = 4
+
+[node name="CharacterInventoriesVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3"]
+layout_mode = 2
+
+[node name="CharacterNameLabel1" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox"]
+layout_mode = 2
+text = "character name 1"
+
+[node name="CharacterInventoryContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox" instance=ExtResource("3_yo6hm")]
+layout_mode = 2
+
+[node name="CharacterNameLabel2" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox"]
+layout_mode = 2
+text = "character name 2"
+
+[node name="CharacterInventoryContainer2" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox" instance=ExtResource("3_yo6hm")]
+layout_mode = 2
+
+[node name="CharacterNameLabel3" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox"]
+layout_mode = 2
+text = "character name 3"
+
+[node name="CharacterInventoryContainer3" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox" instance=ExtResource("3_yo6hm")]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox"]
+layout_mode = 2
+
+[node name="SellBox" type="PanelContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+script = ExtResource("4_cpn1h")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox"]
+layout_mode = 2
+texture = ExtResource("5_6s3tq")
+patch_margin_left = 4
+patch_margin_top = 4
+patch_margin_right = 4
+patch_margin_bottom = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Drag Items Here To Sell"
+horizontal_alignment = 1
+
+[node name="Control" type="NinePatchRect" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+texture = ExtResource("5_kaory")
+patch_margin_left = 6
+patch_margin_top = 6
+patch_margin_right = 6
+patch_margin_bottom = 6
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Sell Price: "
+
+[node name="SellPriceLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer/MarginContainer3/CharacterInventoriesVBox/SellBox/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(40, 0)
+layout_mode = 2
+horizontal_alignment = 1

@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=26 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -22,6 +22,7 @@
 [ext_resource type="Texture2D" uid="uid://bjnq2f2tlmcty" path="res://assets/items/gem-13.png" id="22_ufufp"]
 [ext_resource type="Texture2D" uid="uid://dfu83h6ocomu6" path="res://assets/items/powder-1.png" id="23_xsycr"]
 [ext_resource type="Texture2D" uid="uid://fdvdwowy5wyw" path="res://assets/items/shard-3.png" id="24_ia0w3"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="25_xsycr"]
 [ext_resource type="PackedScene" uid="uid://ddp8fjrwnisv0" path="res://scenes/2d/WorldClocktscn.tscn" id="25_y4ryl"]
 [ext_resource type="PackedScene" uid="uid://dm8ukp1vhijtc" path="res://scenes/2d/BlacksmithScreen.tscn" id="27_35772"]
 
@@ -42,6 +43,15 @@ mouse_reveal_radius = 64.0
 [node name="UIController" type="CanvasLayer" parent="."]
 unique_name_in_owner = true
 script = ExtResource("3_myh0h")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="UIController"]
+z_index = 100
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("25_xsycr")
 
 [node name="MainMenu" parent="UIController" instance=ExtResource("8_kpsef")]
 visible = false

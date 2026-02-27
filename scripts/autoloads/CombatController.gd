@@ -22,6 +22,11 @@ signal status_removed(combatant: CombatantData, status: StatusEffect)
 # Combat state
 var combat_active: bool = false
 var combat_timeline: CombatTimeline = null
+
+## Delay before the first turn begins. Customizable (default 3 seconds).
+@export var combat_start_delay: float = 3.0
+## Delay after a player's turn ends, before the next character's turn starts (default 1 second).
+@export var turn_end_delay_after_player: float = 1.0
 var player_combatants: Array[CombatantData] = []
 var enemy_combatants: Array[CombatantData] = []
 var current_turn_combatant: CombatantData = null
@@ -32,6 +37,14 @@ var waiting_for_player_input: bool = false
 
 func _ready():
 	print("CombatController initialized")
+
+## If CombatScene is in the tree, return its exported delay; otherwise use default.
+func _get_delay(property: String, default_val: float) -> float:
+	var nodes = get_tree().get_nodes_in_group("combat_scene")
+	for node in nodes:
+		if node.get(property) != null:
+			return node.get(property)
+	return default_val
 
 ## Safe display name for logging; avoids Nil access when target died or was removed
 func _safe_display_name(c) -> String:
@@ -79,6 +92,11 @@ func start_combat_from_encounter(encounter: Resource, party_members: Array):
 	# Emit signal
 	combat_started.emit(player_combatants, enemy_combatants)
 	
+	# Delay before first turn (CombatScene exports override when in tree)
+	var start_delay := _get_delay("combat_start_delay", combat_start_delay)
+	await get_tree().create_timer(start_delay).timeout
+	if not combat_active:
+		return
 	# Start first turn
 	_advance_to_next_turn()
 
@@ -434,12 +452,18 @@ func _execute_ai_turn():
 
 ## End the current turn
 func _end_current_turn():
+	var was_player_turn := current_turn_combatant and current_turn_combatant.is_player
 	if current_turn_combatant:
 		turn_ended.emit(current_turn_combatant)
 	
 	waiting_for_player_input = false
 	current_turn_combatant = null
 	
+	var end_delay := _get_delay("turn_end_delay_after_player", turn_end_delay_after_player)
+	if was_player_turn and end_delay > 0:
+		await get_tree().create_timer(end_delay).timeout
+	if not combat_active:
+		return
 	# Advance to next turn
 	_advance_to_next_turn()
 

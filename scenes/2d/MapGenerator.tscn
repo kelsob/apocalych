@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=14 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
@@ -11,7 +11,6 @@
 [ext_resource type="Texture2D" uid="uid://c56h3fp3ouegp" path="res://assets/icons/party_present.png" id="6_jerfe"]
 [ext_resource type="Texture2D" uid="uid://d2rd43gwgirsi" path="res://assets/map/therebedagrons.png" id="6_o2kik"]
 [ext_resource type="Texture2D" uid="uid://dox1js6lhibgr" path="res://assets/map/waves-angled.png" id="6_p13sx"]
-[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="7_et537"]
 [ext_resource type="Script" uid="uid://dpiclq4dhx7e8" path="res://scripts/2d/CameraController2D.gd" id="8_n8x2r"]
 [ext_resource type="Script" uid="uid://j2qy7fg7lwyj" path="res://scripts/2d/StaticMapRenderer.gd" id="9_bvoid"]
 
@@ -28,12 +27,13 @@ map_size = Vector2(1280, 780)
 node_scene = ExtResource("2_sdxh4")
 poisson_min_distance = 30.0
 shape_noise_enabled = false
-road_color = Color(0.540353, 0.478515, 0.355151, 1)
+line_color = Color(0.301961, 0.188235, 0.0941176, 1)
+road_color = Color(0.358424, 0.312538, 0.22072, 1)
 node_base_color = Color(0.784852, 0.662272, 0.487773, 1)
 coast_line_color = Color(0.3, 0.1878, 0.096, 1)
 coastal_water_color = Color(0.25098, 0.45098, 0.701961, 0.12549)
 ripple_base_color = Color(0.54902, 0.45098, 0.321569, 1)
-mountain_color = Color(0.419318, 0.338669, 0.193858, 1)
+mountain_color = Color(0.282797, 0.224559, 0.119726, 1)
 preview_path_color = Color(0.667829, 1, 0.532445, 0.501961)
 river_color = Color(0.371397, 0.459768, 0.592817, 1)
 line_width = 1.0
@@ -52,7 +52,7 @@ mountain_display_scale = 0.85
 biome_blob_radius = 128.0
 biome_blob_circles = 4
 biome_blob_alpha_max = 0.03
-tree_sprite_scale = 0.05
+tree_sprite_scale = 0.125
 enable_rivers = true
 river_source_width = 2.0
 river_end_width = 0.5
@@ -214,16 +214,6 @@ modulate = Color(0.286275, 0.227451, 0.121569, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("5_5r5px")
-
-[node name="TextureRect" type="TextureRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("7_et537")
 
 [node name="StaticMapViewport" type="SubViewport" parent="."]
 transparent_bg = true

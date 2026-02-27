@@ -20,38 +20,41 @@ const MONTH_NAMES: Array[String] = [
 	"Cermie", "Urime", "Yavannie", "Narquelie", "Hisime", "Ringare"
 ]
 
-# Eight moon phases in order; cycle repeats every (8 * days_per_lunar_phase) days
-const MOON_PHASES: Array[String] = [
-	"New Moon",
-	"Waxing Crescent",
-	"First Quarter",
-	"Waxing Gibbous",
-	"Full Moon",
-	"Waning Gibbous",
-	"Last Quarter",
-	"Waning Crescent"
+# Fourteen moon phases (Sprite2D frames 0-13); cycle repeats every (14 * days_per_lunar_phase) days
+# Order: full → waning gibbous (early/late) → last quarter (early/late) → waning crescent (early/late)
+# → new moon → waxing crescent (early/late) → first quarter (early/late) → waxing gibbous (early/late)
+const LUNAR_FRAME_COUNT: int = 14
+
+# Player-facing labels (early/late collapsed). Index = frame_index (0-13).
+const LUNAR_DISPLAY_LABELS: Array[String] = [
+	"Full Moon",           # 0
+	"Waning Gibbous",      # 1 early
+	"Waning Gibbous",      # 2 late
+	"Last Quarter",        # 3 early
+	"Last Quarter",        # 4 late
+	"Waning Crescent",     # 5 early
+	"Waning Crescent",     # 6 late
+	"New Moon",            # 7
+	"Waxing Crescent",     # 8 early
+	"Waxing Crescent",     # 9 late
+	"First Quarter",       # 10 early
+	"First Quarter",       # 11 late
+	"Waxing Gibbous",      # 12 early
+	"Waxing Gibbous"       # 13 late
 ]
 
-# Icon paths per phase index
-const MOON_ICON_PATHS: Array[String] = [
-	"res://assets/map/moon/new-moon.png",
-	"res://assets/map/moon/waxing-crescent.png",
-	"res://assets/map/moon/half-moon-first-quarter.png",
-	"res://assets/map/moon/waxing-gibbous.png",
-	"res://assets/map/moon/full-moon.png",
-	"res://assets/map/moon/waning-gibbous.png",
-	"res://assets/map/moon/half-moon-last-quarter.png",
-	"res://assets/map/moon/waning-crescent.png"
+# Map frame index (0-13) to display-phase index for ProjectColors.LUNAR_PHASE_COLORS (0-7)
+const FRAME_TO_COLOR_INDEX: Array[int] = [
+	4, 5, 5, 6, 6, 7, 7, 0, 1, 1, 2, 2, 3, 3  # full, w.gibb x2, l.quarter x2, w.crescent x2, new, w.crescent x2, f.quarter x2, w.gibb x2
 ]
 
 @export var game_time_per_day: float = 1.0
 @export var days_per_month: int = 30
 @export var months_per_year: int = 12
-@export var days_per_lunar_phase: int = 3
+@export var days_per_lunar_phase: int = 3  # Days per sub-phase (14 sub-phases per full cycle)
 
 @onready var progress_bar: ProgressBar = $MarginContainer/VBoxContainer/ProgressBar
-@onready var date_label: Label = $MarginContainer/VBoxContainer/DateLabel
-@onready var lunar_cycle_icon: TextureRect = $MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer/LunarCycleIcon
+@onready var lunar_cycle_icon: Sprite2D = $MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer/LunarCycleIcon/Sprite2D
 @onready var lunar_cycle_label: Label = $MarginContainer/VBoxContainer/Control/MarginContainer/HBoxContainer/LunarCycleLabel
 
 func _ready() -> void:
@@ -89,38 +92,29 @@ func set_calendar_from_total_days(total_days: int) -> void:
 	var month: int = (day_of_year / days_per_month) % months_per_year if days_per_month > 0 else 0
 	var day_of_month: int = (day_of_year % days_per_month) + 1
 	var day_of_week: int = total_days % DAY_NAMES.size()
-	set_calendar_date(day_of_week, day_of_month, month, year)
 	_set_lunar_phase(total_days)
 
 
-## Set the displayed date from explicit calendar values.
-## day_of_week: 0–5 (Elenya … Valanya). month: 0–11. day_of_month: 1–days_per_month.
-## Date label may be hidden; we still track internally.
-func set_calendar_date(day_of_week: int, day_of_month: int, month: int, year: int) -> void:
-	if date_label:
-		var day_name: String = DAY_NAMES[day_of_week % DAY_NAMES.size()]
-		var month_name: String = MONTH_NAMES[month % MONTH_NAMES.size()]
-		date_label.text = "%s, %s the %d — Year %d" % [day_name, month_name, day_of_month, year]
+
 
 
 func _set_lunar_phase(total_days: int) -> void:
-	if MOON_PHASES.is_empty() or days_per_lunar_phase <= 0:
+	if LUNAR_DISPLAY_LABELS.is_empty() or days_per_lunar_phase <= 0:
 		return
-	var cycle_length: int = MOON_PHASES.size() * days_per_lunar_phase
+	var cycle_length: int = LUNAR_FRAME_COUNT * days_per_lunar_phase
 	var day_in_cycle: int = total_days % cycle_length
-	var phase_index: int = (day_in_cycle / days_per_lunar_phase) % MOON_PHASES.size()
+	var frame_index: int = (day_in_cycle / days_per_lunar_phase) % LUNAR_FRAME_COUNT
 
-	if lunar_cycle_label:
-		lunar_cycle_label.text = MOON_PHASES[phase_index]
-		lunar_cycle_label.modulate = _get_lunar_modulate(phase_index)
+	if lunar_cycle_label and frame_index < LUNAR_DISPLAY_LABELS.size():
+		lunar_cycle_label.text = LUNAR_DISPLAY_LABELS[frame_index]
+		lunar_cycle_label.modulate = _get_lunar_modulate(frame_index)
 
-	if lunar_cycle_icon and phase_index < MOON_ICON_PATHS.size():
-		var path: String = MOON_ICON_PATHS[phase_index]
-		var tex: Texture2D = load(path) as Texture2D if not path.is_empty() else null
-		lunar_cycle_icon.texture = tex
+	if lunar_cycle_icon:
+		lunar_cycle_icon.frame = frame_index
 
 
-func _get_lunar_modulate(phase_index: int) -> Color:
+func _get_lunar_modulate(frame_index: int) -> Color:
 	if ProjectColors.LUNAR_PHASE_COLORS.is_empty():
 		return Color.WHITE
-	return ProjectColors.LUNAR_PHASE_COLORS[phase_index % ProjectColors.LUNAR_PHASE_COLORS.size()]
+	var color_index: int = FRAME_TO_COLOR_INDEX[frame_index % FRAME_TO_COLOR_INDEX.size()] if frame_index < FRAME_TO_COLOR_INDEX.size() else 0
+	return ProjectColors.LUNAR_PHASE_COLORS[color_index % ProjectColors.LUNAR_PHASE_COLORS.size()]

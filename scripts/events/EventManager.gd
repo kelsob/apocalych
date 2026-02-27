@@ -441,13 +441,28 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 	var count: int = int(effect.get("count", 1))
 	var target_index: int = int(effect.get("target", 0))
 	var main: Node = _get_main_node()
-	if not main or main.current_party_members.is_empty():
-		push_warning("EventManager: give_item requires Main with party")
+	if not main:
+		push_warning("EventManager: give_item requires Main node")
 		return
 	if not ItemDatabase.has_item(effect.item_id):
 		push_warning("EventManager: Unknown item_id '%s'" % effect.item_id)
 		return
 	var item := ItemDatabase.get_item(effect.item_id)
+	
+	# Resource items go to party-wide store
+	if ItemDatabase.is_bulk_loot(effect.item_id):
+		var added := 0
+		for i in count:
+			if main.add_party_resource(effect.item_id, 1):
+				added += 1
+		if added > 0:
+			print("EventManager: Gave %s x%d to party resources" % [item.name, added])
+		return
+	
+	# Non-resource items go to target character
+	if main.current_party_members.is_empty():
+		push_warning("EventManager: give_item requires party members for non-resource items")
+		return
 	var party_total: int = 0
 	for m in main.current_party_members:
 		party_total += m.get_item_count(effect.item_id)

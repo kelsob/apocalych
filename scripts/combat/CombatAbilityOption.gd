@@ -29,6 +29,17 @@ func setup(ability_data: Ability):
 	ability = ability_data
 	update_display()
 
+## Initialize as a simple action button (Pass, Flee) - no AP cost shown.
+## Uses get_node because this may be called before @onready refs are populated (before add_child).
+func setup_simple(label_text: String):
+	ability = null
+	var name_label = get_node_or_null("MarginContainer/HBoxContainer/AbilityNameLabel")
+	if name_label:
+		name_label.text = label_text
+	var cost_label = get_node_or_null("MarginContainer/HBoxContainer/APCostLabel")
+	if cost_label:
+		cost_label.visible = false
+
 ## Update the display with current ability data
 func update_display():
 	if not ability:

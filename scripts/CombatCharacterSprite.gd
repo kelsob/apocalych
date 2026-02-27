@@ -5,6 +5,7 @@ class_name CombatCharacterSprite
 
 var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tscn")
 var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
+const PLACEHOLDER_TEXTURE: Texture2D = preload("res://assets/party-characters/placeholder.png")
 
 @onready var character_sprite: TextureRect = $MarginContainer/VBoxContainer/CharacterSprite
 @onready var hp_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/HPProgressBar
@@ -80,6 +81,10 @@ func _notification(what: int):
 
 ## Initialize with combatant data
 func setup(combatant_data: CombatantData):
+	# Placeholder sprite for all combatants; enemies face right (flip_h)
+	if character_sprite and PLACEHOLDER_TEXTURE:
+		character_sprite.texture = PLACEHOLDER_TEXTURE
+		character_sprite.flip_h = not combatant_data.is_player
 	if combatant and combatant.combatant_stats:
 		if combatant.combatant_stats.status_applied.is_connected(_refresh_status_effects_display):
 			combatant.combatant_stats.status_applied.disconnect(_refresh_status_effects_display)
