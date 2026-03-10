@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/umalut_confluence.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/umalut_crystallize.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/umalut_mana_detonation.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/umalut_mimic.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Umalut"
+enemy_id = "umalut"
+description = "Manifestations of raw magical energy that have coalesced into physical form."
+enemy_type = "condensed magic"
+faction = 0
+creature_tags = 32
+max_health = 20
+atk = 4
+def = 15
+spd = 5
+mag = 10
+mag_def = 10
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 25
+gold_reward = 8
+loot_table = {}

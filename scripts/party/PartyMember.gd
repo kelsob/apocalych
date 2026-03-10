@@ -2,6 +2,7 @@ extends Resource
 class_name PartyMember
 
 ## Party Member - represents a single party member with race, class, and name
+## Stats use the simplified ATK / DEF / SPD / MAG / MAG_DEF system.
 
 # Character identity
 @export var member_name: String = ""
@@ -11,7 +12,7 @@ class_name PartyMember
 # Character progression
 @export var level: int = 1
 @export var experience: int = 0
-@export var experience_to_next_level: int = 100  # XP needed for level 2
+@export var experience_to_next_level: int = 100
 
 # Character health
 @export var max_health: int = 10
@@ -20,10 +21,8 @@ class_name PartyMember
 # Character inventory: item_id -> count
 var inventory: Dictionary = {}
 
-# Equipped weapon (stat stick, tiered with enchantment slots)
+# Equipped weapon and armour
 var weapon: Weapon = null
-
-# Equipped armour (single slot, tiered like weapons)
 var armour: Armour = null
 
 ## Add items to this character's inventory. Returns true if added.
@@ -41,7 +40,7 @@ func add_item(item_id: String, count: int = 1) -> bool:
 	inventory[item_id] = current + can_add
 	return true
 
-## Remove items from this character's inventory. Returns true if removed (at least one).
+## Remove items from this character's inventory. Returns true if removed.
 func remove_item(item_id: String, count: int = 1) -> bool:
 	if count <= 0:
 		return false
@@ -54,15 +53,12 @@ func remove_item(item_id: String, count: int = 1) -> bool:
 		inventory.erase(item_id)
 	return true
 
-## Get how many of an item this character has
 func get_item_count(item_id: String) -> int:
 	return inventory.get(item_id, 0)
 
-## Check if character has at least one of the item
 func has_item(item_id: String) -> bool:
 	return inventory.get(item_id, 0) > 0
 
-## Get all item IDs this character owns (with count > 0)
 func get_inventory_ids() -> Array[String]:
 	var ids: Array[String] = []
 	for k in inventory.keys():
@@ -70,8 +66,7 @@ func get_inventory_ids() -> Array[String]:
 			ids.append(str(k))
 	return ids
 
-## Initialize a new party member with starting values based on their stats
-## Call this after setting race and class
+## Initialize a new party member after setting race and class.
 func initialize():
 	level = 1
 	experience = 0
@@ -80,59 +75,51 @@ func initialize():
 		weapon = Weapon.create_default()
 	if armour == null:
 		armour = Armour.create_default()
-	
-	# Calculate max health: base 10 + constitution modifier
-	var stats = get_final_stats()
-	var constitution = stats.get("constitution", 10)
-	var con_modifier = _get_ability_modifier(constitution)
-	max_health = 10 + con_modifier
+
+	# Base HP = 10 + DEF modifier (tougher characters have more HP)
+	var stats := get_final_stats()
+	var def_stat: int = stats.get("def", 0)
+	max_health = 10 + def_stat
 	current_health = max_health
-	
+
 	print("Initialized %s: Level %d, Max HP: %d" % [member_name, level, max_health])
 
-## Weapon type name from class for display (e.g. "Bow", "Sword"). Default "Weapon" if no class or unset.
 func get_weapon_type() -> String:
 	if class_resource and class_resource.weapon_type and not class_resource.weapon_type.is_empty():
 		return class_resource.weapon_type
 	return "Weapon"
 
-## Armour type name from class for display (e.g. "Tunic", "Plate", "Robes"). Default "Armour" if no class or unset.
 func get_armour_type() -> String:
 	if class_resource and class_resource.armour_type and not class_resource.armour_type.is_empty():
 		return class_resource.armour_type
 	return "Armour"
 
-## Get final stats combining race base stats and class modifiers
+## Get final stats combining race base stats and class modifiers.
+## Keys: "atk", "def", "spd", "mag", "mag_def"
 func get_final_stats() -> Dictionary:
-	var stats = {}
-	
+	var stats: Dictionary = {}
+
 	if race and race.base_stats:
 		stats = race.base_stats.duplicate()
-	
+
 	if class_resource and class_resource.stat_modifiers:
 		for stat in class_resource.stat_modifiers:
-			if stats.has(stat):
-				stats[stat] += class_resource.stat_modifiers[stat]
-			else:
-				stats[stat] = class_resource.stat_modifiers[stat]
-	
+			stats[stat] = stats.get(stat, 0) + class_resource.stat_modifiers[stat]
+
+	# Ensure all stat keys are present
+	for key in ["atk", "def", "spd", "mag", "mag_def"]:
+		if not stats.has(key):
+			stats[key] = 5 if key == "spd" else 0
+
 	return stats
 
-## Calculate D&D-style ability modifier from stat value
-## 10-11 = +0, 12-13 = +1, 14-15 = +2, etc.
-func _get_ability_modifier(stat_value: int) -> int:
-	return (stat_value - 10) / 2
-
-## Take damage and return true if still alive
 func take_damage(amount: int) -> bool:
 	current_health = max(0, current_health - amount)
 	return current_health > 0
 
-## Heal and cap at max health
 func heal(amount: int):
 	current_health = min(max_health, current_health + amount)
 
-## Check if character is alive
 func is_alive() -> bool:
 	return current_health > 0
 
@@ -150,8 +137,6 @@ func get_rest_abilities() -> Array[RestAbility]:
 ## Gain experience and level up if threshold reached
 func gain_experience(amount: int):
 	experience += amount
-	
-	# Check for level up
 	while experience >= experience_to_next_level:
 		level_up()
 
@@ -159,16 +144,12 @@ func gain_experience(amount: int):
 func level_up():
 	level += 1
 	experience -= experience_to_next_level
-	
-	# Increase XP requirement for next level (exponential scaling)
 	experience_to_next_level = int(100 * pow(1.5, level - 1))
-	
-	# Increase max health on level up (base 5 + con modifier per level)
-	var stats = get_final_stats()
-	var constitution = stats.get("constitution", 10)
-	var con_modifier = _get_ability_modifier(constitution)
-	var health_gain = 5 + con_modifier
+
+	# Each level grants HP based on DEF stat (tougher characters grow more)
+	var stats := get_final_stats()
+	var health_gain: int = 5 + int(stats.get("def", 0)) / 2
 	max_health += health_gain
-	current_health = max_health  # Full heal on level up
-	
+	current_health = max_health
+
 	print("%s leveled up to level %d! Max HP: %d (+%d)" % [member_name, level, max_health, health_gain])

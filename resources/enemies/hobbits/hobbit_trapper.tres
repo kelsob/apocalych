@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/trapper_snare_trap.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/trapper_caltrops.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/trapper_net_throw.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/trapper_conceal_trap.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Hobbit Trapper"
+enemy_id = "hobbit_trapper"
+description = "Trappers litter the battlefield with snares and tricks."
+enemy_type = "battlefield control"
+faction = 5
+creature_tags = 2
+max_health = 22
+atk = 5
+def = 3
+spd = 8
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 12
+gold_reward = 3
+loot_table = {}

@@ -8,21 +8,47 @@ class_name CharacterRewardsDisplay
 @onready var level_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/LevelLabel
 @onready var race_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/RaceLabel
 @onready var class_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
-@onready var experience_progress_bar: ProgressBar = $MarginContainer/HBoxContainer/VBoxContainer2/ExperienceProgressBar
+@onready var experience_progress_bar: TextureProgressBar = $MarginContainer/HBoxContainer/VBoxContainer2/ExpBar
 @onready var experience_gain_label: Label = $MarginContainer/HBoxContainer/VBoxContainer2/ExperienceToLevelLabel
+
+## Simulate adding XP without mutating member. Returns {exp, exp_to_next, level}.
+static func _simulate_exp_add(exp: int, exp_to_next: int, level: int, amount: int) -> Dictionary:
+	var e := exp
+	var etn := exp_to_next
+	var lvl := level
+	e += amount
+	while e >= etn:
+		e -= etn
+		lvl += 1
+		etn = int(100 * pow(1.5, lvl - 1))
+	return {"exp": e, "exp_to_next": etn, "level": lvl}
 
 func set_display(member: PartyMember, xp_gained: int):
 	if member == null:
 		visible = false
 		return
+	_set_display_internal(member, xp_gained, member.experience, member.experience_to_next_level, member.level)
+
+## Update display with simulated XP (for count-up animation). displayed_xp is the amount to simulate adding.
+func set_display_simulated(member: PartyMember, displayed_xp: int):
+	if member == null:
+		visible = false
+		return
+	var sim = _simulate_exp_add(member.experience, member.experience_to_next_level, member.level, displayed_xp)
+	_set_display_internal(member, displayed_xp, sim.exp, sim.exp_to_next, sim.level)
+
+func _set_display_internal(member: PartyMember, xp_gained: int, exp: int, exp_to_next: int, level: int):
+	if member == null:
+		visible = false
+		return
 	visible = true
 	character_name_label.text = member.member_name
-	level_label.text = "Level %d" % member.level
+	level_label.text = "Level %d" % level
 	race_label.text = member.race.race_name if member.race else ""
 	class_label.text = member.class_resource.name if member.class_resource else ""
 	experience_progress_bar.min_value = 0
-	experience_progress_bar.max_value = member.experience_to_next_level
-	experience_progress_bar.value = member.experience
-	experience_gain_label.text = "%d / %d (+%d XP)" % [member.experience, member.experience_to_next_level, xp_gained]
+	experience_progress_bar.max_value = exp_to_next
+	experience_progress_bar.value = exp
+	experience_gain_label.text = "%d / %d (+%d XP)" % [exp, exp_to_next, xp_gained]
 	# Portrait: set when PartyMember has a portrait texture; leave empty for now
 	character_texture_rect.texture = null

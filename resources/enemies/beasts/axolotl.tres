@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/axolotl_taunt.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/axolotl_sleep.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/axolotl_guard_brood.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Axolotl"
+enemy_id = "axolotl"
+description = "Massive armored amphibians that fiercely defend their young."
+enemy_type = "amphibious guardian"
+faction = 0
+creature_tags = 1
+max_health = 50
+atk = 9
+def = 9
+spd = 4
+mag = 2
+mag_def = 4
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Defensive"
+xp_reward = 30
+gold_reward = 6
+loot_table = {}

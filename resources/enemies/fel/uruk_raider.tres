@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_raider_strafing_javelin.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_raider_impaling_charge.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_raider_sound_the_horn.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Uruk Raider"
+enemy_id = "uruk_raider"
+description = "Uruks mounted on wargs that specialize in fast raids and devastating charges."
+enemy_type = "mounted marauder"
+faction = 1
+creature_tags = 2
+max_health = 45
+atk = 12
+def = 4
+spd = 9
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 30
+gold_reward = 7
+loot_table = {}

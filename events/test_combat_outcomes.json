@@ -1,0 +1,47 @@
+[
+  {
+    "id": "test_warg_ambush_outcomes",
+    "title": "Warg Ambush",
+    "biomes": ["forest"],
+    "weight": 999,
+    "one_shot": false,
+    "text": "You've barely taken three steps into the clearing when they come out of the treeline — four wargs, low and fast, no warning howl this time. Someone trained them, or something did.",
+    "choices": [
+      {
+        "id": "stand_and_fight",
+        "text": "Hold your ground and fight",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "fight_from_cover",
+        "text": "Dive for the treeline and fight from cover",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -8 },
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      }
+    ],
+    "combat_outcomes": {
+      "victory": {
+        "title": "Aftermath",
+        "text": "The last warg drops and goes still. You take a moment to catch your breath, then make a quick pass over the bodies. One of them has a crude collar with a small pouch knotted to it — inside, a handful of coins and a tooth the size of your thumb. Someone was keeping these things. You pocket both.",
+        "effects": [
+          { "type": "give_gold", "amount": 25 },
+          { "type": "add_tag", "tag": "found_warg_collar" }
+        ]
+      },
+      "party_fled": {
+        "title": "Aftermath",
+        "text": "You make it out of the clearing with your lives, which is more than you had a right to expect. The wargs don't follow past the treeline — whether out of territory or training, you can't say. You're down some pride and some ground. The collar on the lead warg catches your eye as you retreat. Someone is directing these things.",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "found_warg_collar" }
+        ]
+      }
+    }
+  }
+]

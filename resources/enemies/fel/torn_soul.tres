@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/torn_soul_longing_grasp.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/torn_soul_tragic_truth.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/torn_soul_agonized_cry.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Torn Soul"
+enemy_id = "torn_soul"
+description = "A spirit ripped from its body before its time. In agony and rage."
+enemy_type = "anguished spirit"
+faction = 1
+creature_tags = 12
+max_health = 30
+atk = 5
+def = 0
+spd = 7
+mag = 7
+mag_def = 6
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 20
+gold_reward = 3
+loot_table = {}

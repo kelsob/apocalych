@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/speyeder_hatchling_morsel.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/speyeder_hatchling_spring_from_shadows.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Speyeder Hatchling"
+enemy_id = "speyeder_hatchling"
+description = "Newly hatched speyeders. Individually weak but dangerous in swarms."
+enemy_type = "tiny swarmer"
+faction = 0
+creature_tags = 1
+max_health = 12
+atk = 3
+def = 1
+spd = 8
+mag = 0
+mag_def = 1
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3")])
+ai_behavior = "Aggressive"
+xp_reward = 5
+gold_reward = 1
+loot_table = {}

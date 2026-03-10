@@ -1,0 +1,253 @@
+[
+  {
+    "id": "forest_burning_farmstead",
+    "title": "Burning Farmstead",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "Smoke first. Then the smell of burning thatch. You round a bend and find a farmstead fully ablaze. A figure runs toward you from the yard—screaming—and behind them, small green shapes loot what the fire hasn't taken.",
+    "choices": [
+      {
+        "id": "fight_goblins",
+        "text": "Drive off the goblins",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" },
+          { "type": "change_reputation", "faction": "locals", "amount": 15 },
+          { "type": "add_tag", "tag": "defended_farmer" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "grab_farmer_flee",
+        "text": "Grab the farmer and get clear before the goblins turn on you",
+        "effects": [
+          { "type": "change_reputation", "faction": "locals", "amount": 5 },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "loot_barn",
+        "text": "Help yourself to the unguarded barn while chaos reigns",
+        "effects": [
+          { "type": "give_gold", "amount": 30 },
+          { "type": "give_item", "item_id": "ration", "count": 3 },
+          { "type": "change_reputation", "faction": "locals", "amount": -20 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "move_on",
+        "text": "Walk past. This isn't your fight.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hanging_cage",
+    "title": "The Hanging Cage",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A man-sized iron cage hangs from an oak branch by a rusted chain. Inside it—a hobbit, unconscious but breathing. Carved into the bark beneath: \"THIEF. DO NOT FREE.\" Someone put some effort into making sure they stayed there.",
+    "choices": [
+      {
+        "id": "cut_cage_down",
+        "text": "Cut the cage down and free them",
+        "effects": [
+          { "type": "add_tag", "tag": "freed_prisoner" },
+          { "type": "give_gold", "amount": 10 },
+          { "type": "change_reputation", "faction": "hobbits", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "read_sign_move_on",
+        "text": "Read the sign. Walk on.",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "take_whatever_they_have",
+        "text": "Reach through the bars and take whatever they have on them",
+        "effects": [
+          { "type": "give_gold", "amount": 5 },
+          { "type": "give_item", "item_id": "pipeweed", "count": 1 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wake_and_ask",
+        "text": "Wake them up and ask what they did",
+        "effects": [
+          { "type": "add_tag", "tag": "knows_about_thief" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_goblin_prisoner_circle",
+    "title": "Goblin Prisoner Circle",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Three goblins have a human tied to a post and are arguing loudly about what to do with them. They're gesturing, snapping at each other, clearly undecided. The human has seen you. Their eyes go very wide. The goblins haven't looked up.",
+    "choices": [
+      {
+        "id": "ambush_goblins",
+        "text": "Ambush them before they notice you",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" },
+          { "type": "add_tag", "tag": "rescued_prisoner" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "signal_prisoner_silence",
+        "text": "Signal the prisoner to stay quiet and sneak them out",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "rescued_prisoner" },
+          { "type": "change_reputation", "faction": "locals", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "try_negotiate",
+        "text": "Walk in and try to buy the prisoner's release",
+        "effects": [
+          { "type": "pay_gold", "amount": 25 },
+          { "type": "add_tag", "tag": "rescued_prisoner" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "sneak_away",
+        "text": "Sneak away before any of them notice you",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_body_in_road",
+    "title": "Body in the Road",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A man face-down in the mud. Armed, but stripped of valuables. Fresh wounds—within the last hour. No sign of whoever did it.",
+    "choices": [
+      {
+        "id": "search_body",
+        "text": "Search the body",
+        "effects": [
+          { "type": "give_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "looted_dead" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_scene",
+        "text": "Look for tracks and signs of what happened",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "investigated_body" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "mark_and_move",
+        "text": "Mark the location to report to the next town",
+        "effects": [
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "keep_walking",
+        "text": "Keep walking. You didn't see this.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wanted_man",
+    "title": "The Wanted Man",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A well-dressed man runs out of the trees, panting, and grabs your arm. \"Please. You've got to hide me. They're right behind me.\" Three militia soldiers appear around the bend thirty seconds later, hands on their weapons. Everyone waits for you to decide.",
+    "choices": [
+      {
+        "id": "hide_him",
+        "text": "Step in front of him. \"Haven't seen anyone.\"",
+        "effects": [
+          { "type": "change_reputation", "faction": "militia", "amount": -15 },
+          { "type": "add_tag", "tag": "sheltered_fugitive" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "hand_him_over",
+        "text": "Step aside. \"He came from the east.\"",
+        "effects": [
+          { "type": "give_gold", "amount": 20 },
+          { "type": "change_reputation", "faction": "militia", "amount": 10 },
+          { "type": "add_tag", "tag": "turned_in_fugitive" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "refuse_to_engage",
+        "text": "Hold up your hands. \"This has nothing to do with us.\" Walk away.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_elven_warning",
+    "title": "Elven Warning",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "An arrow strikes the ground two feet in front of your party. Then a voice from above: clear, unhurried, certain. \"You are at the edge of our land. Turn back.\" A figure stands on a branch overhead. They do not appear to be alone.",
+    "choices": [
+      {
+        "id": "turn_back",
+        "text": "Turn back without argument",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "negotiate_passage",
+        "text": "Call up to them—ask for passage, not conflict",
+        "effects": [
+          { "type": "add_tag", "tag": "negotiating_with_elves" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "press_through_anyway",
+        "text": "Keep walking",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "elves/woodland_patrol" },
+          { "type": "change_reputation", "faction": "elves", "amount": -20 }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

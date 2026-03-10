@@ -1,0 +1,461 @@
+[
+  {
+    "id": "forest_herb_witch",
+    "title": "The Herb Witch",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "An old woman is gathering plants at the roadside with the calm efficiency of someone who requires neither your assistance, your company, nor your conversation. She glances at you once—entirely unsurprised. Armed adventurers, apparently, are not worth getting up for.",
+    "choices": [
+      {
+        "id": "trade",
+        "text": "Ask to trade",
+        "effects": [
+          { "type": "open_vendor", "item_ids": ["herb_common", "herb_rare", "bandage", "antidote"] }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_about_forest",
+        "text": "Ask her about the forest",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "herb_witch_lore" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "offer_to_help",
+        "text": "Offer to help gather while you talk",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_item", "item_id": "herb_rare", "count": 1 },
+          { "type": "add_tag", "tag": "herb_witch_favor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "be_rude",
+        "text": "Make a dismissive remark about her being out here alone",
+        "effects": [
+          { "type": "add_tag", "tag": "witch_cursed" },
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_injured_traveler",
+    "title": "The Injured Traveler",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A young man at the side of the road—ankle swollen to twice its size, left here when the pace got too slow. He's been sitting for hours. He knows it. His expression says he has made his peace with it.",
+    "choices": [
+      {
+        "id": "help_him",
+        "text": "Set the ankle, rig a splint, help him along",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "give_gold", "amount": 15 },
+          { "type": "reveal_secrets" },
+          { "type": "change_reputation", "faction": "locals", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "give_supplies",
+        "text": "Give him what healing supplies you can spare and point him toward the road",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_him",
+        "text": "Leave him. He'll manage.",
+        "effects": [
+          { "type": "add_tag", "tag": "left_injured_traveler" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "carry_him",
+        "text": "Carry him to the nearest settlement yourself",
+        "effects": [
+          { "type": "advance_time", "amount": 3 },
+          { "type": "change_reputation", "faction": "locals", "amount": 20 },
+          { "type": "give_gold", "amount": 25 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_poacher",
+    "title": "The Poacher",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A man steps out of the trees with a brace of illegal kills—the forest protects this game, and he's broken every rule covering it. He sees you. Freezes. Goes very carefully neutral-faced.",
+    "choices": [
+      {
+        "id": "let_him_go",
+        "text": "Let him go. Not your concern.",
+        "effects": [
+          { "type": "add_tag", "tag": "poacher_owes_favor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_a_cut",
+        "text": "Take a cut in exchange for forgetting you saw this",
+        "effects": [
+          { "type": "give_item", "item_id": "meat", "count": 2 },
+          { "type": "add_tag", "tag": "complicit_with_poacher" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "report_him",
+        "text": "Report him to the militia when you reach the next town",
+        "effects": [
+          { "type": "add_tag", "tag": "reported_poacher" },
+          { "type": "change_reputation", "faction": "militia", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "challenge_him",
+        "text": "Tell him to hand over the kills and move on",
+        "effects": [
+          { "type": "add_tag", "tag": "confronted_poacher" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_lost_child_fey",
+    "title": "The Lost Child",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A child picking wildflowers deep in the dangerous part of the forest, well past where any sensible adult would have turned back. They're completely calm. Unnervingly calm. They look at you with no fear at all.",
+    "choices": [
+      {
+        "id": "escort_back",
+        "text": "Escort them back to their settlement",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "give_gold", "amount": 20 },
+          { "type": "change_reputation", "faction": "locals", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_where_from",
+        "text": "Ask where they're from",
+        "effects": [
+          { "type": "add_tag", "tag": "suspicious_child_met" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "follow_them",
+        "text": "Follow them—they seem to know exactly where they're going",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "followed_strange_child" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_feeling",
+        "text": "Something is wrong here. Investigate before doing anything.",
+        "effects": [
+          { "type": "add_tag", "tag": "fey_trickery_suspected" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wandering_friar",
+    "title": "The Wandering Friar",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A travelling holy man between villages. He's cheerful in the way of someone who has made peace with the world being terrible. \"Good road today,\" he says. \"Yesterday was not. Tomorrow I cannot speak to.\"",
+    "choices": [
+      {
+        "id": "travel_together",
+        "text": "Walk with him a while and share information",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_friar" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_blessing",
+        "text": "Ask him to bless the party before you part ways",
+        "effects": [
+          { "type": "add_tag", "tag": "friar_blessed" },
+          { "type": "change_stat", "stat": "hp", "amount": 8 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "escort_him",
+        "text": "He asks for company on a dangerous stretch—escort him through",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "give_gold", "amount": 10 },
+          { "type": "add_tag", "tag": "escorted_friar" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_about_undead",
+        "text": "Ask about unusual sightings—particularly anything undead",
+        "effects": [
+          { "type": "add_tag", "tag": "corruption_warning" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_rival_party",
+    "title": "Rivals",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Another adventuring party coming down the same road, heading the same direction. They're bigger and considerably more confident about their size than is probably warranted. They size you up.",
+    "choices": [
+      {
+        "id": "friendly_rivalry",
+        "text": "Greet them warmly. Establish friendly competition.",
+        "effects": [
+          { "type": "add_tag", "tag": "rival_party_friendly" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "race_them",
+        "text": "Mention casually you're heading the same way. Make it a race.",
+        "effects": [
+          { "type": "add_tag", "tag": "racing_rivals" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_them_ahead",
+        "text": "Let them go ahead—they'll soften up whatever's waiting",
+        "effects": [
+          { "type": "add_tag", "tag": "rivals_ahead" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "challenge_them",
+        "text": "Challenge them outright",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/mercenary_company" },
+          { "type": "add_tag", "tag": "rival_party_hostile" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_dwarven_merchant",
+    "title": "The Dwarven Merchant",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A lone dwarven trader and his extraordinarily loaded mule, well off any route dwarves normally travel. His prices are fair. His mood is not. He's had a difficult week and it is visible on his face.",
+    "choices": [
+      {
+        "id": "trade",
+        "text": "Trade with him",
+        "effects": [
+          { "type": "open_vendor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_why_here",
+        "text": "Ask what brings a dwarven merchant this deep into the forest",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "dwarven_merchant_story" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "travel_together",
+        "text": "Offer to travel together for mutual safety",
+        "effects": [
+          { "type": "add_tag", "tag": "traveling_with_dwarf_merchant" },
+          { "type": "open_vendor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "move_on",
+        "text": "Nod and move on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hobbit_farmsteader",
+    "title": "The Hobbit Farmsteader",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A hobbit tending a small plot just off the trail, producing an improbable quantity of food from a very small space. He waves you over immediately. He has been alone out here for some time and would very much like company.",
+    "choices": [
+      {
+        "id": "accept_hospitality",
+        "text": "Accept his hospitality—sit down, eat something real",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_stat", "stat": "hp", "amount": 20 },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "trade_supplies",
+        "text": "Buy supplies off him",
+        "effects": [
+          { "type": "pay_gold", "amount": 10 },
+          { "type": "give_item", "item_id": "ration", "count": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_about_trouble",
+        "text": "Ask if he's seen anything unusual lately",
+        "effects": [
+          { "type": "add_tag", "tag": "goblin_scouts_reported" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "move_on",
+        "text": "Politely decline and keep moving",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_lone_bandit",
+    "title": "The Bandit on His Own",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A lone bandit, clearly separated from his crew—exhausted, embarrassed, and in no position to threaten anyone. He's not attacking. He might actually be about to ask for help, very awkwardly.",
+    "choices": [
+      {
+        "id": "hear_him_out",
+        "text": "Hear him out. Help if it makes sense.",
+        "effects": [
+          { "type": "add_tag", "tag": "bandit_informant" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "capture_him",
+        "text": "Take him prisoner—he's worth something as intelligence",
+        "effects": [
+          { "type": "add_tag", "tag": "bandit_captured" },
+          { "type": "reveal_secrets" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "kill_him",
+        "text": "Simplify things",
+        "effects": [
+          { "type": "give_gold", "amount": 8 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_go",
+        "text": "Let him go. He's not worth the energy.",
+        "effects": [
+          { "type": "add_tag", "tag": "bandit_let_go" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_elven_scout_hostile",
+    "title": "The Elven Scout",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "An elf drops from a branch overhead and lands silently ten feet in front of you. No weapon drawn. No need to. \"You have entered a protected zone. You will not pass further.\"",
+    "choices": [
+      {
+        "id": "diplomatic",
+        "text": "De-escalate. Explain who you are and why you're here.",
+        "effects": [
+          { "type": "add_tag", "tag": "elven_parley_attempted" },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "inform_them",
+        "text": "Inform them that you will be passing",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "elves/woodland_patrol" },
+          { "type": "change_reputation", "faction": "elves", "amount": -15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "turn_back",
+        "text": "Turn back without argument",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "attack",
+        "text": "Attack before they can call for backup",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "elves/elven_ambush" },
+          { "type": "change_reputation", "faction": "elves", "amount": -25 }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

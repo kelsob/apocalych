@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unicorn_waxing_strike.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unicorn_moon_beam.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unicorn_soothe.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unicorn_dazzle.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Unicorn"
+enemy_id = "unicorn"
+description = "Mystical creatures that appear only during the full moon."
+enemy_type = "lunar beast"
+faction = 0
+creature_tags = 1
+max_health = 60
+atk = 8
+def = 0
+spd = 10
+mag = 12
+mag_def = 10
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 50
+gold_reward = 10
+loot_table = {}

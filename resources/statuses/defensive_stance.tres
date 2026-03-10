@@ -11,7 +11,7 @@ status_type = 0
 base_duration = 2
 stack_behavior = 0
 stat_modifiers = {
-"constitution": 5
+"def": 5
 }
 tick_damage = 0.0
 tick_heal = 0.0

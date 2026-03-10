@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_bladesinger.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_sharpshooter.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_windrunner.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "elven_war_party"
+encounter_name = "Elven War Party"
+description = "The Bladesinger closes while Sharpshooters fire. The Windrunner speeds everyone up. Terrifying synergy."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 20
+bonus_gold = 10
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 2
+time_limit = 0
+special_victory_condition = ""

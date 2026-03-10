@@ -14,6 +14,10 @@ enum GameState {
 	IN_GAME
 }
 
+## Holds the post-combat outcome block for the current fight. Set in _on_combat_ended,
+## consumed in on_combat_scene_fully_ended, then cleared.
+var _pending_combat_outcome: Dictionary = {}
+
 var current_state: GameState = GameState.MAIN_MENU
 var game_started: bool = false
 var current_world_name: String = ""
@@ -172,9 +176,29 @@ func _show_introductory_event():
 	var current_node = map_generator.current_party_node
 	ui_controller.event_window.display_event(presented_event, party_dict, current_node)
 
-## Apply rewards to party when combat ends (victory: XP + gold; fled: XP only for killed enemies)
-## Victory: current node becomes safe to rest at; flee/defeat: node is not safe to rest at
+## Called when combat ends. Sets rest safety. Rewards are applied later when user clicks Continue on rewards panel.
 func _on_combat_ended(victory: bool, rewards: Dictionary):
+	var fled: bool = rewards.get("fled", false)
+	# Set rest safety at current node: safe only on victory; flee/defeat = not safe
+	var node = map_generator.current_party_node
+	if node != null:
+		node.can_rest_here = victory
+	# Capture the matching post-combat outcome from the originating event (if any).
+	var outcomes: Dictionary = EventManager.pending_combat_outcomes
+	EventManager.pending_combat_outcomes = {}
+	var outcome_key: String
+	if victory:
+		outcome_key = "victory"
+	elif fled:
+		outcome_key = "party_fled"
+	else:
+		outcome_key = "defeat"
+	var outcome = outcomes.get(outcome_key, null)
+	_pending_combat_outcome = outcome if outcome is Dictionary else {}
+	# Rewards (XP, gold) are applied by apply_combat_rewards when user clicks Continue
+
+## Apply rewards to party. Called from CombatScene when user clicks Continue on rewards panel.
+func apply_combat_rewards(victory: bool, rewards: Dictionary):
 	var xp: int = rewards.get("xp", 0)
 	var gold: int = rewards.get("gold", 0)
 	var fled: bool = rewards.get("fled", false)
@@ -185,13 +209,75 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 	elif fled:
 		for member in current_party_members:
 			member.gain_experience(xp)
-		# No gold on flee
-
-	# Set rest safety at current node: safe only on victory; flee/defeat = not safe
-	var node = map_generator.current_party_node
-	if node != null:
-		node.can_rest_here = victory
 	_refresh_map_resource_labels()
+
+## Called by CombatScene after rewards panel is dismissed (or immediately on defeat).
+## Restores the map and fires any post-combat outcome event, or shows the game-over screen.
+func on_combat_scene_fully_ended(victory: bool, rewards: Dictionary):
+	var fled: bool = rewards.get("fled", false)
+	var defeat: bool = not victory and not fled
+	if defeat:
+		_show_game_over()
+		return
+	map_generator.visible = true
+	ui_controller.map_ui.visible = true
+	refresh_rest_button_visibility()
+	refresh_town_button_visibility()
+	if not _pending_combat_outcome.is_empty():
+		_show_combat_outcome(_pending_combat_outcome)
+	_pending_combat_outcome = {}
+
+## Display a post-combat outcome as a one-choice "Aftermath" event window.
+func _show_combat_outcome(outcome: Dictionary):
+	if not outcome.has("text"):
+		_pending_combat_outcome = {}
+		return
+	var outcome_event: Dictionary = {
+		"id": "_combat_outcome",
+		"title": outcome.get("title", "Aftermath"),
+		"text": outcome.text,
+		"choices": [
+			{
+				"id": "continue",
+				"text": "Continue",
+				"effects": outcome.get("effects", []),
+				"next_event": null
+			}
+		]
+	}
+	var party_dict = _build_party_dict()
+	var current_node = map_generator.current_party_node
+	ui_controller.event_window.display_event(outcome_event, party_dict, current_node)
+
+## Show the game-over screen as an event window with New Game / Main Menu / Quit.
+func _show_game_over():
+	var game_over_event: Dictionary = {
+		"id": "_game_over",
+		"title": "Party Wiped",
+		"text": "The last of your companions falls. The forest goes quiet save for the sound of crows gathering overhead. Whatever you were hoping to find out there dies with you here.",
+		"choices": [
+			{
+				"id": "new_game",
+				"text": "New Game",
+				"effects": [{"type": "script_hook", "hook_name": "restart_game"}],
+				"next_event": null
+			},
+			{
+				"id": "main_menu",
+				"text": "Main Menu",
+				"effects": [{"type": "script_hook", "hook_name": "go_to_main_menu"}],
+				"next_event": null
+			},
+			{
+				"id": "quit",
+				"text": "Quit",
+				"effects": [{"type": "script_hook", "hook_name": "quit_game"}],
+				"next_event": null
+			}
+		]
+	}
+	var party_dict = _build_party_dict()
+	ui_controller.event_window.display_event(game_over_event, party_dict, null)
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found

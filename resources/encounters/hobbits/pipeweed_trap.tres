@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/hobbits/hobbit_cook.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/hobbits/hobbit_burglar.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "pipeweed_trap"
+encounter_name = "Suspicious Smell"
+description = "A Cook feeds Burglars from the shadows. The aroma is suspicious. The ambush less so."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("3")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 8
+bonus_gold = 5
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

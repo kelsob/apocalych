@@ -1,0 +1,197 @@
+[
+  {
+    "id": "forest_goblin_settlement",
+    "title": "The Goblin Settlement",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Not a warband. An actual small goblin settlement—barely hidden, visible from the trail if you know what to look for. Goblin children dart between the structures. Older goblins sit in doorways watching you. Nobody has attacked yet.",
+    "choices": [
+      {
+        "id": "leave_them_alone",
+        "text": "Pass by without stopping. They watch. You keep moving.",
+        "effects": [
+          { "type": "add_tag", "tag": "saw_goblin_settlement" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "trade_with_them",
+        "text": "Try to trade—they have things, they want things",
+        "effects": [
+          { "type": "open_vendor", "item_ids": ["trinket", "herb_common", "goblin_junk"] },
+          { "type": "add_tag", "tag": "traded_with_goblins" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "demand_tribute",
+        "text": "Demand tribute—payment for safe passage through your road",
+        "effects": [
+          { "type": "give_gold", "amount": 12 },
+          { "type": "add_tag", "tag": "extorted_goblins" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "attack",
+        "text": "Attack",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" },
+          { "type": "add_tag", "tag": "attacked_goblin_settlement" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "try_to_communicate",
+        "text": "Attempt real communication—see what they actually want",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "communicated_with_goblins" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_dwarven_survey",
+    "title": "The Dwarven Survey Team",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Three dwarves surveying terrain with instruments—measuring, marking, mapping. They're professionally dressed and completely focused. One of them looks up when you approach. \"You're not in our way,\" he says, which is technically not a greeting but seems to function as one.",
+    "choices": [
+      {
+        "id": "ask_what_theyre_looking_for",
+        "text": "Ask what they're looking for",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "dwarven_survey_info" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "offer_to_help",
+        "text": "Offer to help—they're doing something useful",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_gold", "amount": 15 },
+          { "type": "change_reputation", "faction": "dwarves", "amount": 8 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "info_exchange",
+        "text": "Trade information—you've seen things they'd want to know",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "change_reputation", "faction": "dwarves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "get_warning",
+        "text": "Ask if they've encountered anything dangerous ahead",
+        "effects": [
+          { "type": "add_tag", "tag": "dwarves_warned_us" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_elven_boundary",
+    "title": "The Elven Boundary Marker",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A carved stone with elven runes marks the edge of their claimed forest zone—unmistakable to anyone who knows what they're looking at. And it's been moved. You can see where it stood before, from the root damage and the old discoloration of the soil.",
+    "choices": [
+      {
+        "id": "respect_the_boundary",
+        "text": "Respect the boundary and take a longer route",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "cross_anyway",
+        "text": "Cross anyway—you need to get through",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "elves/elven_ambush" },
+          { "type": "change_reputation", "faction": "elves", "amount": -10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "restore_it",
+        "text": "Move the stone back to where it was—the elves will notice",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "change_reputation", "faction": "elves", "amount": 15 },
+          { "type": "add_tag", "tag": "restored_elven_boundary" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_who_moved_it",
+        "text": "Investigate who moved it and why",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_boundary_dispute" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hobbit_smugglers",
+    "title": "The Hobbit Smugglers",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A group of hobbits moving something on a cart covered with tarps, very fast, very quiet, very suspicious. They freeze when they see you. One of them gives you a wide, completely unconvincing smile. \"Evening. Nothing to see here.\"",
+    "choices": [
+      {
+        "id": "ignore_it",
+        "text": "Let them carry on. Their business is their business.",
+        "effects": [
+          { "type": "add_tag", "tag": "saw_hobbit_smugglers" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_whats_under_there",
+        "text": "Ask what's under the tarp",
+        "effects": [
+          { "type": "add_tag", "tag": "asked_about_smugglers_cargo" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "insist_on_seeing",
+        "text": "Insist on seeing what they're carrying",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "hobbits/trickster_mob" },
+          { "type": "change_reputation", "faction": "hobbits", "amount": -10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "help_them_carry",
+        "text": "Offer to help carry it—whatever it is, they look like they need it",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_gold", "amount": 15 },
+          { "type": "add_tag", "tag": "hobbit_smuggler_accomplice" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

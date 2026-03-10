@@ -1,0 +1,292 @@
+[
+  {
+    "id": "forest_forager_luck",
+    "title": "Forager's Fortune",
+    "biomes": ["forest"],
+    "weight": 18,
+    "one_shot": false,
+    "text": "A patch of wild herbs clings to the roots of an ancient oak, half-hidden under fallen leaves. Someone gathered here before—there's a worn wicker basket nearby, left behind or forgotten.",
+    "choices": [
+      {
+        "id": "pick_herbs",
+        "text": "Pick what you can carry",
+        "effects": [
+          { "type": "give_item", "item_id": "herb_common", "count": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_basket_too",
+        "text": "Harvest everything and take the basket",
+        "effects": [
+          { "type": "give_item", "item_id": "herb_common", "count": 5 },
+          { "type": "add_tag", "tag": "opportunist" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_it",
+        "text": "Leave it. Someone may come back for this.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_shady_hollow",
+    "title": "A Shady Hollow",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "Tucked between two ancient oaks, a natural hollow forms a near-perfect shelter—soft ground, a windbreak of dense brush, clear sightlines in every direction. Your feet ache. The light is still good.",
+    "choices": [
+      {
+        "id": "make_camp",
+        "text": "Make camp here while conditions favor it",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "press_on",
+        "text": "Note the location and press on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_clear_spring",
+    "title": "Bubbling Spring",
+    "biomes": ["forest"],
+    "weight": 16,
+    "one_shot": false,
+    "text": "A small spring bubbles up between mossy stones at the edge of the path. The water runs clear and cold. You could smell it before you could see it.",
+    "choices": [
+      {
+        "id": "drink_and_rest",
+        "text": "Drink deeply and rest your legs a while",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 10 },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "fill_skins",
+        "text": "Fill waterskins and keep moving",
+        "effects": [
+          { "type": "add_tag", "tag": "water_supply_full" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "pass_by",
+        "text": "Walk past. No time.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_abandoned_camp",
+    "title": "Abandoned Campsite",
+    "biomes": ["forest"],
+    "weight": 13,
+    "one_shot": false,
+    "text": "A camp abandoned in haste—embers still faintly warm, a bedroll left behind, a half-eaten meal going cold. Whoever was here, they didn't take everything. Didn't have time to.",
+    "choices": [
+      {
+        "id": "search_camp",
+        "text": "Search the camp thoroughly",
+        "effects": [
+          { "type": "give_gold", "amount": 8 },
+          { "type": "give_item", "item_id": "ration", "count": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "look_for_clues",
+        "text": "Look for signs of what happened here",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "camp_mystery_found" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_camp",
+        "text": "Don't touch anything. Someone may be coming back.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wildflower_meadow",
+    "title": "Wildflower Meadow",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A break in the canopy reveals a meadow bursting with color. Bees move lazily through tall grass. It is, for a moment, absurdly peaceful. The kind of place people paint pictures of.",
+    "choices": [
+      {
+        "id": "rest_briefly",
+        "text": "Stop and breathe. Just for a moment.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "gather_flowers",
+        "text": "Gather a handful—someone in the next town might want them",
+        "effects": [
+          { "type": "add_tag", "tag": "carrying_flowers" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "keep_moving",
+        "text": "Beautiful. Keep moving.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_old_milestone",
+    "title": "Old Milestone Stone",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": true,
+    "text": "A weathered milestone stone sits at a crossroads, tilted with age. The original engravings are mostly faded, but you can make out a direction: \"Three Days East—Redfield.\" Below that, in fresher, rougher scratchings: \"Don't.\"",
+    "choices": [
+      {
+        "id": "study_it",
+        "text": "Study the stone carefully",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_redfield_warning" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "note_and_go",
+        "text": "Make a mental note and continue",
+        "effects": [
+          { "type": "add_tag", "tag": "knows_redfield_warning" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_stone",
+        "text": "Keep walking",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_light_rain",
+    "title": "Soft Rain",
+    "biomes": ["forest"],
+    "weight": 14,
+    "one_shot": false,
+    "text": "A light rain begins to fall, pattering against the canopy overhead and dripping down in fat drops. The path ahead softens to mud. The forest smells of earth and wet bark.",
+    "choices": [
+      {
+        "id": "make_camp_rain",
+        "text": "Find shelter and wait it out",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "push_through_rain",
+        "text": "Push through—a little rain never killed anyone",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "enjoy_rain",
+        "text": "Walk slowly. Enjoy it.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_birch_twins",
+    "title": "The Birch Twins",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": true,
+    "text": "Two ancient birch trees have grown together over decades, their trunks intertwined into a single massive double-spired form. Their roots cradle a space of soft, dry earth. Locals probably had a name for this place once.",
+    "choices": [
+      {
+        "id": "shelter_roots",
+        "text": "Rest in their roots tonight",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "add_tag", "tag": "found_birch_twins" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "carve_name",
+        "text": "Add your name to the bark",
+        "effects": [
+          { "type": "add_tag", "tag": "marked_birch_twins" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "admire_and_go",
+        "text": "Admire it for a moment and move on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_mushroom_ring",
+    "title": "Mushroom Ring",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A perfect ring of large, spotted mushrooms grows around the base of a dead elm. They look edible. They also look exactly like the ones your herbalist once warned you about. Hard to say which.",
+    "choices": [
+      {
+        "id": "harvest_carefully",
+        "text": "Harvest carefully—you're fairly confident they're safe",
+        "effects": [
+          { "type": "give_item", "item_id": "mushroom", "count": 4 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "test_one",
+        "text": "Try one. If you're still standing in ten minutes, harvest the rest.",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 },
+          { "type": "give_item", "item_id": "mushroom", "count": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_ring",
+        "text": "Not worth the risk",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

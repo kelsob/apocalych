@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_bulwark.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_axeguard.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_runesmith.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_stonepriest.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "dwarven_grudge_force"
+encounter_name = "Dwarven Grudge Force"
+description = "A Bulwark anchors the line, Axeguards flank, a Runesmith empowers them all, a Stonepriest keeps them standing."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 40
+bonus_gold = 30
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

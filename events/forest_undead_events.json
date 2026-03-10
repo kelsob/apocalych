@@ -1,0 +1,234 @@
+[
+  {
+    "id": "forest_first_signs",
+    "title": "The First Signs",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Animals dead on the path. No marks on them. No predator sign, no struggle. All facing the same direction. All pointing toward the deeper forest. The ones farther along are older. Something has been drawing them here, and they've been coming for weeks.",
+    "choices": [
+      {
+        "id": "investigate",
+        "text": "Investigate—determine what's doing this",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "witnessed_corruption" },
+          { "type": "start_combat", "encounter_id": "fel/risen_dead" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "mark_and_report",
+        "text": "Mark the direction and report it to the nearest settlement",
+        "effects": [
+          { "type": "add_tag", "tag": "corruption_warning" },
+          { "type": "add_tag", "tag": "corruption_reported" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "turn_back",
+        "text": "Turn back. Find another path.",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hidden_graveyard",
+    "title": "The Graveyard That Shouldn't Be Here",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A small graveyard, overgrown, far from any settlement—no church, no road, no reason for it to be here. Some of the graves are old. Some are recent. Several have been disturbed from the inside.",
+    "choices": [
+      {
+        "id": "search_it",
+        "text": "Search the graveyard",
+        "effects": [
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "start_combat", "encounter_id": "fel/risen_dead" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "salt_the_opened_graves",
+        "text": "Salt the disturbed graves—old ritual, delays what's coming",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "salted_graves" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "pray_for_the_dead",
+        "text": "Pray briefly for whoever is buried here",
+        "effects": [
+          { "type": "add_tag", "tag": "paid_respects" },
+          { "type": "change_stat", "stat": "hp", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "dig_one_up",
+        "text": "Dig one up—see what you're actually dealing with",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/risen_dead" },
+          { "type": "add_tag", "tag": "dark_deeds" },
+          { "type": "add_tag", "tag": "witnessed_corruption" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_marrowmancer_trail",
+    "title": "The Marrowmancer's Trail",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "Signs of necromantic ritual—burned earth in specific patterns, symbols scratched into the soil, animal parts arranged with clear deliberate intent. Someone was working here. The arrangement is recent, and it points in a direction.",
+    "choices": [
+      {
+        "id": "disrupt_the_site",
+        "text": "Disrupt the ritual site—scatter it, break what can be broken",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "disrupted_ritual" },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "study_it",
+        "text": "Study it—learn what you're dealing with",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_marrowmancer_signs" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "follow_the_trail",
+        "text": "Follow the trail to its source",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "start_combat", "encounter_id": "fel/marrowmancers_legion" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "report_to_friar",
+        "text": "Report it to the Wandering Friar if you've met him",
+        "condition": {
+          "requires_any": ["knows_friar", "escorted_friar"]
+        },
+        "effects": [
+          { "type": "add_tag", "tag": "friar_alerted" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_bone_warg_den",
+    "title": "The Bone Warg's Den",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A den where something large has been resting. Old bones everywhere—animal bones, mostly, stripped completely clean. The smell is wrong. The warg isn't here, but the signs say it was here recently. The bones around the edges are still pale.",
+    "choices": [
+      {
+        "id": "set_a_trap",
+        "text": "Set a trap and wait for its return",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "trap_set_at_bone_den" },
+          { "type": "start_combat", "encounter_id": "fel/bone_cavalry" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "follow_its_trail",
+        "text": "Follow its trail—find where it's going",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "start_combat", "encounter_id": "fel/bone_cavalry" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_a_bone",
+        "text": "Take a bone from the pile",
+        "effects": [
+          { "type": "give_item", "item_id": "cursed_bone", "count": 1 },
+          { "type": "add_tag", "tag": "took_bone_warg_bone" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "burn_the_den",
+        "text": "Burn the den—remove the threat before it escalates",
+        "effects": [
+          { "type": "pay_gold", "amount": 3 },
+          { "type": "add_tag", "tag": "burned_bone_den" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_torn_soul_lament",
+    "title": "The Torn Soul's Lament",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "At dusk, you hear weeping nearby. Not human—close to it, but not quite. A translucent figure at the tree line, hunched, full of grief. It doesn't seem aware of you. It's weeping over something that's no longer there.",
+    "choices": [
+      {
+        "id": "approach_and_listen",
+        "text": "Approach slowly and listen",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "heard_torn_soul" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "speak_to_it",
+        "text": "Speak to it directly—ask what happened",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "spoken_to_torn_soul" },
+          { "type": "add_tag", "tag": "knows_torn_soul_killer" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "exorcise_it",
+        "text": "Exorcise it—free it properly",
+        "condition": {
+          "requires_any": ["friar_blessed", "has_cleric", "pilgrim_blessed"]
+        },
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "exorcised_torn_soul" },
+          { "type": "change_stat", "stat": "hp", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "attack_it",
+        "text": "Attack it—whatever it is, it shouldn't be here",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/spectral_haunting" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

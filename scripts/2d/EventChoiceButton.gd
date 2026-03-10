@@ -31,6 +31,13 @@ func set_choice_data(choice: Dictionary):
 		text = choice.text
 	else:
 		text = "Choice"
+	
+	# Disabled choices are visible but non-interactive and visually dimmed.
+	# A choice becomes disabled when requires_item is set but the party lacks the item.
+	if choice.get("disabled", false):
+		if button:
+			button.disabled = true
+		modulate = Color(1.0, 1.0, 1.0, 0.4)
 
 ## Handle button press
 func _on_button_pressed():

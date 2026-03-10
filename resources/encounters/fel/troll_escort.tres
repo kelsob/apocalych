@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/fel/troll.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/fel/goblin_ransacker.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "troll_escort"
+encounter_name = "Troll Escort"
+description = "A Troll lumbers forward, goblins darting around its feet, throwing things at anything that tries to stop it."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("3")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 20
+bonus_gold = 8
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 1
+time_limit = 0
+special_victory_condition = ""

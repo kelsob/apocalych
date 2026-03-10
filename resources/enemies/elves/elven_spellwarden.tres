@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/spellwarden_warding_field.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/spellwarden_spellbreak.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/spellwarden_mana_lash.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/spellwarden_arcane_shield.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Elven Spellwarden"
+enemy_id = "elven_spellwarden"
+description = "Guardians who protect sacred places from hostile magic."
+enemy_type = "arcane defender"
+faction = 3
+creature_tags = 2
+max_health = 26
+atk = 4
+def = 4
+spd = 6
+mag = 9
+mag_def = 8
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Support"
+xp_reward = 20
+gold_reward = 6
+loot_table = {}

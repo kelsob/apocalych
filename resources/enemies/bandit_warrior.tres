@@ -9,15 +9,15 @@ script = ExtResource("1")
 enemy_name = "Bandit Warrior"
 enemy_id = "bandit_warrior"
 description = "A ruthless bandit skilled with melee weapons."
+enemy_type = "human brigand"
+faction = 2
+creature_tags = 2
 max_health = 25
-base_stats = {
-"charisma": 8,
-"constitution": 11,
-"dexterity": 10,
-"intelligence": 8,
-"strength": 12,
-"wisdom": 8
-}
+atk = 8
+def = 3
+spd = 6
+mag = 0
+mag_def = 2
 abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3")])
 ai_behavior = "Aggressive"
 xp_reward = 20

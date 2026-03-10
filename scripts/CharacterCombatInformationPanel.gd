@@ -5,6 +5,7 @@ extends MarginContainer
 @onready var ap_max_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer/APMaxLabel
 @onready var health_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer2/HealthLabel
 @onready var health_max_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer2/HealthMaxLabel
+@onready var health_progress_bar: HPBar = $VBoxContainer/MarginContainer/HPBar
 
 ## Update display with current combatant stats
 func update_display(combatant_name: String, current_hp: int, max_hp: int, current_ap: int, max_ap: int):
@@ -22,3 +23,5 @@ func update_display(combatant_name: String, current_hp: int, max_hp: int, curren
 	
 	if ap_max_label:
 		ap_max_label.text = str(max_ap)
+	
+	health_progress_bar.set_health(current_hp, max_hp)

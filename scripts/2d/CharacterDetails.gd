@@ -9,7 +9,7 @@ var _member: PartyMember = null
 @onready var race_label: Label = $HBoxContainer/VBoxContainer/HBoxContainer/RaceLabel
 @onready var level_label: Label = $HBoxContainer/VBoxContainer/HBoxContainer/LevelLabel
 
-@onready var hp_progress_bar: ProgressBar = $HBoxContainer/VBoxContainer/HPProgressBar
+@onready var hp_progress_bar: HPBar = $HBoxContainer/VBoxContainer/HPBar
 
 @onready var button: Button = $Button
 
@@ -47,10 +47,7 @@ func set_member(member: PartyMember) -> void:
 
 
 func _update_hp_bar(current: int, maximum: int) -> void:
-	if hp_progress_bar:
-		hp_progress_bar.min_value = 0
-		hp_progress_bar.max_value = maximum if maximum > 0 else 1
-		hp_progress_bar.value = current
+	hp_progress_bar.set_health(current, maximum)
 
 func _on_button_pressed() -> void:
 	if _member:

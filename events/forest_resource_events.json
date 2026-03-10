@@ -1,0 +1,209 @@
+[
+  {
+    "id": "forest_hidden_cache",
+    "title": "The Hidden Cache",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "You notice disturbed earth beside the path—fresh, within the last day or two. Something has been buried here deliberately, not by an animal. Someone will be coming back for it.",
+    "choices": [
+      {
+        "id": "dig_it_up",
+        "text": "Dig it up",
+        "effects": [
+          { "type": "give_gold", "amount": 20 },
+          { "type": "give_item", "item_id": "ration", "count": 2 },
+          { "type": "add_tag", "tag": "looted_cache" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "mark_it_and_leave",
+        "text": "Mark the location carefully and leave it alone",
+        "effects": [
+          { "type": "add_tag", "tag": "marked_cache_location" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "stake_it_out",
+        "text": "Wait nearby for the owner to return",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "met_cache_owner" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_dry_camp",
+    "title": "The Dry Camp",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "The usual campsite—flat, dry, defensible, sheltered from wind on three sides. Someone has camped here before and done the work for you: a fire ring already cleared, firewood stacked, drainage cut. A good night's rest feels genuinely possible.",
+    "choices": [
+      {
+        "id": "full_rest",
+        "text": "Full rest—use it properly",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "change_stat", "stat": "hp", "amount": 20 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "double_watch",
+        "text": "Rest but keep a double watch—safety first",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "change_stat", "stat": "hp", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "light_a_fire",
+        "text": "Light a fire—warm and comfortable, but visible for miles",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "change_stat", "stat": "hp", "amount": 20 },
+          { "type": "add_tag", "tag": "lit_visible_fire" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_ruined_campsite",
+    "title": "The Ruined Campsite",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Another party's camp, completely destroyed. Packs torn open, bedrolls shredded. Recent—within hours. Whatever happened was fast. The fire is still slightly warm.",
+    "choices": [
+      {
+        "id": "search_for_survivors",
+        "text": "Search for survivors",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_campsite_survivor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "assess_the_threat",
+        "text": "Assess what did this—tracks, claw marks, the pattern",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_campsite_attacker" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_supplies",
+        "text": "Take what's usable from the wreckage",
+        "effects": [
+          { "type": "give_gold", "amount": 10 },
+          { "type": "give_item", "item_id": "ration", "count": 2 },
+          { "type": "add_tag", "tag": "looted_dead" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "get_out_fast",
+        "text": "Get out fast—whatever did this might still be close",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_merchant_caravan_camp",
+    "title": "The Merchant Caravan Camp",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A full caravan is camped for the night—three wagons, a dozen people, fires going, smells of food cooking. They wave you over. There's safety in numbers and they know it.",
+    "choices": [
+      {
+        "id": "join_for_the_night",
+        "text": "Join them for the night—rest, commerce, conversation",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "change_stat", "stat": "hp", "amount": 15 },
+          { "type": "open_vendor" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "trade_only",
+        "text": "Trade only, then move on",
+        "effects": [
+          { "type": "open_vendor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "warn_them",
+        "text": "Warn them about hazards you've seen ahead",
+        "effects": [
+          { "type": "give_item", "item_id": "ration", "count": 3 },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "hired_escort",
+        "text": "Accept their offer of pay to escort them through the night",
+        "effects": [
+          { "type": "give_gold", "amount": 20 },
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "start_combat", "encounter_id": "nighttime_ambush" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_medicine_cache",
+    "title": "The Medicine Cache",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": true,
+    "text": "A healer had supplies cached here for emergencies—you find the marker almost by accident. The cache is still intact and full. Whoever left it won't be coming back.",
+    "choices": [
+      {
+        "id": "take_all_of_it",
+        "text": "Take everything—someone needs it and it might as well be you",
+        "effects": [
+          { "type": "give_item", "item_id": "bandage", "count": 4 },
+          { "type": "give_item", "item_id": "antidote", "count": 2 },
+          { "type": "give_item", "item_id": "herb_rare", "count": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_what_you_need",
+        "text": "Take only what you need and leave the rest",
+        "effects": [
+          { "type": "give_item", "item_id": "bandage", "count": 2 },
+          { "type": "give_item", "item_id": "antidote", "count": 1 },
+          { "type": "add_tag", "tag": "left_supplies_for_others" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_it",
+        "text": "Leave it. It's there for emergencies.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

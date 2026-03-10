@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_sharpshooter.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_bladesinger.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_spellwarden.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_windrunner.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "elven_full_force"
+encounter_name = "Elven Full Force"
+description = "All four elven archetypes at once. The Spellwarden shields, the Windrunner hastens, the Bladesinger slices, the Sharpshooter kills."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("4"), ExtResource("5"), ExtResource("3"), ExtResource("2")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 35
+bonus_gold = 20
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

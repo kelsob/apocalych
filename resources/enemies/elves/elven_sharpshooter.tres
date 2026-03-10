@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/sharpshooter_longshot.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/sharpshooter_heartseeker.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/sharpshooter_rain_of_arrows.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/elves/sharpshooter_vanish_into_brush.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Elven Sharpshooter"
+enemy_id = "elven_sharpshooter"
+description = "Elven archers strike from impossible distances with deadly precision."
+enemy_type = "longbow sniper"
+faction = 3
+creature_tags = 2
+max_health = 24
+atk = 8
+def = 2
+spd = 8
+mag = 2
+mag_def = 4
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 18
+gold_reward = 5
+loot_table = {}

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_axeguard.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_thunderer.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/enemies/dwarves/dwarven_stonepriest.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "dwarven_expedition"
+encounter_name = "Dwarven Expedition"
+description = "A full dwarven fighting unit out in force. The Stonepriest is the keystone — the Axeguard its shield."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 30
+bonus_gold = 20
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

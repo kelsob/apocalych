@@ -1,0 +1,326 @@
+[
+  {
+    "id": "forest_rope_bridge",
+    "title": "The Rope Bridge",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A rope bridge over a river gorge—functional, probably, in the sense that it hasn't fallen yet. The planks are uneven. Several are missing. The rope has been mended many times, by many hands, with decreasing care.",
+    "choices": [
+      {
+        "id": "cross_carefully",
+        "text": "Cross carefully, one at a time",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "reinforce_first",
+        "text": "Spend time reinforcing the worst sections before crossing",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "burn_behind_you",
+        "text": "Cross and burn it behind you—eliminate that pursuit route permanently",
+        "effects": [
+          { "type": "add_tag", "tag": "bridge_burned" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "find_another_way",
+        "text": "Find another crossing entirely",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_sinkhole",
+    "title": "The Sinkhole",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "The trail drops away suddenly—a fresh sinkhole, probably opened last night. The collapsed earth at the edges is still damp. Down in the dark: the sound of water, and something that catches the light.",
+    "choices": [
+      {
+        "id": "climb_down",
+        "text": "Climb down to investigate",
+        "effects": [
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "give_gold", "amount": 10 },
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Go around it and continue",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_what_opened_it",
+        "text": "Examine what caused it to open—this isn't natural",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_dark_omen" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_deep_fog",
+    "title": "The Deep Fog",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "Morning fog so thick you can barely see ten feet in any direction. The forest beyond is just shapes. And something is moving in it. Not close. Not far.",
+    "choices": [
+      {
+        "id": "hold_position",
+        "text": "Hold position—wait for the fog to lift",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "move_through_carefully",
+        "text": "Move through carefully, keeping together",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "light_torches",
+        "text": "Light torches—you'll see better, but so will whatever's out there",
+        "effects": [
+          { "type": "add_tag", "tag": "visible_in_fog" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "call_out",
+        "text": "Call out into the fog",
+        "effects": [
+          { "type": "add_tag", "tag": "called_in_fog" },
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_old_well",
+    "title": "The Old Well",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A stone well in the middle of the forest, far from any settlement. No reason to be here. The stonework is old—older than the surrounding trees, possibly. The rope is new.",
+    "choices": [
+      {
+        "id": "drink_from_it",
+        "text": "Draw water and drink",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 10 },
+          { "type": "add_tag", "tag": "drank_from_old_well" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "look_into_it",
+        "text": "Lean over and look down into it",
+        "effects": [
+          { "type": "add_tag", "tag": "saw_face_in_well" },
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "drop_a_coin",
+        "text": "Drop a coin in. Old habit.",
+        "effects": [
+          { "type": "pay_gold", "amount": 1 },
+          { "type": "add_tag", "tag": "threw_coin_in_well" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "lower_a_lantern",
+        "text": "Lower a lantern down on the rope to see the bottom",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "give_item", "item_id": "trinket", "count": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_fire",
+    "title": "The Fire",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A section of the forest has caught fire—not a campfire, a proper section of burning trees. The path through is blocked. The smoke is thick. Someone set this deliberately.",
+    "choices": [
+      {
+        "id": "wait_it_out",
+        "text": "Wait at a safe distance for it to die down",
+        "effects": [
+          { "type": "advance_time", "amount": 3 },
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "push_through",
+        "text": "Push through while it's still manageable",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -12 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "find_the_source",
+        "text": "Find out where it started—someone set this on purpose",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_arson_source" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "help_contain_it",
+        "text": "Help contain it—other travelers appear to lend a hand",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "helped_fight_fire" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_flood_path",
+    "title": "The Flood Path",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Recent rains have turned the lower path to mud and standing water. Ankle deep in places, knee-deep in others. Everything is slow. Everything is heavy.",
+    "choices": [
+      {
+        "id": "high_ground",
+        "text": "Take the high ground route—longer, but drier",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "slog_through",
+        "text": "Slog through—it's the shortest path",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "make_camp",
+        "text": "Make camp and wait for it to drain",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_deadfall",
+    "title": "The Deadfall",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A massive tree has been felled directly across the path—and wedged there with stakes and rope. Not fallen. Placed. By someone who knew what they were doing and wanted the road blocked.",
+    "choices": [
+      {
+        "id": "climb_over",
+        "text": "Climb over it. Whoever put it there isn't around anymore.",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "clear_it",
+        "text": "Work to clear it—reveals a trip line on the far side",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "change_stat", "stat": "hp", "amount": -6 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_under",
+        "text": "Go under—someone is sitting on top of the log",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/bandit_crew" },
+          { "type": "add_tag", "tag": "ambushed_at_deadfall" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_cliff_shortcut",
+    "title": "The Cliff Shortcut",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A narrow goat path up a cliff face would cut significant time off the journey. It's used—you can see handholds worn into the rock. It would take sure footing and no bad luck.",
+    "choices": [
+      {
+        "id": "take_it",
+        "text": "Take it",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -6 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ranger_leads",
+        "text": "Let your most sure-footed member lead the way",
+        "condition": {
+          "requires_any": ["has_ranger", "has_rogue"]
+        },
+        "effects": [
+          { "type": "add_tag", "tag": "cliff_shortcut_taken" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "stick_to_road",
+        "text": "Stick to the road. Not worth the risk.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

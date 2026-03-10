@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_ironclad_slam.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_ironclad_bellow.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_ironclad_black_bulwark.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Uruk Ironclad"
+enemy_id = "uruk_ironclad"
+description = "Heavily armored uruks who anchor the battlefield. Their resilience allows them to soak punishment while protecting allies."
+enemy_type = "armored defender"
+faction = 1
+creature_tags = 2
+max_health = 35
+atk = 9
+def = 10
+spd = 5
+mag = 0
+mag_def = 3
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Defensive"
+xp_reward = 25
+gold_reward = 6
+loot_table = {}

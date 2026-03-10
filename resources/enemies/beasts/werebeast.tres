@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/werebeast_sundering_claws.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/werebeast_crippling_jaws.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/werebeast_lunar_frenzy.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Werebeast"
+enemy_id = "werebeast"
+description = "Beasts cursed to transform under the full moon. If a battle drags on long enough they may revert to human form."
+enemy_type = "cursed predator"
+faction = 0
+creature_tags = 129
+max_health = 45
+atk = 12
+def = 5
+spd = 8
+mag = 0
+mag_def = 3
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 35
+gold_reward = 7
+loot_table = {}

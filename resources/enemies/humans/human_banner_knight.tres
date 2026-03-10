@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/banner_knight_rally.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/banner_knight_shield_advance.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/banner_knight_hold_formation.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/banner_knight_hold_the_line.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Human Banner Knight"
+enemy_id = "human_banner_knight"
+description = "The banner knight carries the standard of their house. As long as it stands, the soldiers will not falter."
+enemy_type = "battlefield standard bearer"
+faction = 2
+creature_tags = 2
+max_health = 36
+atk = 9
+def = 9
+spd = 5
+mag = 2
+mag_def = 4
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Support"
+xp_reward = 25
+gold_reward = 7
+loot_table = {}

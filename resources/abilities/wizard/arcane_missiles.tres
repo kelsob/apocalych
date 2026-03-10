@@ -8,10 +8,14 @@ script = ExtResource("2")
 effect_type = 0
 potency = 7.0
 stat_scaling = {
-"intelligence": 1.0
+"mag": 1.0
 }
 target_count = 1
 dispel_count = 1
+enemy_to_spawn_id = ""
+spawn_count = 1
+lifesteal_ratio = 0.5
+is_magical = false
 
 [resource]
 script = ExtResource("1")

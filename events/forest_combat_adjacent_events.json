@@ -1,0 +1,437 @@
+[
+  {
+    "id": "forest_ambush_signs",
+    "title": "The Ambush Signs",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "You notice it before you should have—disturbed earth beside the path, a rope end with a fresh cut, the smell of nervous men trying to be quiet. Something is waiting ahead. It doesn't know that you know.",
+    "choices": [
+      {
+        "id": "prepare_for_it",
+        "text": "Prepare—weapons ready, positions set, let them come",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "bandit_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "sneak_around",
+        "text": "Find a way around without triggering it",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "avoided_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "loud_approach",
+        "text": "Walk in loudly and obviously—make it clear you're not worth the trouble",
+        "effects": [
+          { "type": "add_tag", "tag": "bluffed_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "counter_ambush",
+        "text": "Set your own positions and become the ambushers",
+        "effects": [
+          { "type": "add_tag", "tag": "counter_ambush" },
+          { "type": "start_combat", "encounter_id": "humans/bandit_gang" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_standoff",
+    "title": "The Standoff",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Two groups face each other across a clearing—militia on one side, bandits on the other. Swords out, nobody moving. This has been going on for a while. They both look at you when you step into view, as if you might be the thing that decides it.",
+    "choices": [
+      {
+        "id": "back_militia",
+        "text": "Back the militia",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/bandit_crew" },
+          { "type": "change_reputation", "faction": "militia", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "back_bandits",
+        "text": "Back the bandits—the militia started it, clearly",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/militia_patrol" },
+          { "type": "change_reputation", "faction": "militia", "amount": -20 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "broker_peace",
+        "text": "Step between them and try to end it peacefully",
+        "effects": [
+          { "type": "add_tag", "tag": "standoff_resolved" },
+          { "type": "change_reputation", "faction": "militia", "amount": 5 },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "watch_from_cover",
+        "text": "Stay hidden and watch. One side wins. You deal with the victor.",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "watched_standoff" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "rob_both",
+        "text": "Rob both sides while they're focused on each other",
+        "effects": [
+          { "type": "give_gold", "amount": 25 },
+          { "type": "add_tag", "tag": "dark_deeds" },
+          { "type": "change_reputation", "faction": "militia", "amount": -10 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_trapped_warg",
+    "title": "Trapped Beast",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A large warg has its rear leg caught in a hunter's snare, the wire cutting deep into the flesh. It snarls when you approach—exhausted and in pain, fighting something it cannot beat.",
+    "choices": [
+      {
+        "id": "free_it",
+        "text": "Cut it loose",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 },
+          { "type": "add_tag", "tag": "freed_warg" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "mercy_kill",
+        "text": "End its suffering cleanly",
+        "effects": [
+          { "type": "add_tag", "tag": "mercy_killed_warg" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_it",
+        "text": "Leave it. Nature decides.",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "study_trap",
+        "text": "Study the trap—this tells you who's hunting here",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_trap_maker" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_warning_sign",
+    "title": "The Warning",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Someone has nailed a board to a tree: \"TURN BACK — THERE ARE THINGS IN THESE WOODS THAT SHOULD NOT BE.\" Old sign. Whoever wrote it is long gone. Beneath it, in fresh charcoal: \"Still true.\"",
+    "choices": [
+      {
+        "id": "heed_warning",
+        "text": "Take the longer safe path",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "push_on",
+        "text": "Push on regardless",
+        "effects": [
+          { "type": "add_tag", "tag": "ignored_warning" },
+          { "type": "start_combat", "encounter_id": "mixed/tainted_forest" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_warning",
+        "text": "Find who wrote the fresh note—they're still nearby",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "investigated_warning" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_smoke_on_wind",
+    "title": "Smoke on the Wind",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "Black smoke to the north. Too thick, too dark, the wrong smell for a campfire. Could be a farmstead. Could be something worse.",
+    "choices": [
+      {
+        "id": "investigate",
+        "text": "Investigate",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_gold", "amount": 10 },
+          { "type": "add_tag", "tag": "found_raid_aftermath" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore",
+        "text": "Ignore it and stay on course",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "approach_carefully",
+        "text": "Approach carefully—survivors might still be there",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_raid_aftermath" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_night_watch",
+    "title": "The Night Watch",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "You make camp and set a watch. Around the third hour, the watcher hears something moving just outside the fire's light. Not approaching. Not leaving. Circling. For hours.",
+    "choices": [
+      {
+        "id": "wake_party",
+        "text": "Wake the party—everyone up, weapons ready",
+        "effects": [
+          { "type": "add_tag", "tag": "night_watch_alert" },
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_it_pass",
+        "text": "Watch and wait. Don't provoke it.",
+        "effects": [
+          { "type": "add_tag", "tag": "night_stalker_observed" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "send_someone_out",
+        "text": "Send someone into the dark to look",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wounded_goblin",
+    "title": "The Wounded Goblin",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A single goblin—small even by goblin standards, probably not yet an adult—sits alone at the base of a tree with a wound it cannot reach. It sees you and goes completely still. Terrified. Not attacking.",
+    "choices": [
+      {
+        "id": "let_it_go",
+        "text": "Leave it alone. Let it go.",
+        "effects": [
+          { "type": "add_tag", "tag": "goblin_child_spared" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "capture_it",
+        "text": "Capture it—get information about nearby movements",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "goblin_captive_info" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "threaten_for_info",
+        "text": "Threaten it. It tells you everything immediately and runs.",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "goblin_child_threatened" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "kill_it",
+        "text": "Kill it",
+        "effects": [
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_cart_robbery",
+    "title": "Cart Robbery in Progress",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "You arrive to find it already happening—three bandits have a merchant family stopped on the road. The merchant is arguing. His wife has gone quiet in the way people go quiet when they've realized arguing won't help.",
+    "choices": [
+      {
+        "id": "intervene_fight",
+        "text": "Intervene immediately",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/bandit_gang" },
+          { "type": "change_reputation", "faction": "locals", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "negotiate",
+        "text": "Step in and talk the bandits into taking less and leaving",
+        "effects": [
+          { "type": "add_tag", "tag": "negotiated_robbery" },
+          { "type": "give_gold", "amount": 10 },
+          { "type": "change_reputation", "faction": "locals", "amount": 8 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wait_and_collect",
+        "text": "Wait for it to resolve. The merchant pays you to stay out of it.",
+        "effects": [
+          { "type": "give_gold", "amount": 8 },
+          { "type": "add_tag", "tag": "let_robbery_happen" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "join_bandits",
+        "text": "Join the bandits",
+        "effects": [
+          { "type": "give_gold", "amount": 30 },
+          { "type": "change_reputation", "faction": "locals", "amount": -25 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_screaming",
+    "title": "The Screaming",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Someone is screaming in the forest. Not far. It stops before you can triangulate the direction. The silence after is worse.",
+    "choices": [
+      {
+        "id": "run_toward",
+        "text": "Run toward it",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "approach_cautiously",
+        "text": "Move toward it carefully",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "beasts/scavenger_pack" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "call_out",
+        "text": "Call out from a distance",
+        "effects": [
+          { "type": "add_tag", "tag": "called_into_forest" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_it",
+        "text": "Ignore it. Keep moving.",
+        "effects": [
+          { "type": "add_tag", "tag": "ignored_screaming" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_goblin_sentry",
+    "title": "The Goblin Sentry",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A goblin on a flat rock by the road, watching traffic. It has a horn. It has spotted you. It is deciding.",
+    "choices": [
+      {
+        "id": "kill_it_fast",
+        "text": "Kill it before it signals",
+        "effects": [
+          { "type": "add_tag", "tag": "sentry_killed" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "too_late",
+        "text": "Too late. It already has.",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_warband" },
+          { "type": "add_tag", "tag": "sentry_alerted" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "follow_it",
+        "text": "Follow it back to wherever it came from",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_goblin_camp" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wave_at_it",
+        "text": "Wave at it",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" },
+          { "type": "add_tag", "tag": "goblin_confused" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

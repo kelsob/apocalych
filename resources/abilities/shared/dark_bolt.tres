@@ -8,7 +8,7 @@ script = ExtResource("2")
 effect_type = 0
 potency = 9.0
 stat_scaling = {
-"intelligence": 1.0
+"mag": 1.0
 }
 target_count = 1
 status_to_apply = null

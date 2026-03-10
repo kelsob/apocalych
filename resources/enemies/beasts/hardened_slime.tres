@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/hardened_slime_jarring_slam.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/hardened_slime_encase.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/hardened_slime_caustic_mist.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Hardened Slime"
+enemy_id = "hardened_slime"
+description = "These slimes consume rock and bone, developing dense mineral shells. Their bodies are highly caustic, leaving melted stone in their wake."
+enemy_type = "stone slime"
+faction = 0
+creature_tags = 1
+max_health = 25
+atk = 6
+def = 20
+spd = 3
+mag = 2
+mag_def = 5
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Defensive"
+xp_reward = 20
+gold_reward = 4
+loot_table = {}

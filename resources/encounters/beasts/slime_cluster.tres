@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/innocuous_slime.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "slime_cluster"
+encounter_name = "Slime Cluster"
+description = "A cluster of harmless-looking slimes blocks the path. Individually they're nothing, but together they start to merge..."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("2"), ExtResource("2")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 0
+bonus_gold = 2
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

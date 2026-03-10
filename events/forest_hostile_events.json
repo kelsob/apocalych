@@ -1,0 +1,251 @@
+[
+  {
+    "id": "forest_goblin_scouts",
+    "title": "Goblin Scouts",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "You catch a flash of movement between the trees. Then another. The crack of a twig. Someone is tracking you—badly. A small, gap-toothed face peers around a birch trunk before yanking back. Then a horn sounds.",
+    "choices": [
+      {
+        "id": "set_ambush",
+        "text": "Fall back and set an ambush before they organize",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "charge_them",
+        "text": "Charge before they can spread out",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "scatter_into_forest",
+        "text": "Scatter into the trees and lose them",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_bandit_toll",
+    "title": "The Toll Road",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "Three men with notched blades and a felled tree across the road. The one in front has the kind of grin that only works when he outnumbers you. \"One silver per boot,\" he says. \"Forest tax.\" He's clearly made up this phrase just now.",
+    "choices": [
+      {
+        "id": "pay_toll",
+        "text": "Pay the toll (15 gold)",
+        "effects": [
+          { "type": "pay_gold", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "fight_bandits",
+        "text": "Fight them",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/bandit_crew" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "negotiate_down",
+        "text": "Laugh and offer them a single coin. See what they do.",
+        "effects": [
+          { "type": "pay_gold", "amount": 1 },
+          { "type": "add_tag", "tag": "bandit_toll_bluffed" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_warg_howls",
+    "title": "Warg Howls at Dusk",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "As the light fades, a long howl splits the air. Then several more in answer. Close. The sound bounces off the trees in a way that makes it hard to tell which direction they're coming from. Then you hear their paws on the leaves.",
+    "choices": [
+      {
+        "id": "make_fire_stand_ground",
+        "text": "Build a fire and hold your ground—wargs don't like fire",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "climb_trees",
+        "text": "Get up into the trees and wait them out",
+        "effects": [
+          { "type": "advance_time", "amount": 3 },
+          { "type": "set_rest_state", "allow_rest": false }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "run_open_ground",
+        "text": "Run for open ground—wargs hunt better in the trees",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_pack" },
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_spider_webs",
+    "title": "Spider Web Tunnel",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "The path ahead is strung with thick, sticky webs between the trees, catching the light. Silk-wrapped bundles hang from the branches above—too large to be insects. The forest has gone quiet in this direction.",
+    "choices": [
+      {
+        "id": "burn_through",
+        "text": "Burn the webs and press through",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/spider_brood" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "find_another_way",
+        "text": "Find another route around",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "cut_through_careful",
+        "text": "Cut through carefully and quietly",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -5 },
+          { "type": "start_combat", "encounter_id": "beasts/spider_lair" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_night_ambush",
+    "title": "Ambush in the Ravine",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "You're halfway through a narrow ravine when rocks begin raining down from above. Arrows follow. Someone knew you were coming—or more likely, someone knew that anyone coming through here would be easy pickings.",
+    "choices": [
+      {
+        "id": "fight_through",
+        "text": "Drive through the ambush and take the fight to them",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "nighttime_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "scatter_retreat",
+        "text": "Scatter and retreat out of the ravine",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -12 },
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_militia_checkpoint",
+    "title": "Militia Checkpoint",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A makeshift checkpoint blocks the forest road—a rope strung between two posts, a pair of militia soldiers and a sergeant who looks like he hasn't slept in two days. \"Road's closed ahead. We're looking for someone.\"",
+    "choices": [
+      {
+        "id": "comply_answer_questions",
+        "text": "Comply and answer their questions",
+        "effects": [
+          { "type": "change_reputation", "faction": "militia", "amount": 5 },
+          { "type": "add_tag", "tag": "cooperated_with_militia" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_about_search",
+        "text": "Ask who they're looking for",
+        "effects": [
+          { "type": "add_tag", "tag": "knows_militia_quarry" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Turn back and find a way around",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "push_through",
+        "text": "Push through by force",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/militia_patrol" },
+          { "type": "change_reputation", "faction": "militia", "amount": -20 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_goblin_warband_march",
+    "title": "Goblin Warband on the Move",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Through the trees ahead you see them before they see you: a column of goblins moving with unusual purpose. Not scouting. Not foraging. Marching. Something has organized them—and they're headed in the same direction you are.",
+    "choices": [
+      {
+        "id": "attack_now",
+        "text": "Strike before they reach wherever they're going",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_warband" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "shadow_them",
+        "text": "Shadow them and see where they're headed",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_goblin_destination" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_them_pass",
+        "text": "Stay hidden and let them pass",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

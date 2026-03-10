@@ -283,7 +283,7 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 	for effect in ability.effects:
 		match effect.effect_type:
 			AbilityEffect.EffectType.DAMAGE:
-				var potency = effect.calculate_final_potency(caster_stats) + caster.combatant_stats.weapon_damage_bonus
+				var potency = effect.calculate_final_potency(caster_stats)
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
 						var damage_result = target.take_damage(potency, caster)

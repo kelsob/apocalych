@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/enchanted_slime_slime_magic.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/enchanted_slime_mass_dispel.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/enchanted_slime_spell_steal.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Enchanted Slime"
+enemy_id = "enchanted_slime"
+description = "Slimes absorb what they consume. These have clearly ingested magical artifacts, unfortunate spellcasters, or too many enchanted mushrooms."
+enemy_type = "magical slime"
+faction = 0
+creature_tags = 1
+max_health = 30
+atk = 3
+def = 8
+spd = 5
+mag = 9
+mag_def = 8
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Balanced"
+xp_reward = 20
+gold_reward = 5
+loot_table = {}

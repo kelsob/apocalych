@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_troll_necrotic_grasp.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_troll_staggering_blow.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Bone Troll"
+enemy_id = "bone_troll"
+description = "The skeletal remains of trolls reanimated by necromancy. Even more relentless than their living counterparts."
+enemy_type = "skeletal brute"
+faction = 1
+creature_tags = 4
+max_health = 50
+atk = 12
+def = 7
+spd = 4
+mag = 3
+mag_def = 4
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3")])
+ai_behavior = "Aggressive"
+xp_reward = 35
+gold_reward = 5
+loot_table = {}

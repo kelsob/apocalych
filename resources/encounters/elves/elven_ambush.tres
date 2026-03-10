@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/elves/elven_sharpshooter.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "elven_ambush"
+encounter_name = "Elven Ambush"
+description = "Three Sharpshooters hidden in the canopy open fire. You didn't see them. You might not survive seeing them."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("2"), ExtResource("2")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 10
+bonus_gold = 8
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

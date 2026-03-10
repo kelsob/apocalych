@@ -1,0 +1,316 @@
+[
+  {
+    "id": "forest_old_woodsman",
+    "title": "The Woodsman",
+    "biomes": ["forest"],
+    "weight": 14,
+    "one_shot": false,
+    "text": "An old man with a heavy pack and a dog-eared map sits on a log eating bread. His dog watches you without moving. He looks up, unhurried. \"Forest's thick a mile east. Wolves too. You'll want to know.\"",
+    "choices": [
+      {
+        "id": "ask_about_area",
+        "text": "Ask him about the area",
+        "effects": [
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "pay_for_info",
+        "text": "Offer him coin for specific information about the wolves (10 gold)",
+        "effects": [
+          { "type": "pay_gold", "amount": 10 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "wolf_warning" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "nod_and_go",
+        "text": "Nod and move on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wounded_scout",
+    "title": "Wounded Scout",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A young soldier in a militia tabard sits with their back against a tree, pressing folded cloth against a wound in their side. They look up when they hear you—first with alarm, then exhausted relief. \"Thank the gods. I thought you were more of them.\"",
+    "choices": [
+      {
+        "id": "help_them",
+        "text": "Bandage the wound and help them to safety",
+        "effects": [
+          { "type": "change_reputation", "faction": "militia", "amount": 10 },
+          { "type": "add_tag", "tag": "helped_militia" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_what_happened",
+        "text": "Patch them up and ask what attacked them",
+        "effects": [
+          { "type": "change_reputation", "faction": "militia", "amount": 5 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "helped_militia" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "loot_scout",
+        "text": "They're not going to make it anyway. Take what they have.",
+        "effects": [
+          { "type": "give_gold", "amount": 12 },
+          { "type": "change_reputation", "faction": "militia", "amount": -15 },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "walk_past",
+        "text": "Keep walking. Not your problem.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wandering_pilgrim",
+    "title": "The Pilgrim",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A robed figure walks the forest road, head bowed, murmuring quiet prayer. They stop when they see you. \"Travelers? Good. The road grows strange here. There are things in this forest that were not here last season. Stay together.\"",
+    "choices": [
+      {
+        "id": "walk_with_pilgrim",
+        "text": "Walk with them a while",
+        "effects": [
+          { "type": "add_tag", "tag": "pilgrim_blessed" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_about_strange",
+        "text": "Ask what they mean by 'strange'",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "corruption_warning" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "offer_coin",
+        "text": "Offer them a coin for the road",
+        "effects": [
+          { "type": "pay_gold", "amount": 3 },
+          { "type": "add_tag", "tag": "pilgrim_blessed" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_pilgrim",
+        "text": "Wish them well and move on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_lost_merchant",
+    "title": "Lost Merchant",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "A disheveled merchant waves you down from beside an overturned cart. A broken axle. He has bolts of cloth and crates of preserved goods scattered across the mud. He's sweating despite the chill. \"I can't lift it. I'll pay! Please.\"",
+    "choices": [
+      {
+        "id": "help_right_cart",
+        "text": "Help him right the cart",
+        "effects": [
+          { "type": "give_gold", "amount": 20 },
+          { "type": "add_tag", "tag": "helped_merchant" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "help_then_buy",
+        "text": "Help him, then ask if he'll sell some supplies at a discount",
+        "effects": [
+          { "type": "give_gold", "amount": 10 },
+          { "type": "give_item", "item_id": "ration", "count": 3 },
+          { "type": "add_tag", "tag": "helped_merchant" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "loot_loose_cargo",
+        "text": "Help yourself to the scattered cargo while he's distracted",
+        "effects": [
+          { "type": "give_item", "item_id": "ration", "count": 4 },
+          { "type": "give_gold", "amount": 5 },
+          { "type": "change_reputation", "faction": "locals", "amount": -5 },
+          { "type": "add_tag", "tag": "opportunist" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "walk_by",
+        "text": "Walk past. Not your problem.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_two_sellswords",
+    "title": "Two Sellswords Arguing",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Two armored mercenaries are arguing loudly at the fork in the road. One wants to go left; the other insists it's right. They look embarrassed when they notice you watching. One of them is holding the map upside down.",
+    "choices": [
+      {
+        "id": "offer_directions",
+        "text": "Offer to help them navigate",
+        "effects": [
+          { "type": "give_gold", "amount": 15 },
+          { "type": "add_tag", "tag": "sellsword_favor" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "recruit_them",
+        "text": "Ask if they want work—you could use the muscle",
+        "effects": [
+          { "type": "add_tag", "tag": "sellsword_allies" },
+          { "type": "pay_gold", "amount": 20 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "watch_and_go",
+        "text": "Watch with amusement for a moment, then carry on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_elven_runner",
+    "title": "Elven Runner",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "An elf runs past at full speed along the path, glances at you once with sharp eyes, and keeps running without a word. They're dressed for travel, not combat, and moving with purpose.",
+    "choices": [
+      {
+        "id": "chase_them",
+        "text": "Chase them—something's wrong",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "call_after",
+        "text": "Call after them to ask what's happening",
+        "effects": [
+          { "type": "add_tag", "tag": "elves_are_running" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_them_go",
+        "text": "Let them go. Their business is their own.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hobbit_trader",
+    "title": "Hobbit Trader",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A hobbit with an overloaded pony stops you with a cheerful wave. He's selling cured meats, travel bread, pipeweed, and—inexplicably—a very small crossbow. \"Best prices in the forest,\" he says, which is not hard, as he is the only vendor in the forest.",
+    "choices": [
+      {
+        "id": "buy_food",
+        "text": "Buy rations (15 gold)",
+        "effects": [
+          { "type": "pay_gold", "amount": 15 },
+          { "type": "give_item", "item_id": "ration", "count": 4 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "buy_pipeweed",
+        "text": "Buy pipeweed (5 gold)",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "give_item", "item_id": "pipeweed", "count": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "buy_both",
+        "text": "Buy food and pipeweed—stock up while you can (18 gold)",
+        "effects": [
+          { "type": "pay_gold", "amount": 18 },
+          { "type": "give_item", "item_id": "ration", "count": 4 },
+          { "type": "give_item", "item_id": "pipeweed", "count": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "no_thanks",
+        "text": "Nothing today. Move along.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_child_alone",
+    "title": "The Child Alone",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A child, maybe twelve, walks alone down the forest road with a large shaggy dog and a wrapped parcel under one arm. They move with purpose—not lost, just alone. This is not a good road for a child to walk alone.",
+    "choices": [
+      {
+        "id": "talk_to_child",
+        "text": "Stop and talk to them",
+        "effects": [
+          { "type": "add_tag", "tag": "knows_about_child" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "escort_child",
+        "text": "Offer to walk with them to the next settlement",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_gold", "amount": 5 },
+          { "type": "change_reputation", "faction": "locals", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_child",
+        "text": "Keep moving. They seem fine.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

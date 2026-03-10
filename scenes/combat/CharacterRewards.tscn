@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://cdbh531aowdrv"]
+[gd_scene load_steps=4 format=3 uid="uid://cdbh531aowdrv"]
 
 [ext_resource type="Script" uid="uid://47lpkmhcjrj6" path="res://scripts/combat/CharacterRewards.gd" id="1_pq70o"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_kh7v7"]
+[ext_resource type="PackedScene" uid="uid://c25jnpw5bujke" path="res://scenes/2d/ExpBar.tscn" id="3_bc6gt"]
 
 [node name="CharacterRewards" type="HBoxContainer"]
 offset_right = 1280.0
@@ -55,10 +56,8 @@ layout_mode = 2
 size_flags_horizontal = 3
 alignment = 1
 
-[node name="ExperienceProgressBar" type="ProgressBar" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
+[node name="ExpBar" parent="MarginContainer/HBoxContainer/VBoxContainer2" instance=ExtResource("3_bc6gt")]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 4
 
 [node name="ExperienceToLevelLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer2"]
 layout_mode = 2

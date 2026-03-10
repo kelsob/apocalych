@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/dwarves/runesmith_rune_of_fury.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/dwarves/runesmith_rune_of_warding.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/dwarves/runesmith_rune_burst.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/dwarves/runesmith_rune_channel.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Dwarven Runesmith"
+enemy_id = "dwarven_runesmith"
+description = "Masters of rune magic who empower allies and weapons."
+enemy_type = "rune enchanter"
+faction = 4
+creature_tags = 2
+max_health = 30
+atk = 4
+def = 9
+spd = 5
+mag = 10
+mag_def = 6
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Support"
+xp_reward = 25
+gold_reward = 10
+loot_table = {}

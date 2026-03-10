@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/enchanted_slime.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/unstable_slime.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/hardened_slime.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "slime_concoction"
+encounter_name = "Slime Concoction"
+description = "Three bizarre slime variants — one enchanted, one volatile, one armoured. No two are the same problem."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 10
+bonus_gold = 5
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

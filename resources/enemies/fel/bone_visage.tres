@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_visage_breath_of_fire.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_visage_drain_essence.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_visage_horrible_gaze.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Bone Visage"
+enemy_id = "bone_visage"
+description = "A screaming skull-like spirit drifting through the air. It feeds on fear and the fading life of the living."
+enemy_type = "restless spirit"
+faction = 1
+creature_tags = 12
+max_health = 14
+atk = 4
+def = 4
+spd = 7
+mag = 6
+mag_def = 5
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Balanced"
+xp_reward = 12
+gold_reward = 2
+loot_table = {}

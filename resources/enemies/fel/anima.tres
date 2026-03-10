@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/anima_despair.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/anima_absorb_essence.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/anima_curse_of_mana.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Anima"
+enemy_id = "anima"
+description = "An energy construct bound to the mortal plane by an unfinished purpose. It feeds on the life force of living beings to maintain its form."
+enemy_type = "bound spirit"
+faction = 1
+creature_tags = 12
+max_health = 25
+atk = 4
+def = 2
+spd = 6
+mag = 8
+mag_def = 7
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Balanced"
+xp_reward = 22
+gold_reward = 4
+loot_table = {}

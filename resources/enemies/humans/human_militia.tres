@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/militia_spear_thrust.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/militia_shield_brace.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/militia_hold_formation.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/militia_rally.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Human Militia"
+enemy_id = "human_militia"
+description = "Common soldiers raised from the countryside. Alone they are unimpressive, but they fight well under command."
+enemy_type = "trained levy"
+faction = 2
+creature_tags = 2
+max_health = 24
+atk = 6
+def = 4
+spd = 5
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 12
+gold_reward = 3
+loot_table = {}

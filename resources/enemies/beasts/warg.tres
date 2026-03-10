@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/warg_bite.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/warg_go_for_the_neck.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/warg_lick_wounds.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Warg"
+enemy_id = "warg"
+description = "Massive wolf-like predators that hunt in coordinated packs. Surprisingly stealthy. They may flee if grievously wounded."
+enemy_type = "pack hunter"
+faction = 0
+creature_tags = 1
+max_health = 25
+atk = 7
+def = 1
+spd = 8
+mag = 0
+mag_def = 1
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 15
+gold_reward = 3
+loot_table = {}

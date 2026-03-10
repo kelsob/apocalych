@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://cwhqifgnimimb"]
+[gd_scene load_steps=6 format=3 uid="uid://cwhqifgnimimb"]
 
 [ext_resource type="Script" uid="uid://bd1o2erw4uynk" path="res://scripts/2d/CharacterDetails.gd" id="1_6a65j"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="1_jm4yu"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_pw4xs"]
 [ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="4_yotrc"]
+[ext_resource type="PackedScene" uid="uid://dea1l50emdl0" path="res://scenes/2d/HPBar.tscn" id="5_1xyik"]
 
 [node name="CharacterDetails" type="Control"]
 custom_minimum_size = Vector2(256, 68)
@@ -94,10 +95,8 @@ theme = ExtResource("2_pw4xs")
 theme_override_font_sizes/font_size = 24
 text = "Class"
 
-[node name="HPProgressBar" type="ProgressBar" parent="HBoxContainer/VBoxContainer"]
+[node name="HPBar" parent="HBoxContainer/VBoxContainer" instance=ExtResource("5_1xyik")]
 layout_mode = 2
-theme = ExtResource("2_pw4xs")
-show_percentage = false
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 1

@@ -1,0 +1,241 @@
+[
+  {
+    "id": "forest_battle_survivor",
+    "title": "The Survivor",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A single survivor of a massacre, wandering in shock. Their uniform is in tatters. They say their entire unit was wiped out—by the enemies ahead of you. They look at your weapons and say, very quietly: \"You're going to need those.\"",
+    "choices": [
+      {
+        "id": "help_them_recover",
+        "text": "Help them recover and escort them to safety",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "helped_survivor" },
+          { "type": "change_reputation", "faction": "militia", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_their_gear",
+        "text": "They press their weapon and armor on you—insist you'll need it more",
+        "effects": [
+          { "type": "give_gold", "amount": 15 },
+          { "type": "give_item", "item_id": "weapon_basic", "count": 1 },
+          { "type": "add_tag", "tag": "took_survivor_gear" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "send_them_ahead",
+        "text": "Send them toward the nearest settlement with directions",
+        "effects": [
+          { "type": "add_tag", "tag": "sent_survivor_away" },
+          { "type": "change_reputation", "faction": "militia", "amount": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "bring_them_along",
+        "text": "Bring them with you—non-combatant, but they know what's ahead",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "survivor_in_party" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_village_blamed",
+    "title": "The Village Blamed",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": true,
+    "text": "A militia captain has a small settlement surrounded—three families, a farming community. He claims they're harboring bandits. The evidence seems circumstantial. The villagers are terrified. The captain seems certain.",
+    "choices": [
+      {
+        "id": "side_with_militia",
+        "text": "Back the militia captain",
+        "effects": [
+          { "type": "change_reputation", "faction": "militia", "amount": 10 },
+          { "type": "change_reputation", "faction": "locals", "amount": -20 },
+          { "type": "add_tag", "tag": "sided_with_militia_against_village" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "defend_village",
+        "text": "Defend the village—step between them",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/militia_patrol" },
+          { "type": "change_reputation", "faction": "locals", "amount": 20 },
+          { "type": "change_reputation", "faction": "militia", "amount": -15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_truth",
+        "text": "Investigate—find actual evidence before anyone acts",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "investigated_village_blame" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "stay_out_of_it",
+        "text": "Stay out of it—walk past",
+        "effects": [
+          { "type": "add_tag", "tag": "ignored_village_crisis" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_plague_cart",
+    "title": "The Plague Cart",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A cart in quarantine on the road—makeshift barriers of rope and cloth marked with red. Two people inside, visibly ill. A third person, healthy, guards it with exhausted desperation and begs for medicine. \"Please. Just anything.\"",
+    "choices": [
+      {
+        "id": "give_medicine",
+        "text": "Give what medicine you can",
+        "effects": [
+          { "type": "pay_gold", "amount": 10 },
+          { "type": "add_tag", "tag": "helped_plague_cart" },
+          { "type": "change_reputation", "faction": "locals", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "give_food_and_water",
+        "text": "Give them what supplies you can spare—food, water, kindling",
+        "requires_item": { "item_id": "camping_supplies", "count": 1 },
+        "effects": [
+          { "type": "consume_item", "item_id": "camping_supplies", "count": 1 },
+          { "type": "add_tag", "tag": "gave_food_to_plague_cart" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "help_to_settlement",
+        "text": "Help escort them to the nearest settlement",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_stat", "stat": "hp", "amount": -5 },
+          { "type": "change_reputation", "faction": "locals", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Go around. You can't afford exposure.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_forced_recruitment",
+    "title": "The Forced Recruitment",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A war captain is pressing peasants into service at the side of the road—legally, technically. The peasants don't want to go. Two of them are pleading. One has started crying quietly. The captain looks used to this.",
+    "choices": [
+      {
+        "id": "intervene",
+        "text": "Intervene—this isn't right, legal or not",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/militia_patrol" },
+          { "type": "change_reputation", "faction": "militia", "amount": -15 },
+          { "type": "change_reputation", "faction": "locals", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "bribe_the_captain",
+        "text": "Bribe the captain to release them",
+        "effects": [
+          { "type": "pay_gold", "amount": 30 },
+          { "type": "change_reputation", "faction": "locals", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "recruit_the_captain",
+        "text": "Offer the captain's men better pay to come with you instead",
+        "effects": [
+          { "type": "pay_gold", "amount": 40 },
+          { "type": "add_tag", "tag": "recruited_militia_deserters" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "walk_past",
+        "text": "Walk past. This is how things are.",
+        "effects": [
+          { "type": "add_tag", "tag": "ignored_forced_recruitment" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_sacrifice_site",
+    "title": "The Sacrifice Site",
+    "biomes": ["forest"],
+    "weight": 5,
+    "one_shot": false,
+    "text": "Something has been left here as an offering—arranged with obvious care and specific symbolic intent. The details are alarming. Whatever cult left this, they left it recently, and they know what they're doing.",
+    "choices": [
+      {
+        "id": "investigate_who",
+        "text": "Study the arrangement for clues about who made it",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_sacrifice_cult" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_the_offering",
+        "text": "Take the offering object—it might be valuable",
+        "effects": [
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "add_tag", "tag": "took_sacrifice_offering" },
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_counter_offering",
+        "text": "Leave a counter-offering—old magic to cancel old magic",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "left_counter_offering" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "destroy_it",
+        "text": "Destroy the arrangement completely",
+        "effects": [
+          { "type": "add_tag", "tag": "destroyed_sacrifice_site" },
+          { "type": "add_tag", "tag": "dark_deeds" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

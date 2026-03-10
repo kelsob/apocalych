@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_hemomancer_bloodgeon.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_hemomancer_blood_boil.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_hemomancer_harvest.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_hemomancer_blood_boon.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Goblin Hemomancer"
+enemy_id = "goblin_hemomancer"
+description = "Twisted goblin blood mages who weaponize life force. They drain vitality from allies or enemies to fuel dark magic."
+enemy_type = "blood caster"
+faction = 1
+creature_tags = 2
+max_health = 21
+atk = 3
+def = 2
+spd = 6
+mag = 9
+mag_def = 4
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Support"
+xp_reward = 20
+gold_reward = 6
+loot_table = {}

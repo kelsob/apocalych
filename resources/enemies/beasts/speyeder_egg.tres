@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/speyeder_egg_hatch.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Speyeder Egg"
+enemy_id = "speyeder_egg"
+description = "Thick chitinous eggs containing young speyeders. Often hidden until disturbed."
+enemy_type = "hardened cocoon"
+faction = 0
+creature_tags = 1
+max_health = 15
+atk = 0
+def = 15
+spd = 1
+mag = 0
+mag_def = 5
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2")])
+ai_behavior = "Defensive"
+xp_reward = 8
+gold_reward = 2
+loot_table = {}

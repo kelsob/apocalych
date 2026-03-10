@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 0
+potency = 5.0
+stat_scaling = {"atk": 0.6}
+target_count = 999
+
+[resource]
+script = ExtResource("1")
+ability_name = "Rain of Arrows"
+ability_id = "sharpshooter_rain_of_arrows"
+description = "Fires rapidly into the air, arrows falling on the entire enemy line."
+ap_cost = 3
+base_cast_time = 1
+ability_type = 1
+targeting_type = 4
+requires_target = false
+effects = Array[Resource("res://scripts/combat/resources/AbilityEffect.gd")]([SubResource("1")])
+can_be_interrupted = true
+channeled_tick_on_cast = false

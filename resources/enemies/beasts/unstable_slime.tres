@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unstable_slime_detonate.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unstable_slime_stabilize.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/unstable_slime_slime_grenade.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Unstable Slime"
+enemy_id = "unstable_slime"
+description = "This slime must have absorbed volatile materials. Any sudden impact may cause it to detonate violently."
+enemy_type = "explosive slime"
+faction = 0
+creature_tags = 1
+max_health = 35
+atk = 5
+def = 3
+spd = 6
+mag = 8
+mag_def = 3
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 18
+gold_reward = 4
+loot_table = {}

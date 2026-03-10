@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/burglar_backstab.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/burglar_pickpocket.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/burglar_vanish.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/burglar_tripwire.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Hobbit Burglar"
+enemy_id = "hobbit_burglar"
+description = "Small, quiet, and surprisingly good at taking things that don't belong to them."
+enemy_type = "stealth rogue"
+faction = 5
+creature_tags = 2
+max_health = 20
+atk = 7
+def = 2
+spd = 10
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 12
+gold_reward = 5
+loot_table = {}

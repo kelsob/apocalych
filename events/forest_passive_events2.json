@@ -1,0 +1,284 @@
+[
+  {
+    "id": "forest_good_spring",
+    "title": "The Good Spring",
+    "biomes": ["forest"],
+    "weight": 14,
+    "one_shot": false,
+    "text": "A spring fed by some underground source. The water is uncommonly clear, cold even in warm weather, and faintly sweet in a way you can't explain. Your mouths were dry before you smelled it.",
+    "choices": [
+      {
+        "id": "drink",
+        "text": "Drink. Everyone drinks.",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "fill_flasks",
+        "text": "Fill every flask and container you have",
+        "effects": [
+          { "type": "give_item", "item_id": "healing_water", "count": 2 },
+          { "type": "add_tag", "tag": "water_supply_full" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "rest_here",
+        "text": "Rest here a while. This is a good spot.",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_afternoon_light",
+    "title": "Afternoon Light",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A clearing breaks the canopy at just the right angle. Warm sun cuts through in solid golden columns. Birds. Wind in the high branches. The forest, just for this moment, feels completely benign.",
+    "choices": [
+      {
+        "id": "rest_briefly",
+        "text": "Rest briefly in the warmth",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 8 },
+          { "type": "add_tag", "tag": "good_morale" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "press_on",
+        "text": "Nice. Keep moving.",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "look_around",
+        "text": "Have a look around the clearing before pressing on",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "give_gold", "amount": 5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_singing_tree",
+    "title": "The Singing Tree",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": true,
+    "text": "A hollow tree makes a low, resonant hum as wind passes through it. Small trinkets dangle from the lower branches—ribbons, carved wood scraps, a rusted key. Local children apparently make wishes here. Something about this place feels intentional.",
+    "choices": [
+      {
+        "id": "leave_offering",
+        "text": "Leave an offering at the roots",
+        "effects": [
+          { "type": "pay_gold", "amount": 3 },
+          { "type": "add_tag", "tag": "singing_tree_offering" },
+          { "type": "change_stat", "stat": "hp", "amount": 10 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_trinket",
+        "text": "Take one of the trinkets—there are many",
+        "effects": [
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "add_tag", "tag": "took_singing_tree_trinket" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "listen",
+        "text": "Just stand here and listen for a while",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_wild_berries",
+    "title": "Wild Berries",
+    "biomes": ["forest"],
+    "weight": 13,
+    "one_shot": false,
+    "text": "A thick briar loaded with ripe red berries. They look right. They smell right. They're probably fine. You've eaten things that looked exactly like these before. Probably.",
+    "choices": [
+      {
+        "id": "eat_freely",
+        "text": "Eat your fill. They're fine.",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 12 },
+          { "type": "add_tag", "tag": "possibly_ill" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "eat_cautiously",
+        "text": "Eat a few, wait ten minutes, eat a few more",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 6 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_them",
+        "text": "You've seen that exact berry before. Leave them.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_abandoned_sled",
+    "title": "The Woodcutter's Abandoned Sled",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A handcart loaded with split logs, one wheel splintered clean off, abandoned mid-trail. Good work, recently done—someone put real effort into this load. Whoever left it, left in a hurry and hasn't come back.",
+    "choices": [
+      {
+        "id": "investigate",
+        "text": "Investigate the surrounding area",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_abandoned_sled" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_whats_useful",
+        "text": "Strip what's useful from the cart",
+        "effects": [
+          { "type": "give_item", "item_id": "rope", "count": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "call_out",
+        "text": "Call out—someone might still be close by",
+        "effects": [
+          { "type": "add_tag", "tag": "called_out_at_sled" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_butterflies",
+    "title": "Butterflies",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "An eruption of butterflies in a sunlit meadow—hundreds of them, orange and yellow and white, lifting as a single slow breath through the long grass. Completely harmless. Unreasonably beautiful. The kind of thing you stop without meaning to.",
+    "choices": [
+      {
+        "id": "appreciate_it",
+        "text": "Stop and appreciate it. Just for a moment.",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "chase_them",
+        "text": "Chase them into the meadow—see what's out there",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_fallen_giant",
+    "title": "The Fallen Giant",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A tree of enormous age has fallen across the path—centuries of growth, ended quietly. Its root ball towers two stories overhead. Its hollow interior is home to a fox family, a bird colony, and something else that moves in the dark when you lean close.",
+    "choices": [
+      {
+        "id": "climb_over",
+        "text": "Climb over it and continue",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Go around the root ball",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "look_inside",
+        "text": "Lean in and look into the hollow",
+        "effects": [
+          { "type": "give_item", "item_id": "herb_common", "count": 2 },
+          { "type": "add_tag", "tag": "explored_hollow_tree" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_someones_lunch",
+    "title": "Someone's Lunch",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A small camp with a fire still going and food half-eaten. A good meal, by the look of it. Nobody here. No bedroll, no pack. No signs of struggle or haste. Whoever was sitting here just... got up and walked away mid-bite.",
+    "choices": [
+      {
+        "id": "eat_it",
+        "text": "Sit down and eat it. Waste is a sin.",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 12 },
+          { "type": "add_tag", "tag": "ate_strangers_food" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wait",
+        "text": "Wait for whoever left it to come back",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "waited_at_camp" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "search_camp",
+        "text": "Search the camp for clues",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "give_gold", "amount": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_immediately",
+        "text": "Leave it untouched and keep moving",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

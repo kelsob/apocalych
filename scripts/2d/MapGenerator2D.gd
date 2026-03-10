@@ -7222,21 +7222,62 @@ func spawn_party():
 		push_error("MapGenerator2D: Cannot spawn party - no map nodes available")
 		return
 	
-	# Filter out mountain nodes (party can't spawn on mountains)
-	var valid_nodes: Array[MapNode2D] = []
+	# Prefer forest nodes; fall back to any non-mountain node
+	var forest_nodes: Array[MapNode2D] = []
+	var fallback_nodes: Array[MapNode2D] = []
 	for node in map_nodes:
-		if not node.is_mountain:
-			valid_nodes.append(node)
+		if node.is_mountain:
+			continue
+		fallback_nodes.append(node)
+		if node.biome != null and node.biome.biome_name == "forest":
+			forest_nodes.append(node)
 	
-	if valid_nodes.size() == 0:
-		push_error("MapGenerator2D: No valid nodes to spawn party (all are mountains?)")
+	var candidate_nodes: Array[MapNode2D] = forest_nodes if forest_nodes.size() > 0 else fallback_nodes
+	
+	if candidate_nodes.size() == 0:
+		push_error("MapGenerator2D: No valid nodes to spawn party")
 		return
 	
-	# Pick a random valid node
-	var spawn_node = valid_nodes[randi() % valid_nodes.size()]
-	set_party_position(spawn_node)
+	# Collect all exit nodes in the zone
+	var exit_nodes: Array[MapNode2D] = []
+	for node in map_nodes:
+		if node.is_exit_node:
+			exit_nodes.append(node)
 	
-	debug_print("Party spawned at node %d" % spawn_node.node_index)
+	var spawn_node: MapNode2D
+	
+	if exit_nodes.size() == 0:
+		# No exits found — fall back to a random candidate
+		spawn_node = candidate_nodes[randi() % candidate_nodes.size()]
+		debug_print("Party spawned at node %d (no exits found, random fallback)" % spawn_node.node_index)
+	else:
+		# Pick the forest node with the greatest minimum hop-distance to any exit
+		var best_node: MapNode2D = null
+		var best_min_dist: int = -1
+		
+		for node in candidate_nodes:
+			var min_dist: int = INF
+			for exit in exit_nodes:
+				var path = astar.get_id_path(node.node_index, exit.node_index)
+				if path.size() > 1:
+					var dist = path.size() - 1
+					if dist < min_dist:
+						min_dist = dist
+			# Only consider nodes that actually have a path to at least one exit
+			if min_dist < INF and min_dist > best_min_dist:
+				best_min_dist = min_dist
+				best_node = node
+		
+		# If somehow no node had a valid path, fall back to random
+		if best_node == null:
+			best_node = candidate_nodes[randi() % candidate_nodes.size()]
+			debug_print("Party spawned at node %d (no reachable exits, random fallback)" % best_node.node_index)
+		else:
+			debug_print("Party spawned at node %d (deepest forest node, %d hops from nearest exit)" % [best_node.node_index, best_min_dist])
+		
+		spawn_node = best_node
+	
+	set_party_position(spawn_node)
 
 # ============================================================================
 # PARTY MANAGEMENT

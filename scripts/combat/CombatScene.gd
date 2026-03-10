@@ -188,15 +188,13 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 	if show_rewards_panel:
 		var rewards_panel = combat_rewards_scene.instantiate()
 		add_child(rewards_panel)
-		rewards_panel.show_rewards(rewards, main.current_party_members)
+		rewards_panel.show_rewards(rewards, main.current_party_members, victory, main)
 		await rewards_panel.continue_pressed
 		rewards_panel.queue_free()
-	
+
+	# Hand off to Main for post-combat flow (outcome events, game-over, map restore).
 	if main:
-		main.map_generator.visible = true
-		main.ui_controller.map_ui.visible = true
-		main.refresh_rest_button_visibility()
-		main.refresh_town_button_visibility()
+		main.on_combat_scene_fully_ended(victory, rewards)
 
 	queue_free()
 

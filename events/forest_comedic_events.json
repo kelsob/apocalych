@@ -1,0 +1,198 @@
+[
+  {
+    "id": "forest_bear_in_camp",
+    "title": "Bear in Camp",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "You return to find a large black bear sitting in the middle of your camp, eating your rations with a kind of focused contentment. It looks at you. You look at it. It goes back to eating. Your rations.",
+    "choices": [
+      {
+        "id": "shout_and_charge",
+        "text": "Yell and charge at it to scare it off",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -8 },
+          { "type": "add_tag", "tag": "bear_incident" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wait_it_out",
+        "text": "Wait patiently at a safe distance until it finishes and leaves",
+        "effects": [
+          { "type": "consume_item", "item_id": "camping_supplies", "count": 1 },
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "requires_item": { "item_id": "camping_supplies", "count": 1 },
+        "next_event": null
+      },
+      {
+        "id": "offer_more_food",
+        "text": "Lay out some supplies as a peace offering. Maybe it'll be your friend.",
+        "effects": [
+          { "type": "consume_item", "item_id": "camping_supplies", "count": 2 },
+          { "type": "add_tag", "tag": "bear_friend" }
+        ],
+        "requires_item": { "item_id": "camping_supplies", "count": 2 },
+        "next_event": null
+      },
+      {
+        "id": "leave_let_bear_have_it",
+        "text": "Let the bear have the camp. Set up somewhere else.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "set_rest_state", "allow_rest": false }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_stolen_pie",
+    "title": "The Stolen Pie",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A hobbit blocks the road with surprising physical commitment. He's waving a faded WANTED notice. \"They took my pie! Eleven pies, actually, but the important one was the blackcurrant. It was for a birthday. I will pay you fifty gold to retrieve it and bring the culprit to justice.\" He seems completely serious.",
+    "choices": [
+      {
+        "id": "accept_pie_quest",
+        "text": "Accept the pie retrieval contract with full professionalism",
+        "effects": [
+          { "type": "add_tag", "tag": "on_pie_quest" },
+          { "type": "set_variable", "variable": "pie_quest_active", "value": true }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "politely_decline",
+        "text": "Decline as professionally as possible",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "take_job_ironically",
+        "text": "Agree enthusiastically. You've had worse jobs.",
+        "effects": [
+          { "type": "add_tag", "tag": "on_pie_quest" },
+          { "type": "set_variable", "variable": "pie_quest_active", "value": true }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_drunk_dwarf",
+    "title": "Drunk Dwarf",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A dwarf is sitting against a tree, tankard in hand, singing at full volume. He's extremely loud. He's also extremely cheerful. The song is about a hammer. There are many, many verses. He waves when he sees you.",
+    "choices": [
+      {
+        "id": "join_singing",
+        "text": "Sit down and join him",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_reputation", "faction": "dwarves", "amount": 5 },
+          { "type": "add_tag", "tag": "knows_hammer_song" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_whats_wrong",
+        "text": "Ask him what he's celebrating",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "change_reputation", "faction": "dwarves", "amount": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_him_to_quiet",
+        "text": "Ask him to keep it down. Politely.",
+        "effects": [
+          { "type": "change_reputation", "faction": "dwarves", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_dwarf",
+        "text": "Wish him well and move on quickly",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_rabbit_thief",
+    "title": "The Rabbit",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A rabbit sits in the middle of the path, eating something. As you get closer, you realize it's eating a piece of parchment. That parchment is, or was, your map.",
+    "choices": [
+      {
+        "id": "chase_rabbit",
+        "text": "Chase it",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "rabbit_chaos" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "rescue_map",
+        "text": "Lunge for the map",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -2 },
+          { "type": "add_tag", "tag": "partial_map_recovered" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "let_it_eat",
+        "text": "Watch it finish eating your map. What's even the point.",
+        "effects": [
+          { "type": "add_tag", "tag": "map_eaten" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hobbit_bounty",
+    "title": "The Bounty Board",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A bounty notice is nailed to a tree at eye level. The face on it is sketched with more enthusiasm than skill, but the description reads clearly: hobbit, brown curly hair, smells of pipeweed, wanted for \"theft of eleven pies and general incorrigible mischief.\" Reward: 50 gold.",
+    "choices": [
+      {
+        "id": "look_for_hobbit",
+        "text": "This seems worth pursuing",
+        "effects": [
+          { "type": "add_tag", "tag": "on_pie_quest" },
+          { "type": "set_variable", "variable": "pie_quest_active", "value": true },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "tear_down_poster",
+        "text": "Tear the poster down. Nobody deserves this for pies.",
+        "effects": [
+          { "type": "change_reputation", "faction": "hobbits", "amount": 5 },
+          { "type": "change_reputation", "faction": "locals", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_bounty",
+        "text": "Ignore it and keep moving",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

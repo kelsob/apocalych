@@ -1,0 +1,308 @@
+[
+  {
+    "id": "forest_unnatural_silence",
+    "title": "Unnatural Silence",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "The birds stop. The insects stop. Even the wind seems to hold its breath. The forest is completely silent—the kind of silence that takes effort to produce. Then, from somewhere deeper in the trees: a low, rhythmic thudding. Steady. Patient.",
+    "choices": [
+      {
+        "id": "investigate",
+        "text": "Move toward the sound",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "mixed/tainted_forest" },
+          { "type": "add_tag", "tag": "witnessed_corruption" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wait_and_watch",
+        "text": "Wait and observe from cover",
+        "effects": [
+          { "type": "add_tag", "tag": "corruption_warning" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "get_out",
+        "text": "Get out of here. Now.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_standing_stones",
+    "title": "Standing Stones",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": true,
+    "text": "A ring of eight stones stands in a clearing—each about knee height, each carved with symbols you don't recognize. The grass inside the ring is perfectly flat and a subtly different shade of green. No wind disturbs it.",
+    "choices": [
+      {
+        "id": "step_inside",
+        "text": "Step inside the ring",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 15 },
+          { "type": "add_tag", "tag": "touched_standing_stones" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "study_symbols",
+        "text": "Study the carvings carefully without entering",
+        "effects": [
+          { "type": "add_tag", "tag": "ancient_knowledge" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_offering",
+        "text": "Leave an offering at the edge—coin or food",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "paid_respects" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "back_away",
+        "text": "Back away slowly. Some things are best left alone.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_pale_blue_fire",
+    "title": "The Pale Blue Fire",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A small blue flame floats at eye level between the trees, about thirty feet off the path. It doesn't flicker. It moves—drifting left, then stopping, then drifting again—like something looking for the right direction.",
+    "choices": [
+      {
+        "id": "follow_flame",
+        "text": "Follow it",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "approach_slowly",
+        "text": "Approach slowly without following",
+        "effects": [
+          { "type": "add_tag", "tag": "wisp_observed" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_flame",
+        "text": "Ignore it and keep moving",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_carved_initials",
+    "title": "Carved Initials",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A massive oak is covered in carved names—hundreds of them, layered over decades or longer. Some are still sharp. Some are nearly grown over. One of them, near eye level, is your leader's name. Or something very close to it.",
+    "choices": [
+      {
+        "id": "touch_name",
+        "text": "Touch the name",
+        "effects": [
+          { "type": "add_tag", "tag": "marked_by_oak" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "carve_own",
+        "text": "Add your own name beneath it",
+        "effects": [
+          { "type": "add_tag", "tag": "marked_by_oak" },
+          { "type": "add_tag", "tag": "carved_name" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "study_all_names",
+        "text": "Look through all the names carefully",
+        "effects": [
+          { "type": "add_tag", "tag": "ancient_knowledge" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "move_on_quickly",
+        "text": "Move on. Quickly.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_ash_circle",
+    "title": "Ash Circle",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A ring of ash about ten feet across. Nothing grows inside it. At the center, a blackened iron spike has been driven into the ground. Something has been nailed to it—you can't make out what from here.",
+    "choices": [
+      {
+        "id": "examine_spike",
+        "text": "Get closer and examine it",
+        "effects": [
+          { "type": "add_tag", "tag": "found_dark_omen" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "pull_spike",
+        "text": "Pull the spike out",
+        "effects": [
+          { "type": "add_tag", "tag": "disturbed_binding" },
+          { "type": "change_stat", "stat": "hp", "amount": -8 },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_circle",
+        "text": "Leave it entirely alone",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_woman_in_white",
+    "title": "Woman in White",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A woman in white stands motionless between the trees at the edge of the road. She faces away from you. She doesn't move. You've been walking for thirty seconds and she still hasn't moved.",
+    "choices": [
+      {
+        "id": "call_to_her",
+        "text": "Call out to her",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/spectral_haunting" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "approach_slowly",
+        "text": "Approach slowly and carefully",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/spectral_haunting" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wide_berth",
+        "text": "Give her a very wide berth and keep moving",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "saw_woman_in_white" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_dead_raven",
+    "title": "The Dead Raven",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A raven falls out of the sky and lands at your feet. Stone dead. No wound. No sign of struggle. It's still warm.",
+    "choices": [
+      {
+        "id": "examine_raven",
+        "text": "Examine it",
+        "effects": [
+          { "type": "add_tag", "tag": "ill_omen" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_as_omen",
+        "text": "Take it as a warning and make camp before it gets dark",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "add_tag", "tag": "ill_omen" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "step_over_it",
+        "text": "Step over it and keep moving",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_cursed_grove",
+    "title": "The Cursed Grove",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": true,
+    "text": "The trees in this section of the forest are wrong. Their bark is gray-black. Their branches grow at unnatural angles. There are no dead leaves on the ground—nothing rots here. At the center of the grove, the largest tree pulses with a dull, dark light.",
+    "choices": [
+      {
+        "id": "approach_tree",
+        "text": "Approach the pulsing tree",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/cursed_grove" },
+          { "type": "add_tag", "tag": "witnessed_corruption" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "attempt_cleanse",
+        "text": "Attempt to cleanse it—if you know how",
+        "condition": {
+          "requires_tags": ["pilgrim_blessed"]
+        },
+        "effects": [
+          { "type": "add_tag", "tag": "cleansed_corruption" },
+          { "type": "change_reputation", "faction": "elves", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "study_corruption",
+        "text": "Study it from the edge of the grove",
+        "effects": [
+          { "type": "add_tag", "tag": "corruption_warning" },
+          { "type": "add_tag", "tag": "witnessed_corruption" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_grove",
+        "text": "Turn around and leave immediately",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

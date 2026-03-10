@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/dire_warg_fierce_bite.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/dire_warg_howl.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/dire_warg_lick_wounds.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Dire Warg"
+enemy_id = "dire_warg"
+description = "Larger and far more aggressive than common wargs. Dire wargs lead hunting packs and coordinate attacks."
+enemy_type = "pack leader"
+faction = 0
+creature_tags = 1
+max_health = 35
+atk = 10
+def = 3
+spd = 8
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 22
+gold_reward = 5
+loot_table = {}

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_bloodrager_rend.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_bloodrager_bloodbath.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/uruk_bloodrager_taunt.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Uruk Bloodrager"
+enemy_id = "uruk_bloodrager"
+description = "Uruks that embrace pain as fuel. The more damage they suffer, the stronger their attacks become."
+enemy_type = "fel berserker"
+faction = 1
+creature_tags = 2
+max_health = 30
+atk = 11
+def = 5
+spd = 7
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 22
+gold_reward = 5
+loot_table = {}

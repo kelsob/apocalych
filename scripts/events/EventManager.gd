@@ -9,11 +9,20 @@ var events: Dictionary = {}
 # Track one-shot events that have been seen
 var seen_one_shot_events: Array[String] = []
 
+## Holds combat_outcomes from the event that triggered the current combat.
+## Set by EventWindow before apply_effects, read by Main after combat ends, then cleared.
+var pending_combat_outcomes: Dictionary = {}
+
 # Seedable RNG for deterministic event selection
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # Party state reference (will be set by external systems)
 var party_state: Dictionary = {}
+
+## Debug: when true, always return the event with debug_event_id instead of normal selection.
+## Set via the Godot inspector or in code. Has no effect if debug_event_id is empty or not found.
+@export var debug_force_event: bool = false
+@export var debug_event_id: String = ""
 
 # Debug helper
 func debug_print(msg: String):
@@ -155,22 +164,16 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 	if events.is_empty():
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
-	
-	# FORCE MASTER TEST EVENT (for testing - remove when done)
-	if events.has("master_test"):
-		return events.master_test
-	
-	# FORCE VENDOR EVENT (for testing vendor - remove when done)
-	for event_id in events.keys():
-		if event_id.begins_with("wandering_vendor_"):
-			print("VENDOR TEST: EventManager forcing vendor event: %s" % event_id)
-			return events[event_id]
 
-	# FORCE TOWN ENTRY EVENT (for testing town flow at all nodes - inaccurate, for testing only)
-	for event_id in events.keys():
-		if event_id.begins_with("town_entry_"):
-			print("TOWN TEST: EventManager forcing town entry event: %s" % event_id)
-			return events[event_id]
+	# Debug override: always return one specific event when enabled
+	if debug_force_event:
+		if debug_event_id.is_empty():
+			push_warning("EventManager: debug_force_event is true but debug_event_id is not set")
+		elif events.has(debug_event_id):
+			print("EventManager [DEBUG]: Forcing event '%s'" % debug_event_id)
+			return events[debug_event_id]
+		else:
+			push_warning("EventManager: debug_event_id '%s' not found in loaded events" % debug_event_id)
 
 	# Normal selection
 	var party_state_dict = _build_party_state(party)
@@ -243,15 +246,26 @@ func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
 	
 	var party_state_dict = _build_party_state(party)
 	
-	# Filter choices by conditions
+	# Filter choices by conditions (condition = hide entirely if not met)
 	var filtered_choices: Array[Dictionary] = []
 	for choice in event.get("choices", []):
 		if not choice.has("condition"):
-			# No condition means always available
 			filtered_choices.append(choice)
 		else:
 			if condition_passes(choice.condition, party_state_dict):
 				filtered_choices.append(choice)
+	
+	# requires_item = keep visible but mark disabled if party lacks the item
+	for i in range(filtered_choices.size()):
+		var choice = filtered_choices[i]
+		if choice.has("requires_item"):
+			var req = choice.requires_item
+			var req_item_id: String = str(req.get("item_id", ""))
+			var req_count: int = int(req.get("count", 1))
+			if not _party_has_item(req_item_id, req_count):
+				var disabled_choice = choice.duplicate(true)
+				disabled_choice["disabled"] = true
+				filtered_choices[i] = disabled_choice
 	
 	# Create a copy of the event with filtered choices
 	var presented_event = event.duplicate(true)
@@ -330,6 +344,9 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 
 			"advance_time":
 				_apply_advance_time(effect)
+
+			"consume_item":
+				_apply_consume_item(effect, party)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -584,6 +601,13 @@ func _apply_script_hook(effect: Dictionary, party: Dictionary, node_state: Dicti
 	match effect.hook_name:
 		"open_merchant_ui":
 			main.open_vendor_screen(null)
+		"restart_game":
+			get_tree().reload_current_scene()
+		"go_to_main_menu":
+			main.game_started = false
+			main.show_menu(main.GameState.MAIN_MENU)
+		"quit_game":
+			get_tree().quit()
 		_:
 			push_warning("EventManager: Unknown script hook '%s'" % effect.hook_name)
 
@@ -662,6 +686,52 @@ func _apply_advance_time(effect: Dictionary) -> void:
 		return
 	if TimeManager:
 		TimeManager.advance_time_from_event(amount)
+
+## Check whether the party currently holds at least `count` of the given item
+func _party_has_item(item_id: String, count: int) -> bool:
+	if item_id.is_empty():
+		return false
+	var main := _get_main_node()
+	if not main:
+		return false
+	if ItemDatabase.is_bulk_loot(item_id):
+		return main.get_party_resource_count(item_id) >= count
+	# Non-bulk: sum across all party members
+	var total := 0
+	for m in main.current_party_members:
+		total += m.get_item_count(item_id)
+	return total >= count
+
+func _apply_consume_item(effect: Dictionary, party: Dictionary):
+	if not effect.has("item_id"):
+		push_warning("EventManager: consume_item effect missing 'item_id' field")
+		return
+	var item_id: String = str(effect.item_id)
+	var count: int = int(effect.get("count", 1))
+	if count <= 0:
+		return
+	var main := _get_main_node()
+	if not main:
+		push_warning("EventManager: consume_item could not find Main")
+		return
+	if ItemDatabase.is_bulk_loot(item_id):
+		if not main.remove_party_resource(item_id, count):
+			push_warning("EventManager: consume_item – not enough %s (needed %d)" % [item_id, count])
+		else:
+			print("EventManager: Consumed %s x%d" % [item_id, count])
+	else:
+		# Remove from whichever party members hold the item
+		var remaining := count
+		for m in main.current_party_members:
+			if remaining <= 0:
+				break
+			var has: int = m.get_item_count(item_id)
+			if has > 0:
+				var to_remove := mini(remaining, has)
+				m.remove_item(item_id, to_remove)
+				remaining -= to_remove
+		if remaining > 0:
+			push_warning("EventManager: consume_item – could not consume full quantity of %s" % item_id)
 
 func _get_main_node() -> Node:
 	var root: Window = get_tree().root

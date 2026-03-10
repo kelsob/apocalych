@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/porkupine_puncturing_tackle.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/porkupine_quill_spray.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/porkupine_quill_shield.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/beasts/porkupine_enrage.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Porkupine"
+enemy_id = "porkupine"
+description = "A brutal hybrid of boar and porcupine. Covered in massive quills that punish melee attackers."
+enemy_type = "armored boar"
+faction = 0
+creature_tags = 1
+max_health = 40
+atk = 10
+def = 13
+spd = 5
+mag = 0
+mag_def = 3
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Aggressive"
+xp_reward = 28
+gold_reward = 6
+loot_table = {}

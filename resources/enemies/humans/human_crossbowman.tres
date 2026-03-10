@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/crossbowman_bolt_shot.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/crossbowman_bodkin_bolt.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/crossbowman_reload.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/humans/crossbowman_suppressing_fire.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Human Crossbowman"
+enemy_id = "human_crossbowman"
+description = "Crossbows are favored by human armies for their simplicity and stopping power."
+enemy_type = "disciplined ranged"
+faction = 2
+creature_tags = 2
+max_health = 22
+atk = 8
+def = 3
+spd = 6
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 15
+gold_reward = 5
+loot_table = {}

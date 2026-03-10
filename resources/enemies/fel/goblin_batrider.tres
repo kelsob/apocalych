@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_batrider_shrapnel_bomb.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_batrider_thorned_net.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_batrider_napalm.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Goblin Batrider"
+enemy_id = "goblin_batrider"
+description = "Goblins riding giant bats that circle above battlefields dropping explosives and traps onto enemies below."
+enemy_type = "aerial bomber"
+faction = 1
+creature_tags = 2
+max_health = 30
+atk = 6
+def = 3
+spd = 8
+mag = 3
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 22
+gold_reward = 5
+loot_table = {}

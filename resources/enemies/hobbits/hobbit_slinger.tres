@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/slinger_stone_toss.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/slinger_lucky_shot.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/slinger_scatter_stones.tres" id="4"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/hobbits/slinger_duck.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Hobbit Slinger"
+enemy_id = "hobbit_slinger"
+description = "Hobbits trained with slings can pester enemies endlessly."
+enemy_type = "ranged nuisance"
+faction = 5
+creature_tags = 2
+max_health = 18
+atk = 6
+def = 2
+spd = 9
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5")])
+ai_behavior = "Balanced"
+xp_reward = 10
+gold_reward = 3
+loot_table = {}

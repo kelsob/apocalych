@@ -1,0 +1,294 @@
+[
+  {
+    "id": "forest_pack_territory",
+    "title": "The Pack's Territory",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "Warg tracks everywhere. Fresh—the mud still has water seeping into the impressions. You've been followed since the last clearing. The prints are circling the path, not crossing it. They're studying you.",
+    "choices": [
+      {
+        "id": "double_back_quickly",
+        "text": "Double back at speed—get out of their territory",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "avoided_pack_territory" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "set_up_terrain",
+        "text": "Pick your ground and set up before they make a move",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "beasts/warg_hunt" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "climb_trees",
+        "text": "Get into the trees and ambush them from above",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_hunt" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "run_for_it",
+        "text": "Run for it",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -8 },
+          { "type": "start_combat", "encounter_id": "beasts/warg_hunt" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_false_merchant",
+    "title": "The Merchant's Call for Help",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "A voice from the treeline: \"Please! They took everything! Help me!\" It sounds genuinely desperate. It's also exactly what you'd say if you needed someone to walk into an ambush.",
+    "choices": [
+      {
+        "id": "rush_in",
+        "text": "Rush in to help",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "humans/bandit_gang" },
+          { "type": "change_stat", "stat": "hp", "amount": -5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "approach_cautiously",
+        "text": "Approach carefully—spot the ambush before they spring it",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "humans/bandit_gang" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "call_their_bluff",
+        "text": "Call out loudly that you see them and you're armed",
+        "effects": [
+          { "type": "add_tag", "tag": "bluffed_ambush" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_goblin_camp_spotted",
+    "title": "Smoke from a Goblin Camp",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "From a ridge you can see a full goblin camp in the valley below—fires, tents, the full composition visible from here. They haven't spotted you yet. You have the high ground and the information.",
+    "choices": [
+      {
+        "id": "attack_now",
+        "text": "Attack now—surprise advantage and momentum",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "fel/goblin_warband" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "sneak_past",
+        "text": "Sneak past their perimeter using the ridge",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "add_tag", "tag": "slipped_past_goblin_camp" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "set_fire_to_scatter",
+        "text": "Set a fire upwind to scatter them—creates chaos",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "fel/goblin_rabble" },
+          { "type": "add_tag", "tag": "scattered_goblin_camp" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "observe_and_learn",
+        "text": "Observe the camp fully before doing anything",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_goblin_destination" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_drake_roost",
+    "title": "The Drake's Roost",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "Scorched trees. Deep claw marks in the stone of a cliff face. Bones from kills dragged here over months. Something very large roosts nearby, and you're close enough to its territory that this is going to require a decision.",
+    "choices": [
+      {
+        "id": "avoid_territory",
+        "text": "Avoid its territory—take the wide path around",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "drive_it_out",
+        "text": "Drive it out of the area",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/drake_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_offering",
+        "text": "Leave a meat offering at the edge of its territory—old practice",
+        "effects": [
+          { "type": "give_item", "item_id": "meat", "count": -1 },
+          { "type": "add_tag", "tag": "paid_respects" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "steal_from_hoard",
+        "text": "Find the hoard while it's out and take what you can",
+        "effects": [
+          { "type": "give_gold", "amount": 40 },
+          { "type": "give_item", "item_id": "trinket", "count": 2 },
+          { "type": "start_combat", "encounter_id": "beasts/drake_ambush" },
+          { "type": "add_tag", "tag": "robbed_drake_hoard" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_bone_warg_mark",
+    "title": "The Bone Warg's Mark",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "Fresh bone fragments pressed into the earth around the path, in a pattern. Claw scrapes on the bark at shoulder height—not the scrapes of a natural animal sharpening its claws, but deliberate marks. Something left these as a message.",
+    "choices": [
+      {
+        "id": "track_them",
+        "text": "Track them—approach on your terms",
+        "effects": [
+          { "type": "add_tag", "tag": "ambush_prepared" },
+          { "type": "start_combat", "encounter_id": "fel/bone_cavalry" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "set_a_trap",
+        "text": "Set a trap and let them come to you",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "start_combat", "encounter_id": "fel/bone_cavalry" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "evacuate_the_area",
+        "text": "Get out of the area entirely",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_elven_ambush_warning",
+    "title": "The Elven Ambush Warning",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "An arrow lands point-first between your feet. Attached to the shaft: a single leaf with one word scratched into it in elvish. A passing trader translates when you show them: \"Leave.\"",
+    "choices": [
+      {
+        "id": "leave",
+        "text": "Leave. The message is clear.",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "change_reputation", "faction": "elves", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "find_them_and_parlay",
+        "text": "Find whoever shot it and attempt to negotiate",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "elven_parley_attempted" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "keep_walking",
+        "text": "Keep walking. You got the message.",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "elves/elven_ambush" },
+          { "type": "change_reputation", "faction": "elves", "amount": -15 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_slime_pool",
+    "title": "The Slime Pool",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A low depression in the forest floor has become a slime breeding ground—thick, slow-moving, and audible from thirty feet away. Slimes don't usually colonize forests. Something is wrong with this soil.",
+    "choices": [
+      {
+        "id": "avoid_it",
+        "text": "Find a safe path around it",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_source",
+        "text": "Investigate what's causing this—slimes don't belong here",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_slime_source" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "purge_it_now",
+        "text": "Clear it out before it spreads further",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/slime_evolution" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "collapse_the_depression",
+        "text": "Cave in the depression to cut off the breeding ground",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "change_stat", "stat": "hp", "amount": -4 },
+          { "type": "add_tag", "tag": "collapsed_slime_pool" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

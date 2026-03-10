@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+[ext_resource type="Resource" path="res://resources/statuses/feared.tres" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 2
+potency = 0.0
+stat_scaling = {}
+target_count = 999
+status_to_apply = ExtResource("3")
+dispel_count = 1
+
+[resource]
+script = ExtResource("1")
+ability_name = "Howl"
+ability_id = "dire_warg_howl"
+description = "A chilling howl that strikes fear into all enemies."
+ap_cost = 2
+base_cast_time = 0
+ability_type = 0
+targeting_type = 4
+requires_target = false
+effects = Array[Resource("res://scripts/combat/resources/AbilityEffect.gd")]([SubResource("1")])
+can_be_interrupted = true
+channeled_tick_on_cast = false

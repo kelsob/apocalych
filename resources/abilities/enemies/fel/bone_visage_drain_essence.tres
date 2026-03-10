@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 9
+potency = 5.0
+stat_scaling = {"mag": 0.8}
+target_count = 1
+dispel_count = 1
+lifesteal_ratio = 1.0
+is_magical = true
+
+[resource]
+script = ExtResource("1")
+ability_name = "Drain Essence"
+ability_id = "bone_visage_drain_essence"
+description = "Siphons the living energy from a target, transferring it into itself."
+ap_cost = 2
+base_cast_time = 0
+ability_type = 0
+targeting_type = 2
+requires_target = true
+effects = Array[Resource("res://scripts/combat/resources/AbilityEffect.gd")]([SubResource("1")])
+can_be_interrupted = true
+channeled_tick_on_cast = false

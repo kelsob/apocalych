@@ -110,6 +110,12 @@ func _on_choice_button_pressed(choice: Dictionary):
 		var node_state = {}
 		if current_node:
 			node_state["current_node"] = current_node
+		# If this choice starts combat, stash the parent event's combat_outcomes so
+		# Main can fire the correct post-combat follow-up after the fight resolves.
+		for effect in effects:
+			if effect.get("type") == "start_combat":
+				EventManager.pending_combat_outcomes = current_event.get("combat_outcomes", {}).duplicate(true)
+				break
 		EventManager.apply_effects(effects, current_party, node_state)
 	
 	# Close event window

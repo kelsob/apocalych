@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/fel/bone_gnasher.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/fel/torn_soul.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "risen_dead"
+encounter_name = "Risen Dead"
+description = "Gnashers clatter toward you. A Torn Soul screams overhead, sapping the will to fight."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("2"), ExtResource("3")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 5
+bonus_gold = 0
+guaranteed_loot = []
+can_escape = true
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""

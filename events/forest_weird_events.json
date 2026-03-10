@@ -1,0 +1,407 @@
+[
+  {
+    "id": "forest_wrong_scarecrow",
+    "title": "The Scarecrow That's Wrong",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "A scarecrow in the middle of a clearing with no farmland within miles. It's facing the wrong direction. It has moved since you first saw it—you're almost certain. Nobody touched it.",
+    "choices": [
+      {
+        "id": "burn_it",
+        "text": "Burn it",
+        "effects": [
+          { "type": "add_tag", "tag": "burned_scarecrow" },
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate",
+        "text": "Investigate it and the clearing",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_ritual_site" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_quickly",
+        "text": "Leave quickly and don't look back",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "speak_to_it",
+        "text": "Say something to it",
+        "effects": [
+          { "type": "add_tag", "tag": "spoke_to_scarecrow" },
+          { "type": "change_stat", "stat": "hp", "amount": -2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_black_dog",
+    "title": "The Black Dog",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A large black dog has been following the party since morning. Not following closely—always just at the edge of visibility, just at the edge of the path. It won't approach. It won't leave.",
+    "choices": [
+      {
+        "id": "befriend_it",
+        "text": "Try to befriend it—call it over, offer food",
+        "effects": [
+          { "type": "add_tag", "tag": "black_dog_friend" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "chase_it_off",
+        "text": "Chase it off",
+        "effects": [
+          { "type": "add_tag", "tag": "black_dog_chased" },
+          { "type": "start_combat", "encounter_id": "nighttime_ambush" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "follow_it",
+        "text": "Follow it—it seems to want to lead you somewhere",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "followed_black_dog" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_it",
+        "text": "Ignore it. By camp it's gone. Nothing bad happens.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_lights_in_trees",
+    "title": "The Lights in the Trees",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Dancing lights deep in the forest, moving through the branches. Too large for fireflies. Too deliberate. They stop when you stop. They move when you move.",
+    "choices": [
+      {
+        "id": "follow_lights",
+        "text": "Follow them",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "followed_the_lights" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_them",
+        "text": "Ignore them and stay on the path",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "try_to_catch_one",
+        "text": "Try to catch one",
+        "effects": [
+          { "type": "add_tag", "tag": "touched_the_lights" },
+          { "type": "change_stat", "stat": "hp", "amount": -4 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "shout_at_them",
+        "text": "Shout at them",
+        "effects": [
+          { "type": "add_tag", "tag": "lights_startled" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_mass_of_crows",
+    "title": "The Mass of Crows",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "Hundreds of crows in the branches overhead—completely silent, watching. No other animals. No wind. Just crows, in every tree, for a hundred yards in every direction. It takes a minute to realize they're all watching you specifically.",
+    "choices": [
+      {
+        "id": "move_through_normally",
+        "text": "Move through normally",
+        "effects": [
+          { "type": "add_tag", "tag": "ill_omen" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "make_noise",
+        "text": "Make noise to scatter them",
+        "effects": [
+          { "type": "add_tag", "tag": "disturbed_crows" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "commune_with_them",
+        "text": "One party member tries to commune with them",
+        "condition": {
+          "requires_any": ["has_druid", "has_ranger", "herb_witch_favor"]
+        },
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "crow_lore" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "turn_back",
+        "text": "Turn back—this is a bad omen",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_hanged_man",
+    "title": "The Hanged Man",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A man hanged from a tree by the road. Old—months, maybe a year. But there's a fresh flower in his hand, placed there recently by someone who knew where to find him.",
+    "choices": [
+      {
+        "id": "cut_him_down",
+        "text": "Cut him down. Whatever he did, he's served his time.",
+        "effects": [
+          { "type": "add_tag", "tag": "cut_down_hanged_man" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate",
+        "text": "Investigate—who was he, and who still visits?",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_hanged_man_story" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "take_the_flower",
+        "text": "Take the flower",
+        "effects": [
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "add_tag", "tag": "took_dead_mans_flower" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "keep_moving",
+        "text": "Keep moving. Leave him to whoever still visits.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_old_ruins",
+    "title": "The Ruins",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "Crumbling stone buildings reclaimed by roots and vines—older than anyone in the region can account for. The architecture isn't quite human. The proportions are slightly wrong. The doorways are the wrong height.",
+    "choices": [
+      {
+        "id": "explore_thoroughly",
+        "text": "Explore thoroughly",
+        "effects": [
+          { "type": "advance_time", "amount": 2 },
+          { "type": "give_gold", "amount": 15 },
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "start_combat", "encounter_id": "beasts/enchanted_glade" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "quick_search",
+        "text": "Quick search only",
+        "effects": [
+          { "type": "give_gold", "amount": 8 },
+          { "type": "add_tag", "tag": "ancient_knowledge" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "camp_here",
+        "text": "Camp in the largest shelter",
+        "effects": [
+          { "type": "set_rest_state", "allow_rest": true },
+          { "type": "advance_time", "amount": 1 },
+          { "type": "start_combat", "encounter_id": "fel/spectral_haunting" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_it",
+        "text": "Don't enter. Move on.",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_buried_bell",
+    "title": "The Buried Bell",
+    "biomes": ["forest"],
+    "weight": 7,
+    "one_shot": false,
+    "text": "Your camp spot has a rope tied to a peg in the ground. If you pull it—you can feel resistance, something underneath—there is a bell, buried. Someone buried a bell here, attached to a rope, leading up.",
+    "choices": [
+      {
+        "id": "pull_it",
+        "text": "Pull the rope",
+        "effects": [
+          { "type": "add_tag", "tag": "rang_buried_bell" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "dig_down",
+        "text": "Dig down and see what's down there",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_item", "item_id": "trinket", "count": 1 },
+          { "type": "add_tag", "tag": "dug_up_buried_bell" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "cut_rope",
+        "text": "Cut the rope and leave it",
+        "effects": [
+          { "type": "add_tag", "tag": "cut_buried_bell_rope" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_alone",
+        "text": "Leave it entirely alone. In the night, it rings once.",
+        "effects": [
+          { "type": "add_tag", "tag": "bell_rang_in_night" },
+          { "type": "change_stat", "stat": "hp", "amount": -2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_unikhorne_path",
+    "title": "The Unikhorne's Path",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": true,
+    "text": "The path is crossed by a single line of crushed vegetation—something enormous passed this way. The hoofprints are wrong. Not wrong like injured. Wrong like the shape is not quite a hoof. Whatever made this, it destroyed a wolf pack's territory passing through and didn't stop.",
+    "choices": [
+      {
+        "id": "follow_trail",
+        "text": "Follow the trail",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "start_combat", "encounter_id": "beasts/cursed_grove" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "leave_offering",
+        "text": "Leave an offering where the path crosses yours—old folk ritual",
+        "effects": [
+          { "type": "pay_gold", "amount": 2 },
+          { "type": "add_tag", "tag": "paid_respects" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "investigate_what_it_destroyed",
+        "text": "Examine what it destroyed—there are wolf bodies, crushed traps, something enormous happened here",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "knows_unikhorne_passed" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "report_it",
+        "text": "Mark the location and report it to the nearest settlement",
+        "effects": [
+          { "type": "add_tag", "tag": "unikhorne_reported" },
+          { "type": "change_reputation", "faction": "locals", "amount": 5 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_voice_from_well",
+    "title": "The Voice from the Well",
+    "biomes": ["forest"],
+    "weight": 6,
+    "one_shot": false,
+    "text": "A well that echoes back whatever you say—but wrong. Not in volume or delay. Wrong in content. The words come back changed. You say \"hello.\" It says something else entirely.",
+    "choices": [
+      {
+        "id": "ask_it_a_question",
+        "text": "Ask it a question",
+        "effects": [
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "heard_well_answer" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "say_a_name",
+        "text": "Say a party member's name",
+        "effects": [
+          { "type": "add_tag", "tag": "well_gave_different_name" },
+          { "type": "change_stat", "stat": "hp", "amount": -2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "shout_nonsense",
+        "text": "Shout something meaningless at it",
+        "effects": [
+          { "type": "add_tag", "tag": "well_gave_warning" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "smash_the_well",
+        "text": "Smash it—you don't need this today",
+        "effects": [
+          { "type": "add_tag", "tag": "smashed_echo_well" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

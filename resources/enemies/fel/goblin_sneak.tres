@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_sneak_puncture.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_sneak_garrote.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/goblin_sneak_stagger.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Goblin Sneak"
+enemy_id = "goblin_sneak"
+description = "A stealthy goblin that lurks at the edge of battle waiting for an opportunity to strike vulnerable targets."
+enemy_type = "shadow skirmisher"
+faction = 1
+creature_tags = 2
+max_health = 17
+atk = 7
+def = 4
+spd = 9
+mag = 0
+mag_def = 2
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 12
+gold_reward = 4
+loot_table = {}

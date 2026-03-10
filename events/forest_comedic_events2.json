@@ -1,0 +1,360 @@
+[
+  {
+    "id": "forest_enthusiastic_dog",
+    "title": "The Very Enthusiastic Dog",
+    "biomes": ["forest"],
+    "weight": 13,
+    "one_shot": false,
+    "text": "A dog with no owner appears from nowhere and wants to play fetch RIGHT NOW. It has found a stick. It has dropped the stick at your feet. It is looking at you with a level of hope that is genuinely difficult to disappoint.",
+    "choices": [
+      {
+        "id": "play_fetch",
+        "text": "Play fetch with it",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "find_its_owner",
+        "text": "Try to find its owner—it must belong to someone",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" },
+          { "type": "add_tag", "tag": "found_dog_owner" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "adopt_it",
+        "text": "Adopt it. You have a dog now.",
+        "effects": [
+          { "type": "add_tag", "tag": "has_dog_companion" },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ignore_it",
+        "text": "Walk past ignoring it completely",
+        "effects": [
+          { "type": "add_tag", "tag": "dog_follows_anyway" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_mushroom_circle",
+    "title": "The Mushroom Circle",
+    "biomes": ["forest"],
+    "weight": 11,
+    "one_shot": false,
+    "text": "A perfect fairy ring of enormous mushrooms. Everyone knows what these are. Everyone knows what happens if you step inside one. The information is extremely clear on this point.",
+    "choices": [
+      {
+        "id": "step_inside",
+        "text": "Step inside it",
+        "effects": [
+          { "type": "add_tag", "tag": "entered_fairy_ring" },
+          { "type": "change_stat", "stat": "hp", "amount": 10 },
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Go carefully around it",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "eat_one",
+        "text": "Eat one of the mushrooms",
+        "effects": [
+          { "type": "add_tag", "tag": "ate_fairy_ring_mushroom" },
+          { "type": "change_stat", "stat": "hp", "amount": -8 },
+          { "type": "change_stat", "stat": "hp", "amount": 15 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "study_it",
+        "text": "Study it properly before doing anything",
+        "effects": [
+          { "type": "add_tag", "tag": "ancient_knowledge" },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_mushroom_picker",
+    "title": "The Competitive Mushroom Picker",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "An absolutely furious hobbit woman who has been picking mushrooms at this precise spot for forty years is standing in your way, and you are in her way, and she would like you to know that this is unacceptable.",
+    "choices": [
+      {
+        "id": "apologize_and_leave",
+        "text": "Apologize sincerely and step aside",
+        "effects": [
+          { "type": "give_item", "item_id": "mushroom", "count": 3 },
+          { "type": "change_reputation", "faction": "hobbits", "amount": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "help_her_pick",
+        "text": "Offer to help her pick—she warms up eventually",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_item", "item_id": "mushroom", "count": 5 },
+          { "type": "change_reputation", "faction": "hobbits", "amount": 8 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "argue_with_her",
+        "text": "Argue with her about whose road this is",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "change_reputation", "faction": "hobbits", "amount": -5 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "try_to_outpick_her",
+        "text": "Challenge her—outpick her and prove your worth",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_item", "item_id": "mushroom", "count": 2 },
+          { "type": "add_tag", "tag": "lost_mushroom_contest" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_bet_event",
+    "title": "The Bet",
+    "biomes": ["forest"],
+    "weight": 10,
+    "one_shot": false,
+    "text": "A small group of humans are wagering on something. A snail race. Two snails on a log, taken very seriously. Money has changed hands. They invite you enthusiastically to participate.",
+    "choices": [
+      {
+        "id": "bet_gold",
+        "text": "Bet gold on the faster-looking one",
+        "effects": [
+          { "type": "pay_gold", "amount": 10 },
+          { "type": "give_gold", "amount": 20 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "join_for_fun",
+        "text": "Watch and cheer. Join for the fun of it.",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "cheat",
+        "text": "Subtly interfere with one of the snails",
+        "effects": [
+          { "type": "give_gold", "amount": 15 },
+          { "type": "add_tag", "tag": "cheated_at_snails" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "decline_politely",
+        "text": "Decline politely and move on",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_cook_off",
+    "title": "The Cook-Off",
+    "biomes": ["forest"],
+    "weight": 9,
+    "one_shot": false,
+    "text": "The caravan cook has challenged your party to produce a better meal than him by morning. He is extremely confident. He is also, you notice, an excellent cook. This is going to be difficult.",
+    "choices": [
+      {
+        "id": "accept_the_challenge",
+        "text": "Accept. You'll figure out something.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "give_item", "item_id": "ration", "count": 3 },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "decline_gracefully",
+        "text": "Decline gracefully—he makes you something anyway and it's excellent",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": 10 },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "cheat_magically",
+        "text": "Use a magical shortcut",
+        "condition": {
+          "requires_any": ["has_mage", "herb_witch_favor"]
+        },
+        "effects": [
+          { "type": "give_gold", "amount": 10 },
+          { "type": "give_item", "item_id": "ration", "count": 5 },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_obstinate_goat",
+    "title": "The Goat",
+    "biomes": ["forest"],
+    "weight": 12,
+    "one_shot": false,
+    "text": "A goat is standing in the middle of the path and will not move. It is looking at you. You are looking at it. You have been doing this for several minutes and the situation has not improved.",
+    "choices": [
+      {
+        "id": "move_it",
+        "text": "Physically move it",
+        "effects": [
+          { "type": "change_stat", "stat": "hp", "amount": -3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "bribe_it",
+        "text": "Offer it something from your supplies to move",
+        "requires_item": { "item_id": "camping_supplies", "count": 1 },
+        "effects": [
+          { "type": "consume_item", "item_id": "camping_supplies", "count": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "go_around",
+        "text": "Go around it",
+        "effects": [
+          { "type": "add_tag", "tag": "goat_follows_party" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "stare_it_down",
+        "text": "Stare it down. Establish dominance.",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "add_tag", "tag": "lost_goat_staredown" }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_impersonator",
+    "title": "The Impersonator",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "A young man is pretending to be a legendary hero to impress a small captive audience. He is not good at it. He's about to make a claim that someone in your party can factually disprove. The crowd is delighted regardless.",
+    "choices": [
+      {
+        "id": "play_along",
+        "text": "Play along—build his story up, make it better",
+        "effects": [
+          { "type": "add_tag", "tag": "good_morale" },
+          { "type": "change_reputation", "faction": "locals", "amount": 3 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "expose_him",
+        "text": "Expose him politely but firmly",
+        "effects": [
+          { "type": "add_tag", "tag": "exposed_impersonator" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "hire_him",
+        "text": "Hire him—he's terrible in a fight but excellent for morale",
+        "effects": [
+          { "type": "pay_gold", "amount": 5 },
+          { "type": "add_tag", "tag": "hired_impersonator" },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "challenge_him",
+        "text": "Challenge him to prove himself",
+        "effects": [
+          { "type": "add_tag", "tag": "challenged_impersonator" },
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "forest_pointing_skeleton",
+    "title": "The Skeleton That's Just Standing There",
+    "biomes": ["forest"],
+    "weight": 8,
+    "one_shot": false,
+    "text": "An animated skeleton standing at an intersection in the path, pointing one direction. It is not hostile. It is not threatening. It is just standing there, pointing. It has clearly been doing this for a while.",
+    "choices": [
+      {
+        "id": "follow_direction",
+        "text": "Follow the direction it's pointing",
+        "effects": [
+          { "type": "advance_time", "amount": 1 },
+          { "type": "reveal_secrets" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "ask_it_questions",
+        "text": "Ask it questions",
+        "effects": [
+          { "type": "add_tag", "tag": "skeleton_pointed_more_insistently" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "destroy_it",
+        "text": "Destroy it—just in case",
+        "effects": [
+          { "type": "add_tag", "tag": "destroyed_pointing_skeleton" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "wave_at_it",
+        "text": "Wave at it",
+        "effects": [
+          { "type": "add_tag", "tag": "skeleton_waved_back_wrong_arm" },
+          { "type": "add_tag", "tag": "good_morale" }
+        ],
+        "next_event": null
+      }
+    ]
+  }
+]

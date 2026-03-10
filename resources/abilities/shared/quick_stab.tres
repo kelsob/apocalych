@@ -8,7 +8,7 @@ script = ExtResource("2")
 effect_type = 0
 potency = 1.25
 stat_scaling = {
-"dexterity": 0.8
+"atk": 0.8
 }
 target_count = 1
 dispel_count = 1

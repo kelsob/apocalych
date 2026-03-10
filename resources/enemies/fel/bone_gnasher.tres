@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="Enemy" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Enemy.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_gnasher_tear.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_gnasher_tackle.tres" id="3"]
+[ext_resource type="Resource" path="res://resources/abilities/enemies/fel/bone_gnasher_flesh_for_flesh.tres" id="4"]
+
+[resource]
+script = ExtResource("1")
+enemy_name = "Bone Gnasher"
+enemy_id = "bone_gnasher"
+description = "Mindless undead that tear at anything living. Poison sustains them while healing magic harms them."
+enemy_type = "undead husk"
+faction = 1
+creature_tags = 4
+max_health = 20
+atk = 5
+def = 5
+spd = 6
+mag = 0
+mag_def = 3
+abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
+ai_behavior = "Aggressive"
+xp_reward = 12
+gold_reward = 2
+loot_table = {}

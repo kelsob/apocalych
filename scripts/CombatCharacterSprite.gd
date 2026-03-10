@@ -7,10 +7,10 @@ var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tsc
 var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
 const PLACEHOLDER_TEXTURE: Texture2D = preload("res://assets/party-characters/placeholder.png")
 
-@onready var character_sprite: TextureRect = $MarginContainer/VBoxContainer/CharacterSprite
-@onready var hp_progress_bar: ProgressBar = $MarginContainer/VBoxContainer/HPProgressBar
-@onready var casting_label: Label = $MarginContainer/VBoxContainer/CastingLabel
-@onready var status_effects_container : HBoxContainer = $MarginContainer/VBoxContainer/StatusEffectsContainer
+@onready var character_sprite: TextureRect = $VBoxContainer/CharacterSprite
+@onready var hp_progress_bar: HPBar = $VBoxContainer/HPBar
+@onready var casting_label: Label = $VBoxContainer/CastingLabel
+@onready var status_effects_container : HBoxContainer = $VBoxContainer/StatusEffectsContainer
 
 # Targeting visuals (created in _ready so we don't require scene edits)
 var _selection_highlight: ColorRect = null
@@ -30,9 +30,6 @@ func _ready():
 		casting_label.visible = false
 		casting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	
-	# Initialize HP bar
-	if hp_progress_bar:
-		hp_progress_bar.show_percentage = false
 	
 	# Selection indicator: full rect overlay when this combatant is selected as target
 	_selection_highlight = ColorRect.new()
@@ -100,21 +97,9 @@ func setup(combatant_data: CombatantData):
 
 ## Update health bar display
 func update_health_display():
-	if not combatant or not hp_progress_bar:
-		return
-	
 	var stats = combatant.combatant_stats
-	hp_progress_bar.max_value = stats.max_health
-	hp_progress_bar.value = stats.current_health
-	
-	# Color code health bar
-	var health_percent = float(stats.current_health) / float(stats.max_health)
-	if health_percent > 0.6:
-		hp_progress_bar.modulate = Color.GREEN
-	elif health_percent > 0.3:
-		hp_progress_bar.modulate = Color.YELLOW
-	else:
-		hp_progress_bar.modulate = Color.RED
+	hp_progress_bar.set_health(stats.current_health, stats.max_health)
+
 
 ## Update casting display
 func update_casting_display():

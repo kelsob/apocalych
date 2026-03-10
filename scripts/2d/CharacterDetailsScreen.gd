@@ -31,7 +31,7 @@ const ARMOUR_ICON_PATH: String = "res://assets/items/armor-1.png"
 @onready var _inventory_container: GridContainer = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/PanelContainer/MarginContainer/CharacterInventoryContainer
 @onready var close_button: Button = $CloseButton
 
-var _hp_progress_bar: ProgressBar = null  # Optional: add HPProgressBar as child of HPXPContainer to show HP bar
+var _hp_progress_bar: ProgressBar = null  # Optional: add HPBar as child of HPXPContainer to show HP bar
 
 func _ready() -> void:
 	_hp_progress_bar = get_node_or_null("PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HPProgressBar") as ProgressBar
@@ -74,10 +74,7 @@ func _populate_hp_xp(member: PartyMember) -> void:
 		_current_hp_label.text = str(member.current_health)
 	if _max_hp_label:
 		_max_hp_label.text = str(member.max_health)
-	if _hp_progress_bar:
-		_hp_progress_bar.min_value = 0
-		_hp_progress_bar.max_value = member.max_health if member.max_health > 0 else 1
-		_hp_progress_bar.value = member.current_health
+	_hp_progress_bar.set_health(member.current_health, member.max_health)
 	if _next_lvl_label:
 		_next_lvl_label.text = "%d:" % (member.level + 1)
 	if _xp_to_lvl_label:

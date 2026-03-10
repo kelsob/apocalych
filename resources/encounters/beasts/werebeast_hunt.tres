@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CombatEncounter" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/CombatEncounter.gd" id="1"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/werebeast.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/enemies/beasts/warg.tres" id="3"]
+
+[resource]
+script = ExtResource("1")
+encounter_id = "werebeast_hunt"
+encounter_name = "Werebeast Hunt"
+description = "A Werebeast stalks the night, natural wargs following in its wake like wolves behind a god."
+enemies = Array[Resource("res://scripts/combat/resources/Enemy.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("3")])
+environment_statuses = Array[Resource("res://scripts/combat/resources/StatusEffect.gd")]([])
+bonus_xp = 25
+bonus_gold = 0
+guaranteed_loot = []
+can_escape = false
+escape_difficulty = 0
+time_limit = 0
+special_victory_condition = ""
