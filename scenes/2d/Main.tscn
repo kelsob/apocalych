@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=27 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -19,6 +19,7 @@
 [ext_resource type="Texture2D" uid="uid://bdva5v7okxik1" path="res://assets/items/coin-purse-1.png" id="20_5k84n"]
 [ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="20_mnjbk"]
 [ext_resource type="Texture2D" uid="uid://bv17nma7msnel" path="res://assets/items/meat-2.png" id="21_5k84n"]
+[ext_resource type="PackedScene" uid="uid://bqog1xs2sdx61" path="res://scenes/debug/PartyTagsLabel.tscn" id="22_ia0w3"]
 [ext_resource type="Texture2D" uid="uid://bjnq2f2tlmcty" path="res://assets/items/gem-13.png" id="22_ufufp"]
 [ext_resource type="Texture2D" uid="uid://dfu83h6ocomu6" path="res://assets/items/powder-1.png" id="23_xsycr"]
 [ext_resource type="Texture2D" uid="uid://fdvdwowy5wyw" path="res://assets/items/shard-3.png" id="24_ia0w3"]
@@ -34,6 +35,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
+event_debug_force = true
+event_debug_id = "test_warg_ambush_outcomes"
+debug_event_selection = true
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true
@@ -303,6 +307,19 @@ theme = ExtResource("18_q52ow")
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
+
+[node name="PartyTagsLabel" parent="UIController/MapUI" instance=ExtResource("22_ia0w3")]
+custom_minimum_size = Vector2(0, 256)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -74.0
+offset_top = -64.0
+offset_right = -31.0
+offset_bottom = 192.0
+grow_horizontal = 0
+horizontal_alignment = 2
 
 [node name="TownScreen" parent="UIController" instance=ExtResource("17_ialqc")]
 visible = false

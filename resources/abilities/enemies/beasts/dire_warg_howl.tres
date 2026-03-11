@@ -9,7 +9,7 @@ script = ExtResource("2")
 effect_type = 2
 potency = 0.0
 stat_scaling = {}
-target_count = 999
+target_count = 2
 status_to_apply = ExtResource("3")
 dispel_count = 1
 

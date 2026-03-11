@@ -3,6 +3,8 @@ extends Node
 ## TagManager - manages party composition tags for event queries
 ## Tags are automatically generated from party composition
 
+signal tags_changed()
+
 # Current active tags
 var active_tags: Array[String] = []
 
@@ -39,6 +41,7 @@ func update_tags_from_party(party_members: Array[PartyMember]):
 		# If all members are this class, add "all_" tag
 		if class_counts[class_key] == party_members.size():
 			active_tags.append("<all_" + class_key + ">")
+	tags_changed.emit()
 
 ## Check if a specific tag exists
 func has_tag(tag: String) -> bool:
@@ -62,16 +65,19 @@ func has_all_tags(tags: Array[String]) -> bool:
 func add_tag(tag: String):
 	if not active_tags.has(tag):
 		active_tags.append(tag)
+		tags_changed.emit()
 
 ## Manually remove a tag
 func remove_tag(tag: String):
 	var index = active_tags.find(tag)
 	if index >= 0:
 		active_tags.remove_at(index)
+		tags_changed.emit()
 
 ## Clear all tags
 func clear_tags():
 	active_tags.clear()
+	tags_changed.emit()
 
 ## Get all active tags (for debugging)
 func get_all_tags() -> Array[String]:

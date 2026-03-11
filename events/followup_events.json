@@ -1,0 +1,77 @@
+[
+  {
+    "id": "followup_warg_ambush_fled",
+    "trigger_tag": "warg_ambush_fled",
+    "title": "Wargs Again",
+    "biomes": ["forest"],
+    "weight": 20,
+    "one_shot": true,
+    "text": "The same clearing, or one like it. You're not sure until you hear the same low growl from the treeline — the same pack, or another. This time they don't wait. They come straight in.",
+    "choices": [
+      {
+        "id": "fight",
+        "text": "Stand and fight",
+        "effects": [
+          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "flee_again",
+        "text": "Run for the open path",
+        "effects": [
+          { "type": "advance_time", "amount": 2 }
+        ],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "followup_warg_ambush_collar_found",
+    "trigger_tag": "warg_ambush_collar_found",
+    "title": "The Collar Draws Notice",
+    "biomes": ["forest"],
+    "weight": 15,
+    "one_shot": true,
+    "text": "A lone traveler on the path eyes the tooth you took from the warg's collar — then your face. They don't say anything. They don't need to. Whoever was running those beasts has people everywhere.",
+    "choices": [
+      {
+        "id": "ignore",
+        "text": "Keep walking",
+        "effects": [],
+        "next_event": null
+      },
+      {
+        "id": "confront",
+        "text": "Ask what they're looking at",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  },
+  {
+    "id": "followup_warg_ambush_wargs_fled",
+    "trigger_tag": "warg_ambush_wargs_fled",
+    "title": "Where They Went",
+    "biomes": ["forest"],
+    "weight": 20,
+    "one_shot": true,
+    "text": "The wargs broke and ran. You find their trail easily — they weren't trying to hide. It leads to a hollow where something bigger was waiting. You don't see it now. You're not sure you want to.",
+    "choices": [
+      {
+        "id": "leave",
+        "text": "Leave the hollow and move on",
+        "effects": [
+          { "type": "advance_time", "amount": 1 }
+        ],
+        "next_event": null
+      },
+      {
+        "id": "search",
+        "text": "Search the hollow quickly",
+        "effects": [],
+        "next_event": null
+      }
+    ]
+  }
+]

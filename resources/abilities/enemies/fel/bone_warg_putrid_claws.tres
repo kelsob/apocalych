@@ -7,8 +7,8 @@
 [sub_resource type="Resource" id="1"]
 script = ExtResource("2")
 effect_type = 0
-potency = 7.0
-stat_scaling = {"atk": 0.7}
+potency = 3.0
+stat_scaling = {"atk": 0.25}
 target_count = 1
 dispel_count = 1
 

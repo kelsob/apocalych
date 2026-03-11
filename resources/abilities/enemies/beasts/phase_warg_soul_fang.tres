@@ -6,8 +6,8 @@
 [sub_resource type="Resource" id="1"]
 script = ExtResource("2")
 effect_type = 0
-potency = 10.0
-stat_scaling = {"mag": 0.8}
+potency = 4.0
+stat_scaling = {"mag": 0.3}
 target_count = 1
 dispel_count = 1
 is_magical = true

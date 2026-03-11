@@ -20,6 +20,8 @@ signal health_potion_use_requested()
 
 @onready var health_potion_button: Button = $ResourcesDisplay/GridContainer/MarginContainer2/Button
 
+@onready var party_tag_display_label: Label = $PartyTagsLabel
+
 func _ready():
 	rest_button.pressed.connect(_on_rest_button_pressed)
 	rest_button.visible = false
@@ -28,6 +30,9 @@ func _ready():
 	reset_map_button.pressed.connect(_on_reset_map_button_pressed)
 	if health_potion_button:
 		health_potion_button.pressed.connect(_on_health_potion_button_pressed)
+	_refresh_party_tags_display()
+	if Engine.is_editor_hint() == false and TagManager:
+		TagManager.tags_changed.connect(_refresh_party_tags_display)
 
 func _on_health_potion_button_pressed():
 	health_potion_use_requested.emit()
@@ -56,6 +61,18 @@ func update_town_button_visibility(can_show: bool):
 
 func _on_town_button_pressed():
 	town_requested.emit()
+
+func _refresh_party_tags_display() -> void:
+	if not party_tag_display_label:
+		return
+	if TagManager:
+		var tags: Array[String] = TagManager.get_all_tags()
+		var stripped: Array[String] = []
+		for tag in tags:
+			stripped.append(tag.trim_prefix("<").trim_suffix(">"))
+		party_tag_display_label.text = "\n".join(stripped) if stripped.size() > 0 else "(no tags)"
+	else:
+		party_tag_display_label.text = "(TagManager unavailable)"
 
 func initialize_party_ui(members: Array[PartyMember]) -> void:
 	party_details.initialize_party(members)

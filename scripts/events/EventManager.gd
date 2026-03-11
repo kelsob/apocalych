@@ -6,6 +6,9 @@ extends Node
 # Event registry: id -> event Dictionary
 var events: Dictionary = {}
 
+# Follow-up events: id -> event Dictionary. Only eligible when party has event's trigger_tag.
+var followup_events: Dictionary = {}
+
 # Track one-shot events that have been seen
 var seen_one_shot_events: Array[String] = []
 
@@ -19,14 +22,18 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 # Party state reference (will be set by external systems)
 var party_state: Dictionary = {}
 
-## Debug: when true, always return the event with debug_event_id instead of normal selection.
-## Set via the Godot inspector or in code. Has no effect if debug_event_id is empty or not found.
-@export var debug_force_event: bool = false
-@export var debug_event_id: String = ""
+## Debug: fallback when Main is not in tree. Prefer setting event_debug_force / event_debug_id / debug_event_selection on Main (inspector).
+var debug_force_event: bool = false
+var debug_event_id: String = ""
 
 # Debug helper
 func debug_print(msg: String):
 	print(msg)
+
+func _log_selection(msg: String) -> void:
+	var main: Node = _get_main_node()
+	if main and "debug_event_selection" in main and main.debug_event_selection:
+		print("EventManager [SELECT]: %s" % msg)
 
 func _ready():
 	# Initialize RNG with a seed (can be set externally for determinism)
@@ -34,6 +41,8 @@ func _ready():
 	
 	# Automatically load all events from the events directory
 	load_events_from_directory("res://events")
+	# Load follow-up events (tag-gated, separate pool)
+	load_followup_events_from_json("res://events/followup_events.json")
 
 ## Set the seed for deterministic event selection
 func set_seed(seed_value: int):
@@ -96,6 +105,44 @@ func load_events_from_directory(dir_path: String) -> int:
 	
 	print("EventManager: Loaded %d event files from directory" % loaded_count)
 	return loaded_count
+
+## Load follow-up events from a single JSON file. Each event must have "id" and "trigger_tag".
+## Follow-up events are stored separately and only considered when party has the trigger_tag.
+func load_followup_events_from_json(path: String) -> bool:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file:
+		push_error("EventManager: Could not open follow-up events file: " + path)
+		return false
+	
+	var json_string = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+	if parse_result != OK:
+		push_error("EventManager: Failed to parse follow-up events JSON: " + json.get_error_message())
+		return false
+	
+	var data = json.data
+	if not data is Array:
+		push_error("EventManager: Follow-up events JSON root must be an array")
+		return false
+	
+	var loaded_count = 0
+	for event in data:
+		if not event.has("id"):
+			push_error("EventManager: Follow-up event missing 'id' field, skipping")
+			continue
+		if not event.has("trigger_tag"):
+			push_error("EventManager: Follow-up event '%s' missing 'trigger_tag' field, skipping" % event.get("id", ""))
+			continue
+		if followup_events.has(event.id):
+			push_warning("EventManager: Duplicate follow-up event ID '%s', overwriting" % event.id)
+		followup_events[event.id] = event
+		loaded_count += 1
+	
+	print("EventManager: Loaded %d follow-up events from %s" % [loaded_count, path])
+	return true
 
 ## Check if a condition passes given party state
 func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
@@ -165,78 +212,124 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 		push_warning("EventManager: No events loaded, cannot pick random event")
 		return {}
 
-	# Debug override: always return one specific event when enabled
-	if debug_force_event:
-		if debug_event_id.is_empty():
-			push_warning("EventManager: debug_force_event is true but debug_event_id is not set")
-		elif events.has(debug_event_id):
-			print("EventManager [DEBUG]: Forcing event '%s'" % debug_event_id)
-			return events[debug_event_id]
-		else:
-			push_warning("EventManager: debug_event_id '%s' not found in loaded events" % debug_event_id)
-
-	# Normal selection
+	# Build party state and eligible follow-ups first (needed for "force steps aside" when follow-up eligible)
 	var party_state_dict = _build_party_state(party)
+	var is_town_node: bool = node_state.get("is_town", false)
 	
-	# Step 1: Filter events by biome match and prerequisites
+	_log_selection("Node: biome=%s is_town=%s party_tags=%s" % [biome, is_town_node, str(party_state_dict.get("tags", []))])
+	
+	var eligible_followup_ids: Array[String] = []
+	for event_id in followup_events.keys():
+		var followup = followup_events[event_id]
+		var trigger_tag: String = followup.get("trigger_tag", "")
+		if trigger_tag.is_empty():
+			_log_selection("  follow-up '%s': skip (no trigger_tag)" % event_id)
+			continue
+		if not party_state_dict.has("tags") or trigger_tag not in party_state_dict.tags:
+			_log_selection("  follow-up '%s': skip (party lacks tag '%s')" % [event_id, trigger_tag])
+			continue
+		if followup.get("one_shot", true) and event_id in seen_one_shot_events:
+			_log_selection("  follow-up '%s': skip (one_shot already seen)" % event_id)
+			continue
+		if followup.has("biomes"):
+			var event_biomes = followup.biomes
+			if event_biomes is Array and event_biomes.size() > 0 and biome not in event_biomes:
+				_log_selection("  follow-up '%s': skip (biome '%s' not in %s)" % [event_id, biome, str(event_biomes)])
+				continue
+		if is_town_node and not followup.get("town_entry", false):
+			_log_selection("  follow-up '%s': skip (town node, event not town_entry)" % event_id)
+			continue
+		if not is_town_node and followup.get("town_entry", false):
+			_log_selection("  follow-up '%s': skip (not town, event is town_entry only)" % event_id)
+			continue
+		eligible_followup_ids.append(event_id)
+		_log_selection("  follow-up '%s': ELIGIBLE (tag=%s)" % [event_id, trigger_tag])
+	
+	_log_selection("Eligible follow-ups: %d — %s" % [eligible_followup_ids.size(), str(eligible_followup_ids)])
+	
+	# Debug override: prefer Main's scene-tree exports. Steps aside when any follow-up is eligible so you can test follow-up flow.
+	var force_event: bool = debug_force_event
+	var force_id: String = debug_event_id
+	var main: Node = _get_main_node()
+	if main and "event_debug_force" in main:
+		if main.event_debug_force:
+			force_event = true
+			force_id = main.event_debug_id
+	if force_event and not force_id.is_empty():
+		if eligible_followup_ids.size() > 0:
+			_log_selection("Force override SKIPPED — follow-up(s) eligible, using normal selection")
+			print("EventManager [DEBUG]: Follow-up(s) eligible (%s), skipping force — using normal selection" % str(eligible_followup_ids))
+		else:
+			if events.has(force_id):
+				print("EventManager [DEBUG]: Forcing event '%s'" % force_id)
+				return events[force_id]
+			elif followup_events.has(force_id):
+				print("EventManager [DEBUG]: Forcing follow-up event '%s'" % force_id)
+				return followup_events[force_id]
+			else:
+				push_warning("EventManager: debug event id '%s' not found in loaded events or follow-up events" % force_id)
+	elif force_event and force_id.is_empty():
+		push_warning("EventManager: debug force event is true but event_debug_id / debug_event_id is not set")
+	
+	# Step 1: Follow-up events — one 50/50 roll per eligible; first hit wins.
+	eligible_followup_ids.sort()
+	for event_id in eligible_followup_ids:
+		var roll: float = rng.randf()
+		var passed: bool = roll < 0.5
+		_log_selection("  roll '%s': %.3f → %s" % [event_id, roll, "PASS (< 0.5)" if passed else "fail (>= 0.5)"])
+		if passed:
+			var selected = followup_events[event_id]
+			if selected.get("one_shot", true):
+				seen_one_shot_events.append(selected.id)
+			_log_selection("SELECTED (follow-up): %s" % event_id)
+			return selected
+	
+	_log_selection("No follow-up won (all rolls failed). Using normal event pool.")
+	
+	# Step 2: No follow-up won; build pool from normal events only
 	var eligible_events: Array = []
-	
 	for event_id in events.keys():
 		var event = events[event_id]
 		
-		# Skip one-shot events that have already been seen
 		if event.get("one_shot", false) and event_id in seen_one_shot_events:
 			continue
-		
-		# Check biome match (if event specifies biomes)
 		if event.has("biomes"):
 			var event_biomes = event.biomes
-			if event_biomes is Array and event_biomes.size() > 0:
-				# Check if current biome is in the event's biome list
-				if biome not in event_biomes:
-					continue  # Biome doesn't match, skip this event
-
-		# When at a town node: only consider events marked as town_entry (subset within biome)
-		var is_town_node = node_state.get("is_town", false)
+			if event_biomes is Array and event_biomes.size() > 0 and biome not in event_biomes:
+				continue
 		if is_town_node and not event.get("town_entry", false):
 			continue
-		# When not at a town: skip town_entry-only events so they don't appear on normal nodes
 		if not is_town_node and event.get("town_entry", false):
 			continue
-
-		# Check prerequisites (if event has them)
 		if event.has("prereqs"):
 			if not condition_passes(event.prereqs, party_state_dict):
-				continue  # Prerequisites not met, skip this event
-		
-		# Event is eligible!
+				continue
 		var weight = event.get("weight", 1)
 		eligible_events.append({"event": event, "weight": weight})
 	
-	# Step 2: If no eligible events, return empty
 	if eligible_events.is_empty():
+		_log_selection("Normal pool: 0 eligible → return {}")
 		return {}
 	
-	# Step 3: Weighted random selection
 	var total_weight = 0
 	for item in eligible_events:
 		total_weight += item.weight
 	
 	var random_value = rng.randf_range(0, total_weight)
-	var accumulated_weight = 0
+	var accumulated_weight = 0.0
+	
+	_log_selection("Normal pool: %d eligible, total_weight=%d, roll=%.3f" % [eligible_events.size(), total_weight, random_value])
 	
 	for item in eligible_events:
 		accumulated_weight += item.weight
 		if random_value <= accumulated_weight:
 			var selected_event = item.event
-			
-			# Mark one-shot events as seen
 			if selected_event.get("one_shot", false):
 				seen_one_shot_events.append(selected_event.id)
-			
+			_log_selection("SELECTED (normal): %s" % selected_event.get("id", ""))
 			return selected_event
 	
-	# Fallback: return first eligible event (shouldn't happen)
+	_log_selection("SELECTED (normal fallback): %s" % eligible_events[0].event.get("id", ""))
 	return eligible_events[0].event
 
 ## Present an event - returns event with filtered choices

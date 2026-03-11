@@ -31,7 +31,7 @@
         "text": "The last warg drops and goes still. You take a moment to catch your breath, then make a quick pass over the bodies. One of them has a crude collar with a small pouch knotted to it — inside, a handful of coins and a tooth the size of your thumb. Someone was keeping these things. You pocket both.",
         "effects": [
           { "type": "give_gold", "amount": 25 },
-          { "type": "add_tag", "tag": "found_warg_collar" }
+          { "type": "add_tag", "tag": "warg_ambush_collar_found" }
         ]
       },
       "party_fled": {
@@ -39,7 +39,7 @@
         "text": "You make it out of the clearing with your lives, which is more than you had a right to expect. The wargs don't follow past the treeline — whether out of territory or training, you can't say. You're down some pride and some ground. The collar on the lead warg catches your eye as you retreat. Someone is directing these things.",
         "effects": [
           { "type": "advance_time", "amount": 2 },
-          { "type": "add_tag", "tag": "found_warg_collar" }
+          { "type": "add_tag", "tag": "warg_ambush_fled" }
         ]
       }
     }

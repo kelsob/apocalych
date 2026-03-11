@@ -36,7 +36,7 @@ Events are FTL-style: short, punchy, consequential. Most are one interaction dee
 | `title` | Short title shown in the event UI. |
 | `biomes` | Array of biome names this event can appear in. |
 | `weight` | Integer. Higher = more likely. 10 is average. Rare events: 3–5. Common: 12–15. |
-| `one_shot` | `true` = fires once per run, then never again. Use for unique/lore events. |
+| `one_shot` | `true` = fires once per run, then never again. Use for unique/lore events and **all follow-up events gated by outcome tags** (so they don't repeat). |
 | `prereqs` | Optional condition block. If the party doesn't meet it, the event never fires. |
 | `text` | The main flavor text. See Writing Guidelines below. |
 | `choices` | Array of choice objects. See Choice Anatomy below. |
@@ -164,7 +164,7 @@ The primary reward/penalty economy in events:
 - **Camping Supplies:** `give_item` / `consume_item` with `"item_id": "camping_supplies"`
 - **Sharpening Stones:** `give_item` / `consume_item` with `"item_id": "sharpening_stone"`
 - **Arcane Powder:** `give_item` / `consume_item` with `"item_id": "arcane_powder"`
-- **Tags:** `add_tag` for persistent consequences
+- **Tags:** `add_tag` for persistent consequences. For event and combat outcomes, use the **Unique Outcome Tags** format (`event_title_specific_ending`) so follow-up events can key off what the party has done — see Post-Combat Outcomes.
 
 ---
 
@@ -216,12 +216,51 @@ When a choice triggers `start_combat`, the `combat_outcomes` block on the parent
 | `party_fled` | Party fled combat | **No text by default.** Only define in specific cases where it matters. |
 | `defeat` | Total party wipe | Handled globally (new game / main menu / quit screen). Do not write defeat text in events. |
 
+### Unique Outcome Tags
+
+**Every unique event ending should give the party exactly one outcome tag.** Use these to drive conditional content later (e.g. "the wargs fled — they might come back" only if the party has that outcome).
+
+**Format:** `event_title_specific_ending` in snake_case, derived from the event's narrative identity and the resolution. Examples for a warg ambush event:
+
+| Outcome | Tag |
+|---------|-----|
+| Party wins, finds collar | `warg_ambush_collar_found` |
+| Party fled | `warg_ambush_fled` |
+| Enemies fled | `warg_ambush_wargs_fled` |
+
+Apply this to **both** choice-only events (one tag per choice that ends the event) and **combat_outcomes** (one tag per outcome key you define). Do not reuse the same tag for different resolutions (e.g. the collar tag only on victory, not on party_fled).
+
+### Follow-up events gated by outcome tags (non-repeatable)
+
+When an outcome tag is used in **prereqs** to gate a *follow-up* event (e.g. `warg_ambush_fled` triggers "the wargs return" later), that follow-up must **only happen once**. Otherwise the same consequence would fire every time the party hits a node that matches — e.g. "wargs come back" would recur every forest node.
+
+**Rule:** Events that exist solely as the consequence of an outcome tag (e.g. "wargs return after you fled") are **not repeatable** by default. They fire once, then must not trigger again.
+
+**Mechanism:** Set `"one_shot": true` on the follow-up event. Once it has fired, it is removed from the pool for the rest of the run, so the outcome tag does not keep granting the same follow-up.
+
+**Example:** Party flees warg ambush → gets `warg_ambush_fled`. A later event "Wargs again" has `prereqs: { "requires_any": ["warg_ambush_fled"] }`. That later event must have `one_shot: true` so "Wargs again" happens at most once, even though the party keeps the tag.
+
+A future **`repeatable`** property (e.g. on the event or on the tag-grant) could make this explicit in data; until then, **one_shot on the follow-up event** is the way to enforce "this outcome-tag consequence happens only once."
+
+### Follow-up events: separate file and format
+
+**Definition:** A follow-up event is a full event that only becomes eligible when the party has a **specific outcome tag** from a prior event (e.g. `warg_ambush_fled`). It is the narrative consequence of that outcome.
+
+**Storage:** Follow-up events live in their **own JSON file** and are loaded and stored **separately** from normal events:
+
+- **File:** `events/followup_events.json` (single file; loaded by EventManager after the main events directory).
+- **Registry:** EventManager keeps them in `followup_events` (id → event), not in `events`. They are merged into the selection pool only when the party has the required tag.
+
+**Required field:** Every follow-up event must have **`trigger_tag`** (string). The event is only considered for selection when the party has that tag (from TagManager). All other fields are the same as a normal event: `id`, `title`, `biomes`, `weight`, `one_shot`, `text`, `choices`, etc.
+
+**Example:** An event with `"trigger_tag": "warg_ambush_fled"` and `"one_shot": true` will appear at most once per run when the party has fled the warg ambush, then never again even though they keep the tag.
+
 ### Rules
 
 - **Omit any key you don't need.** If `enemies_fled` has no follow-up, leave it out entirely.
 - **Most events will have 0–2 outcome entries.** 0 is fine for fights where the aftermath is covered by the standard reward screen.
 - **Victory text should justify the reward it gives.** If you're giving camping supplies, write flavor that makes sense of it — skinning hides, looting a camp, etc.
-- **Enemy-fled text exists when fleeing changes the situation** — a scout reports your position, a target escapes, something downstream changes. Capture this with an `add_tag` effect.
+- **Enemy-fled text exists when fleeing changes the situation** — a scout reports your position, a target escapes, something downstream changes. Capture this with an `add_tag` effect (and use the unique outcome tag format above).
 
 ### Implementation Note
 Post-combat outcome firing is **not yet implemented** in `Main.gd`. The `_on_combat_ended` handler needs to check `combat_outcomes` on the originating event and fire the matching outcome as a follow-up event display. This needs to be built before `combat_outcomes` will work in any JSON.
@@ -338,6 +377,7 @@ Dark fantasy. Grounded. The world is post-apocalyptic and grim, with an underlyi
 | `one_shot` events | ✅ Implemented |
 | `prereqs` (event-level gating) | ✅ Implemented |
 | Post-combat outcomes (`combat_outcomes`) | ❌ Not yet implemented |
+| Follow-up events (`followup_events.json`, `trigger_tag`) | ✅ Implemented |
 | `requires_class` condition | ❌ Not yet implemented |
 | `requires_race` / `forbids_race` condition | ❌ Not yet implemented |
 | `moon_phase` condition | ❌ Not yet implemented |

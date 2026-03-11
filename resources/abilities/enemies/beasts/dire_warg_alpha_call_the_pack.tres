@@ -11,7 +11,7 @@ stat_scaling = {}
 target_count = 1
 dispel_count = 1
 enemy_to_spawn_id = "warg"
-spawn_count = 2
+spawn_count = 1
 
 [resource]
 script = ExtResource("1")

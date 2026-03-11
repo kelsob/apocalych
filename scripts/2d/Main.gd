@@ -33,6 +33,12 @@ var _blacksmith_opened_from_town: bool = false
 var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns player has been granted entry to
 var _in_potion_target_mode: bool = false  # True when awaiting character click to apply health potion
 
+## Event debug: when true, EventManager forces this event ID on the next node (e.g. "test_warg_ambush_outcomes"). Editable in Main scene inspector.
+@export var event_debug_force: bool = false
+@export var event_debug_id: String = ""
+## When true, EventManager prints detailed event selection logs (follow-up checks, rolls, normal pool). Set in Main scene inspector.
+@export var debug_event_selection: bool = false
+
 func _ready():
 	add_to_group("main")
 	# Connect menu signals automatically
