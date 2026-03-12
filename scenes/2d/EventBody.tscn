@@ -1,0 +1,17 @@
+[gd_scene load_steps=3 format=3 uid="uid://bfyah06ixeeb6"]
+
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_3y2bf"]
+[ext_resource type="Script" uid="uid://dk37ogc5v4git" path="res://scripts/2d/EventBody.gd" id="1_ea1pd"]
+
+[node name="EventBody" type="MarginContainer"]
+script = ExtResource("1_ea1pd")
+
+[node name="BodyLabel" type="Label" parent="."]
+layout_mode = 2
+theme = ExtResource("1_3y2bf")
+theme_override_colors/font_color = Color(0.431373, 0.34902, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0.231373, 0.152941, 0.0627451, 1)
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 32
+text = "asdf asdf fdgs "
+autowrap_mode = 3

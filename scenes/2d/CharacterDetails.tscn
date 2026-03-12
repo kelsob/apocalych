@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://cwhqifgnimimb"]
+[gd_scene load_steps=7 format=3 uid="uid://cwhqifgnimimb"]
 
 [ext_resource type="Script" uid="uid://bd1o2erw4uynk" path="res://scripts/2d/CharacterDetails.gd" id="1_6a65j"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="1_jm4yu"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_pw4xs"]
 [ext_resource type="Texture2D" uid="uid://mwyinto4nxrj" path="res://assets/map/characterdetailspanel.png" id="4_yotrc"]
 [ext_resource type="PackedScene" uid="uid://dea1l50emdl0" path="res://scenes/2d/HPBar.tscn" id="5_1xyik"]
+[ext_resource type="PackedScene" uid="uid://c25jnpw5bujke" path="res://scenes/2d/ExpBar.tscn" id="6_cm5p2"]
 
 [node name="CharacterDetails" type="Control"]
 custom_minimum_size = Vector2(256, 68)
@@ -52,50 +53,97 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_vertical = 4
 
-[node name="NinePatchRect" type="NinePatchRect" parent="HBoxContainer"]
+[node name="Control" type="Control" parent="HBoxContainer"]
 custom_minimum_size = Vector2(56, 56)
 layout_mode = 2
-size_flags_vertical = 4
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer/Control"]
+clip_children = 2
+custom_minimum_size = Vector2(56, 56)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -28.0
+offset_top = -28.0
+offset_right = 28.0
+offset_bottom = 28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="ColorRect" type="ColorRect" parent="HBoxContainer/Control/MarginContainer"]
+clip_children = 1
+layout_mode = 2
+
+[node name="PortraitTexture" type="TextureRect" parent="HBoxContainer/Control/MarginContainer/ColorRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 5
+
+[node name="NinePatchRect" type="NinePatchRect" parent="HBoxContainer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 texture = ExtResource("1_jm4yu")
-patch_margin_left = 8
-patch_margin_top = 8
-patch_margin_right = 8
-patch_margin_bottom = 8
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 10
+patch_margin_bottom = 10
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-theme_override_constants/separation = 0
+theme_override_constants/separation = 2
 
-[node name="NameLabel" type="Label" parent="HBoxContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = -10
+
+[node name="NameLabel" type="Label" parent="HBoxContainer/VBoxContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
 text = "Character"
 vertical_alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="LevelLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="LevelLabel" type="Label" parent="HBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
 theme_override_font_sizes/font_size = 24
 text = "Level 1"
 
-[node name="RaceLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="RaceLabel" type="Label" parent="HBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
 theme_override_font_sizes/font_size = 24
 text = "Race"
 
-[node name="ClassLabel" type="Label" parent="HBoxContainer/VBoxContainer/HBoxContainer"]
+[node name="ClassLabel" type="Label" parent="HBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_pw4xs")
 theme_override_font_sizes/font_size = 24
 text = "Class"
 
 [node name="HPBar" parent="HBoxContainer/VBoxContainer" instance=ExtResource("5_1xyik")]
+layout_mode = 2
+
+[node name="ExpBar" parent="HBoxContainer/VBoxContainer" instance=ExtResource("6_cm5p2")]
 layout_mode = 2
 
 [node name="Button" type="Button" parent="."]

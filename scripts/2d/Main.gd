@@ -65,8 +65,8 @@ func _ready():
 	ui_controller.rest_controller.rest_complete.connect(_on_rest_complete)
 	ui_controller.rest_controller.ambush_triggered.connect(_on_rest_ambush_triggered)
 	
-	# Connect event window signal to update rest button when event closes
-	ui_controller.event_window.event_closed.connect(_on_event_closed)
+	# Connect event log signal to update rest button when event closes
+	ui_controller.event_log.event_closed.connect(_on_event_closed)
 
 	ui_controller.town_screen.town_closed.connect(_on_town_screen_closed)
 	ui_controller.town_screen.rest_from_town_requested.connect(_on_rest_from_town_requested)
@@ -180,7 +180,7 @@ func _show_introductory_event():
 	
 	# Display the event with current node (for rest state effects)
 	var current_node = map_generator.current_party_node
-	ui_controller.event_window.display_event(presented_event, party_dict, current_node)
+	ui_controller.event_log.append_event(presented_event, party_dict, current_node)
 
 ## Called when combat ends. Sets rest safety. Rewards are applied later when user clicks Continue on rewards panel.
 func _on_combat_ended(victory: bool, rewards: Dictionary):
@@ -201,7 +201,7 @@ func _on_combat_ended(victory: bool, rewards: Dictionary):
 		outcome_key = "defeat"
 	var outcome = outcomes.get(outcome_key, null)
 	_pending_combat_outcome = outcome if outcome is Dictionary else {}
-	# Rewards (XP, gold) are applied by apply_combat_rewards when user clicks Continue
+	# Rewards are applied silently in on_combat_scene_fully_ended before the outcome event is shown
 
 ## Apply rewards to party. Called from CombatScene when user clicks Continue on rewards panel.
 func apply_combat_rewards(victory: bool, rewards: Dictionary):
@@ -216,6 +216,8 @@ func apply_combat_rewards(victory: bool, rewards: Dictionary):
 		for member in current_party_members:
 			member.gain_experience(xp)
 	_refresh_map_resource_labels()
+	if xp > 0:
+		ui_controller.map_ui.refresh_party_xp()
 
 ## Called by CombatScene after rewards panel is dismissed (or immediately on defeat).
 ## Restores the map and fires any post-combat outcome event, or shows the game-over screen.
@@ -229,19 +231,20 @@ func on_combat_scene_fully_ended(victory: bool, rewards: Dictionary):
 	ui_controller.map_ui.visible = true
 	refresh_rest_button_visibility()
 	refresh_town_button_visibility()
-	if not _pending_combat_outcome.is_empty():
-		_show_combat_outcome(_pending_combat_outcome)
+	apply_combat_rewards(victory, rewards)
+	_show_combat_outcome(_pending_combat_outcome, rewards)
 	_pending_combat_outcome = {}
 
 ## Display a post-combat outcome as a one-choice "Aftermath" event window.
-func _show_combat_outcome(outcome: Dictionary):
-	if not outcome.has("text"):
-		_pending_combat_outcome = {}
+## Rewards are displayed as a block between the narrative text and the Continue button.
+func _show_combat_outcome(outcome: Dictionary, rewards: Dictionary):
+	var has_text: bool = outcome.has("text")
+	var has_rewards: bool = rewards.get("xp", 0) > 0 or rewards.get("gold", 0) > 0
+	if not has_text and not has_rewards:
 		return
 	var outcome_event: Dictionary = {
 		"id": "_combat_outcome",
 		"title": outcome.get("title", "Aftermath"),
-		"text": outcome.text,
 		"choices": [
 			{
 				"id": "continue",
@@ -251,9 +254,13 @@ func _show_combat_outcome(outcome: Dictionary):
 			}
 		]
 	}
+	if has_text:
+		outcome_event["text"] = outcome["text"]
+	if has_rewards:
+		outcome_event["rewards"] = rewards
 	var party_dict = _build_party_dict()
 	var current_node = map_generator.current_party_node
-	ui_controller.event_window.display_event(outcome_event, party_dict, current_node)
+	ui_controller.event_log.append_event(outcome_event, party_dict, current_node)
 
 ## Show the game-over screen as an event window with New Game / Main Menu / Quit.
 func _show_game_over():
@@ -283,7 +290,7 @@ func _show_game_over():
 		]
 	}
 	var party_dict = _build_party_dict()
-	ui_controller.event_window.display_event(game_over_event, party_dict, null)
+	ui_controller.event_log.append_event(game_over_event, party_dict, null)
 
 ## Launch an event for a node after travel completes
 ## Checks for assigned events, falls back to generic placeholder if none found
@@ -312,7 +319,7 @@ func _launch_node_event(node: MapNode2D):
 	var presented_event = EventManager.present_event(selected_event, party_dict)
 	
 	# Display the event with current node (for rest state effects)
-	ui_controller.event_window.display_event(presented_event, party_dict, node)
+	ui_controller.event_log.append_event(presented_event, party_dict, node)
 
 ## Build party dictionary for event system
 ## This is mainly for text interpolation (like {{party.member1_name}})
@@ -609,8 +616,7 @@ func open_vendor_screen(_context_node: MapNode2D = null, vendor_item_ids: Array 
 	ui_controller.vendor_screen.visible = true
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
-	if ui_controller.event_window.visible:
-		ui_controller.event_window.close()
+	ui_controller.event_log.close()
 	if ui_controller.town_screen.visible:
 		ui_controller.town_screen.visible = false
 

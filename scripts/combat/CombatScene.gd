@@ -23,7 +23,7 @@ extends Control
 @export var turn_announcer_scale_out: float = 0.35
 
 # Node references
-@onready var current_turn_label: Label = $MarginContainer/VBoxContainer/PanelContainer/MarginContainer/CurrentTurnLabel
+@onready var current_turn_label: Label = $MarginContainer/VBoxContainer/MarginContainer/CurrentTurnLabel
 @onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
 @onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel
 @onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/EnemyPanel
@@ -183,14 +183,6 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 		if child.name == "Main":
 			main = child
 			break
-
-	var show_rewards_panel: bool = (victory or fled) and main and rewards.get("xp", 0) >= 0 and rewards.get("gold", 0) >= 0
-	if show_rewards_panel:
-		var rewards_panel = combat_rewards_scene.instantiate()
-		add_child(rewards_panel)
-		rewards_panel.show_rewards(rewards, main.current_party_members, victory, main)
-		await rewards_panel.continue_pressed
-		rewards_panel.queue_free()
 
 	# Hand off to Main for post-combat flow (outcome events, game-over, map restore).
 	if main:

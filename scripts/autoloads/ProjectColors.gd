@@ -68,6 +68,12 @@ const HEALTH_BAR_LOW: Color = Color(0.8, 0.2, 0.2, 1)
 ## Health bar background — #333333
 const HEALTH_BAR_BG: Color = Color(0.2, 0.2, 0.2, 1)
 
+## Event choice selected — manuscript green — #336B2E
+const EVENT_CHOICE_SELECTED: Color = Color(0.200, 0.420, 0.180, 1)
+
+## Event choice rejected — ghosted parchment ink
+const EVENT_CHOICE_REJECTED: Color = Color(0.831, 0.749, 0.600, 0.4)
+
 # --- Lunar cycle ---
 ## Light colors for moon phase label modulation. Cool blue (new) → warm gold (full) → cool blue (waning).
 ## All contrast well on dark backgrounds.

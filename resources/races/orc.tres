@@ -1,6 +1,10 @@
-[gd_resource type="Resource" script_class="Race" load_steps=3 format=3 uid="uid://bdls2nxmycdxp"]
+[gd_resource type="Resource" script_class="Race" load_steps=7 format=3 uid="uid://bdls2nxmycdxp"]
 
+[ext_resource type="Texture2D" uid="uid://dkkn73e1x01m7" path="res://assets/party-characters/combat-portraits/orcs/orc-1.png" id="1_1dhqs"]
+[ext_resource type="Texture2D" uid="uid://f43scfdktn80" path="res://assets/party-characters/orc/orc-1.png" id="1_6lrgi"]
 [ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+[ext_resource type="Texture2D" uid="uid://cihu8pw2vsah2" path="res://assets/party-characters/combat-portraits/orcs/orc-2.png" id="2_3h2o4"]
+[ext_resource type="Texture2D" uid="uid://cxdtt7k46cg1d" path="res://assets/party-characters/orc/orc-2.png" id="2_i8d3g"]
 [ext_resource type="Resource" path="res://resources/rest_abilities/placeholder_race.tres" id="2_rest"]
 
 [resource]
@@ -17,3 +21,7 @@ base_stats = {
 "wisdom": 9
 }
 rest_ability = ExtResource("2_rest")
+portrait_1 = ExtResource("1_6lrgi")
+portrait_2 = ExtResource("2_i8d3g")
+combat_portrait_1 = ExtResource("1_1dhqs")
+combat_portrait_2 = ExtResource("2_3h2o4")

@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3 uid="uid://c25jnpw5bujke"]
+[gd_scene load_steps=5 format=3 uid="uid://c25jnpw5bujke"]
 
 [ext_resource type="Texture2D" uid="uid://by2nsji820n2y" path="res://assets/ui/TextureProgressBar/expbar-background.png" id="1_ksj5x"]
 [ext_resource type="Texture2D" uid="uid://b7unecbu0wcxr" path="res://assets/ui/TextureProgressBar/expbar-highlight.png" id="2_jx73v"]
 [ext_resource type="Texture2D" uid="uid://by26oihx28utw" path="res://assets/ui/TextureProgressBar/expbar-progress.png" id="3_t2ak7"]
+[ext_resource type="Script" uid="uid://b1k4gve0ut1e4" path="res://scripts/2d/XPBar.gd" id="4_jx73v"]
 
 [node name="ExpBar" type="TextureProgressBar"]
 anchors_preset = 8
@@ -27,3 +28,4 @@ stretch_margin_bottom = 4
 texture_under = ExtResource("1_ksj5x")
 texture_over = ExtResource("2_jx73v")
 texture_progress = ExtResource("3_t2ak7")
+script = ExtResource("4_jx73v")

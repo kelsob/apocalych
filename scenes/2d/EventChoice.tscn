@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://cown0aiowmduv"]
+
+[ext_resource type="Script" uid="uid://bhjrrbeuduus4" path="res://scripts/2d/EventChoice.gd" id="1_r1p0q"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_vtt40"]
+
+[node name="EventChoice" type="Label"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme = ExtResource("1_vtt40")
+theme_override_colors/font_color = Color(0.290196, 0.207843, 0.12549, 1)
+theme_override_colors/font_outline_color = Color(0.588235, 0.482353, 0.298039, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 32
+script = ExtResource("1_r1p0q")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+flat = true
+
+[node name="Panel" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

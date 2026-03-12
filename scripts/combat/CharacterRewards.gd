@@ -8,7 +8,7 @@ class_name CharacterRewardsDisplay
 @onready var level_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/LevelLabel
 @onready var race_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/RaceLabel
 @onready var class_label : Label = $MarginContainer/HBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
-@onready var experience_progress_bar: TextureProgressBar = $MarginContainer/HBoxContainer/VBoxContainer2/ExpBar
+@onready var experience_progress_bar: XPBar = $MarginContainer/HBoxContainer/VBoxContainer2/ExpBar
 @onready var experience_gain_label: Label = $MarginContainer/HBoxContainer/VBoxContainer2/ExperienceToLevelLabel
 
 ## Simulate adding XP without mutating member. Returns {exp, exp_to_next, level}.
@@ -46,9 +46,6 @@ func _set_display_internal(member: PartyMember, xp_gained: int, exp: int, exp_to
 	level_label.text = "Level %d" % level
 	race_label.text = member.race.race_name if member.race else ""
 	class_label.text = member.class_resource.name if member.class_resource else ""
-	experience_progress_bar.min_value = 0
-	experience_progress_bar.max_value = exp_to_next
-	experience_progress_bar.value = exp
+	experience_progress_bar.set_experience(exp, exp_to_next, false)
 	experience_gain_label.text = "%d / %d (+%d XP)" % [exp, exp_to_next, xp_gained]
-	# Portrait: set when PartyMember has a portrait texture; leave empty for now
-	character_texture_rect.texture = null
+	character_texture_rect.texture = member.get_combat_portrait()

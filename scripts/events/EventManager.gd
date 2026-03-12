@@ -13,7 +13,7 @@ var followup_events: Dictionary = {}
 var seen_one_shot_events: Array[String] = []
 
 ## Holds combat_outcomes from the event that triggered the current combat.
-## Set by EventWindow before apply_effects, read by Main after combat ends, then cleared.
+## Set by EventLog before apply_effects, read by Main after combat ends, then cleared.
 var pending_combat_outcomes: Dictionary = {}
 
 # Seedable RNG for deterministic event selection
@@ -651,12 +651,8 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 		push_error("EventManager: Could not find Main node for combat")
 		return
 	
-	# Close event window if open
-	var event_window = main.ui_controller.event_window
-	if event_window.visible:
-		event_window.visible = false
-	
-	# Hide main map and UI during combat
+	# Hide event log and map UI during combat
+	main.ui_controller.event_log.visible = false
 	main.map_generator.visible = false
 	main.ui_controller.map_ui.visible = false
 	
@@ -753,8 +749,7 @@ func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Diction
 		push_warning("EventManager: open_town could not find Main")
 		return
 	var force_all_services: bool = effect.get("show_all_services", false)
-	if main.ui_controller.event_window.visible:
-		main.ui_controller.event_window.close()
+	main.ui_controller.event_log.close()
 	main.map_generator.visible = false
 	main.ui_controller.map_ui.visible = false
 	main.open_town_screen(current_node, force_all_services)
@@ -764,8 +759,7 @@ func _apply_open_vendor(effect: Dictionary, party: Dictionary, node_state: Dicti
 	if not main:
 		return
 	var vendor_item_ids: Array = effect.get("item_ids", [])
-	if main.ui_controller.event_window.visible:
-		main.ui_controller.event_window.close()
+	main.ui_controller.event_log.close()
 	main.map_generator.visible = false
 	main.ui_controller.map_ui.visible = false
 	main.open_vendor_screen(null, vendor_item_ids)

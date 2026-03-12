@@ -5,7 +5,7 @@ extends CanvasLayer
 
 @onready var main_menu: MainMenu = $MainMenu
 @onready var party_select_menu: Control = $PartySelectMenu
-@onready var event_window: EventWindow = $EventWindow
+@onready var event_log: EventLog = $EventLog
 @onready var rest_controller: RestController = $RestController
 @onready var map_ui: Control = $MapUI
 @onready var town_screen: Control = $TownScreen

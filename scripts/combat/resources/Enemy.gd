@@ -17,6 +17,7 @@ enum Faction {
 @export var enemy_id: String = ""
 @export var description: String = ""
 @export var enemy_type: String = ""  ## Flavour descriptor e.g. "pack hunter", "stone slime"
+@export var combat_portrait: Texture2D = preload("res://assets/enemies/portraits/bandit-rogue.png")
 
 # Faction and creature classification
 @export var faction: Faction = Faction.WILD

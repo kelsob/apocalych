@@ -9,6 +9,9 @@ class_name PartyMember
 @export var race: Race = null
 @export var class_resource: Class = null
 
+## Which portrait model this character uses (1 or 2). Set once on initialize(), never changes.
+var portrait_model: int = 1
+
 # Character progression
 @export var level: int = 1
 @export var experience: int = 0
@@ -68,6 +71,7 @@ func get_inventory_ids() -> Array[String]:
 
 ## Initialize a new party member after setting race and class.
 func initialize():
+	portrait_model = randi() % 2 + 1  # 1 or 2 — fixed for this character's lifetime
 	level = 1
 	experience = 0
 	experience_to_next_level = 100
@@ -153,3 +157,15 @@ func level_up():
 	current_health = max_health
 
 	print("%s leveled up to level %d! Max HP: %d (+%d)" % [member_name, level, max_health, health_gain])
+
+## Returns the map/event portrait for this character based on their fixed portrait_model.
+func get_portrait() -> Texture2D:
+	if not race:
+		return null
+	return race.portrait_1 if portrait_model == 1 else race.portrait_2
+
+## Returns the combat portrait for this character based on their fixed portrait_model.
+func get_combat_portrait() -> Texture2D:
+	if not race:
+		return null
+	return race.combat_portrait_1 if portrait_model == 1 else race.combat_portrait_2

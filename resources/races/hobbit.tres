@@ -1,6 +1,10 @@
-[gd_resource type="Resource" script_class="Race" load_steps=3 format=3 uid="uid://cy6s8tjfa6p6p"]
+[gd_resource type="Resource" script_class="Race" load_steps=7 format=3 uid="uid://cy6s8tjfa6p6p"]
 
+[ext_resource type="Texture2D" uid="uid://cu8gml3j5qtwd" path="res://assets/party-characters/combat-portraits/hobbits/hobbit-1.png" id="1_cf3qx"]
 [ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+[ext_resource type="Texture2D" uid="uid://btvavpa34bosx" path="res://assets/party-characters/hobbit/hobbit-1.png" id="1_wr7k6"]
+[ext_resource type="Texture2D" uid="uid://f8gd0qq5jjw4" path="res://assets/party-characters/combat-portraits/hobbits/hobbit-2.png" id="2_1ohbi"]
+[ext_resource type="Texture2D" uid="uid://bijrlfws722p0" path="res://assets/party-characters/hobbit/hobbit-2.png" id="2_6cbi1"]
 [ext_resource type="Resource" path="res://resources/rest_abilities/placeholder_race.tres" id="2_rest"]
 
 [resource]
@@ -17,3 +21,7 @@ base_stats = {
 "wisdom": 12
 }
 rest_ability = ExtResource("2_rest")
+portrait_1 = ExtResource("1_wr7k6")
+portrait_2 = ExtResource("2_6cbi1")
+combat_portrait_1 = ExtResource("1_cf3qx")
+combat_portrait_2 = ExtResource("2_1ohbi")

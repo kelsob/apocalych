@@ -77,6 +77,9 @@ func _refresh_party_tags_display() -> void:
 func initialize_party_ui(members: Array[PartyMember]) -> void:
 	party_details.initialize_party(members)
 
+func refresh_party_xp() -> void:
+	party_details.refresh_xp()
+
 ## Update the 5 resource labels. Call whenever gold or bulk items change.
 ## party_resources: optional dict (item_id -> count) for party-wide bulk items; if null/empty, counts default to 0.
 func update_resource_labels(party_members: Array, party_gold: int, party_resources: Dictionary = {}) -> void:

@@ -1,0 +1,74 @@
+[gd_scene load_steps=5 format=3 uid="uid://dq8wpxtyg0atk"]
+
+[ext_resource type="Script" uid="uid://c4cldxhd2bsd4" path="res://scripts/2d/EventLog.gd" id="1_cbifs"]
+[ext_resource type="PackedScene" uid="uid://b8auts47pto5b" path="res://scenes/2d/EventRewards.tscn" id="2_mwf7w"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="2_xh3ds"]
+[ext_resource type="Script" uid="uid://v5ip16hesqa4" path="res://scripts/2d/EventRewards.gd" id="3_esfiu"]
+
+[node name="EventLog" type="Control"]
+custom_minimum_size = Vector2(640, 480)
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -256.0
+offset_top = -240.0
+offset_right = 256.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_cbifs")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="ColorRect" type="ColorRect" parent="MarginContainer"]
+layout_mode = 2
+color = Color(0.831373, 0.74902, 0.6, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/MarginContainer"]
+layout_mode = 2
+
+[node name="ContentContainer" type="VBoxContainer" parent="MarginContainer/MarginContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="EventRewards" parent="MarginContainer/MarginContainer/ScrollContainer/ContentContainer" instance=ExtResource("2_mwf7w")]
+layout_mode = 2
+script = ExtResource("3_esfiu")
+
+[node name="TextureRect" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_xh3ds")
+draw_center = false
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16

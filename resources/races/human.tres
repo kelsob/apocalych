@@ -1,7 +1,11 @@
-[gd_resource type="Resource" script_class="Race" load_steps=3 format=3 uid="uid://catvnuiej3j0w"]
+[gd_resource type="Resource" script_class="Race" load_steps=7 format=3 uid="uid://catvnuiej3j0w"]
 
+[ext_resource type="Texture2D" uid="uid://07gnyh1tvqi3" path="res://assets/party-characters/human/human-1.png" id="1_ojrk1"]
 [ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+[ext_resource type="Texture2D" uid="uid://dt6kkmevqabya" path="res://assets/party-characters/combat-portraits/humans/human-1.png" id="1_ua1nc"]
+[ext_resource type="Texture2D" uid="uid://c6n43nx75wo4k" path="res://assets/party-characters/combat-portraits/humans/human-2.png" id="2_d25js"]
 [ext_resource type="Resource" path="res://resources/rest_abilities/placeholder_race.tres" id="2_rest"]
+[ext_resource type="Texture2D" uid="uid://c2na2i8llbb8b" path="res://assets/party-characters/human/human-2.png" id="2_yg10q"]
 
 [resource]
 script = ExtResource("1_race")
@@ -17,3 +21,7 @@ base_stats = {
 "wisdom": 10
 }
 rest_ability = ExtResource("2_rest")
+portrait_1 = ExtResource("1_ojrk1")
+portrait_2 = ExtResource("2_yg10q")
+combat_portrait_1 = ExtResource("1_ua1nc")
+combat_portrait_2 = ExtResource("2_d25js")

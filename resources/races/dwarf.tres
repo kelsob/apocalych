@@ -1,7 +1,11 @@
-[gd_resource type="Resource" script_class="Race" load_steps=3 format=3 uid="uid://csdst5qxc50u8"]
+[gd_resource type="Resource" script_class="Race" load_steps=7 format=3 uid="uid://csdst5qxc50u8"]
 
+[ext_resource type="Texture2D" uid="uid://6pe4qvmrjeye" path="res://assets/party-characters/combat-portraits/dwarves/dwarf-1.png" id="1_gx7as"]
+[ext_resource type="Texture2D" uid="uid://dqc6q4pj3t3td" path="res://assets/party-characters/dwarf/dwarf-1.png" id="1_n2hvm"]
 [ext_resource type="Script" uid="uid://cawwwrl4kicxb" path="res://scripts/resources/Race.gd" id="1_race"]
+[ext_resource type="Texture2D" uid="uid://ke5pn00iknbq" path="res://assets/party-characters/combat-portraits/dwarves/dwarf-2.png" id="2_0hwme"]
 [ext_resource type="Resource" path="res://resources/rest_abilities/placeholder_race.tres" id="2_rest"]
+[ext_resource type="Texture2D" uid="uid://cavh2eykhn5n3" path="res://assets/party-characters/dwarf/dwarf-2.png" id="2_yn6pg"]
 
 [resource]
 script = ExtResource("1_race")
@@ -17,3 +21,7 @@ base_stats = {
 "wisdom": 11
 }
 rest_ability = ExtResource("2_rest")
+portrait_1 = ExtResource("1_n2hvm")
+portrait_2 = ExtResource("2_yn6pg")
+combat_portrait_1 = ExtResource("1_gx7as")
+combat_portrait_2 = ExtResource("2_0hwme")
