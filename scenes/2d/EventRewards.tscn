@@ -1,8 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://b8auts47pto5b"]
+[gd_scene load_steps=3 format=3 uid="uid://b8auts47pto5b"]
 
 [ext_resource type="Script" uid="uid://v5ip16hesqa4" path="res://scripts/2d/EventRewards.gd" id="1_ens0j"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_2dejc"]
 
 [node name="EventRewards" type="MarginContainer"]
+size_flags_horizontal = 3
 script = ExtResource("1_ens0j")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
@@ -10,6 +12,14 @@ layout_mode = 2
 
 [node name="XPLabel" type="Label" parent="HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_2dejc")
+horizontal_alignment = 1
 
 [node name="GoldLabel" type="Label" parent="HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme = ExtResource("2_2dejc")
+theme_override_colors/font_color = Color(0.937255, 0.74902, 0.0156863, 1)
+theme_override_colors/font_outline_color = Color(0.74902, 0.6, 0.0117647, 1)
+horizontal_alignment = 1

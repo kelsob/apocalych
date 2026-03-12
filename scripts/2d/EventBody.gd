@@ -15,5 +15,5 @@ func _ready():
 ## Set the body text. Safe to call before or after the node is in the scene tree.
 func set_body(text: String):
 	_pending_text = text
-	if is_inside_tree() and body_label:
+	if body_label:
 		body_label.text = text

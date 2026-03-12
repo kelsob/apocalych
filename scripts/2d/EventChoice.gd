@@ -1,4 +1,4 @@
-extends Label
+extends MarginContainer
 class_name EventChoice
 
 ## EventChoice - A single selectable choice entry in the EventLog.
@@ -7,8 +7,11 @@ class_name EventChoice
 
 @onready var panel: Panel = $Panel
 @onready var button: Button = $Button
+@onready var choice_text: Label = $HBoxContainer/Label
+@onready var choice_icon: TextureRect = $HBoxContainer/TextureRect
 
 var choice_data: Dictionary = {}
+var _pending_choice: Dictionary = {}
 
 enum State { AVAILABLE, SELECTED, REJECTED }
 var _state: State = State.AVAILABLE
@@ -16,24 +19,22 @@ var _state: State = State.AVAILABLE
 signal choice_selected(choice: Dictionary)
 
 func _ready():
-	# Connect button press to our handler
 	if button:
 		button.pressed.connect(_on_button_pressed)
 	else:
 		push_error("EventChoiceButton: Button node not found")
+	if not _pending_choice.is_empty():
+		_apply_choice_data(_pending_choice)
 
 ## Set the choice data and update display
 func set_choice_data(choice: Dictionary):
 	choice_data = choice
-	
-	# Set label text (this Label is the parent)
-	if choice.has("text"):
-		text = choice.text
-	else:
-		text = "Choice"
-	
-	# Disabled choices are visible but non-interactive and visually dimmed.
-	# A choice becomes disabled when requires_item is set but the party lacks the item.
+	_pending_choice = choice
+	if choice_text:
+		_apply_choice_data(choice)
+
+func _apply_choice_data(choice: Dictionary):
+	choice_text.text = choice.get("text", "Choice")
 	if choice.get("disabled", false):
 		if button:
 			button.disabled = true
