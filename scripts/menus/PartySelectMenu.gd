@@ -127,15 +127,14 @@ func randomize_all_characters():
 		if champion_class:
 			character_select_1.selected_class = champion_class
 			if character_select_1.class_option_button:
-				var class_index = character_select_1.available_classes.find(champion_class) + 1
-				character_select_1.class_option_button.selected = class_index
+				character_select_1.class_option_button.selected = character_select_1.available_classes.find(champion_class)
 		
 		# Randomize race and name
 		if character_select_1.available_races.size() > 0:
 			character_select_1.selected_race = character_select_1.available_races[randi() % character_select_1.available_races.size()]
 			if character_select_1.race_option_button:
-				var race_index = character_select_1.available_races.find(character_select_1.selected_race) + 1
-				character_select_1.race_option_button.selected = race_index
+				character_select_1.race_option_button.selected = character_select_1.available_races.find(character_select_1.selected_race)
+			character_select_1._update_portrait()
 			
 			# Random name
 			if character_select_1.selected_race:
@@ -153,15 +152,14 @@ func randomize_all_characters():
 		if wizard_class:
 			character_select_2.selected_class = wizard_class
 			if character_select_2.class_option_button:
-				var class_index = character_select_2.available_classes.find(wizard_class) + 1
-				character_select_2.class_option_button.selected = class_index
+				character_select_2.class_option_button.selected = character_select_2.available_classes.find(wizard_class)
 		
 		# Randomize race and name
 		if character_select_2.available_races.size() > 0:
 			character_select_2.selected_race = character_select_2.available_races[randi() % character_select_2.available_races.size()]
 			if character_select_2.race_option_button:
-				var race_index = character_select_2.available_races.find(character_select_2.selected_race) + 1
-				character_select_2.race_option_button.selected = race_index
+				character_select_2.race_option_button.selected = character_select_2.available_races.find(character_select_2.selected_race)
+			character_select_2._update_portrait()
 			
 			# Random name
 			if character_select_2.selected_race:
@@ -179,15 +177,14 @@ func randomize_all_characters():
 		if cleric_class:
 			character_select_3.selected_class = cleric_class
 			if character_select_3.class_option_button:
-				var class_index = character_select_3.available_classes.find(cleric_class) + 1
-				character_select_3.class_option_button.selected = class_index
+				character_select_3.class_option_button.selected = character_select_3.available_classes.find(cleric_class)
 		
 		# Randomize race and name
 		if character_select_3.available_races.size() > 0:
 			character_select_3.selected_race = character_select_3.available_races[randi() % character_select_3.available_races.size()]
 			if character_select_3.race_option_button:
-				var race_index = character_select_3.available_races.find(character_select_3.selected_race) + 1
-				character_select_3.race_option_button.selected = race_index
+				character_select_3.race_option_button.selected = character_select_3.available_races.find(character_select_3.selected_race)
+			character_select_3._update_portrait()
 			
 			# Random name
 			if character_select_3.selected_race:

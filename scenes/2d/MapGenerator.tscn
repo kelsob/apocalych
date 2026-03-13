@@ -1,8 +1,9 @@
-[gd_scene load_steps=14 format=3 uid="uid://ckkwsspou0y1c"]
+[gd_scene load_steps=15 format=3 uid="uid://ckkwsspou0y1c"]
 
 [ext_resource type="Script" uid="uid://dwdacgn0gos7v" path="res://scripts/2d/MapGenerator2D.gd" id="1_d6u0w"]
 [ext_resource type="PackedScene" uid="uid://bu1i4dwqtcq4v" path="res://scenes/2d/MapNode.tscn" id="2_sdxh4"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_du8ac"]
+[ext_resource type="Texture2D" uid="uid://c64yltcrbexif" path="res://assets/map/icons/town.png" id="3_rpxmf"]
 [ext_resource type="Texture2D" uid="uid://da075esvsqt8f" path="res://assets/icons/compassrose.png" id="3_sdxh4"]
 [ext_resource type="PackedScene" uid="uid://cmp66wp0kwrf8" path="res://scenes/2d/ViewportFX.tscn" id="3_ug3a7"]
 [ext_resource type="Texture2D" uid="uid://brq02nt25yjm7" path="res://assets/map/therebeoctopi.png" id="4_ldstu"]
@@ -61,6 +62,7 @@ river_noise_frequency = 10.0
 river_waypoint_randomness = 1.0
 river_simplify_distance = 50.0
 inter_region_river_chance = 0.0
+default_town_icon = ExtResource("3_rpxmf")
 enable_debug_output = true
 party_travel_speed = 50.0
 

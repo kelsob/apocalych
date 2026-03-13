@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=28 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -26,6 +26,7 @@
 [ext_resource type="PackedScene" uid="uid://ddp8fjrwnisv0" path="res://scenes/2d/WorldClocktscn.tscn" id="25_y4ryl"]
 [ext_resource type="PackedScene" uid="uid://dq8wpxtyg0atk" path="res://scenes/2d/EventLog.tscn" id="26_ia0w3"]
 [ext_resource type="PackedScene" uid="uid://dm8ukp1vhijtc" path="res://scenes/2d/BlacksmithScreen.tscn" id="27_35772"]
+[ext_resource type="Script" uid="uid://di2o18ds8gctx" path="res://scripts/2d/FadeOverlay.gd" id="27_y4ryl"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -35,9 +36,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
-event_debug_force = true
-event_debug_id = "test_warg_ambush_outcomes"
-debug_event_selection = true
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true
@@ -93,6 +91,7 @@ grow_horizontal = 2
 grow_vertical = 0
 
 [node name="ResetMapButton" type="Button" parent="UIController/MapUI/HBoxContainer"]
+visible = false
 layout_mode = 2
 text = "new game"
 
@@ -151,6 +150,9 @@ modulate = Color(0.712967, 0.59503, 0.391606, 1)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_colors/font_shadow_color = Color(0.301961, 0.188235, 0.0941176, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "resources"
 horizontal_alignment = 1
 
@@ -193,6 +195,10 @@ custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("18_q52ow")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
@@ -219,6 +225,10 @@ custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("18_q52ow")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
@@ -249,6 +259,10 @@ custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("18_q52ow")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
@@ -275,6 +289,10 @@ custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("18_q52ow")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
@@ -301,6 +319,10 @@ custom_minimum_size = Vector2(16, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("18_q52ow")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 2
@@ -331,3 +353,15 @@ visible = false
 visible = false
 
 [node name="EventLog" parent="UIController" instance=ExtResource("26_ia0w3")]
+
+[node name="FadeLayer" type="CanvasLayer" parent="."]
+layer = 128
+
+[node name="FadeOverlay" type="ColorRect" parent="FadeLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+script = ExtResource("27_y4ryl")

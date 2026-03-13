@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bhjrrbeuduus4" path="res://scripts/2d/EventChoice.gd" id="1_r1p0q"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_vtt40"]
-[ext_resource type="Texture2D" uid="uid://ctgss4sd37u0v" path="res://assets/icons/selected-icon.png" id="3_g4xlt"]
+[ext_resource type="Texture2D" uid="uid://bej1n2x0xyls5" path="res://assets/icons/event-choice-icon-2.png" id="3_g4xlt"]
 
 [node name="EventChoice" type="MarginContainer"]
 anchors_preset = 8

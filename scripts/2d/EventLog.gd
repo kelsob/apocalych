@@ -33,11 +33,18 @@ var _current_node = null
 # True while waiting for the player to select a choice
 var _awaiting_choice: bool = false
 
+# Animation
+@export var anim_open_duration: float = 0.15
+@export var anim_close_duration: float = 0.12
+var _anim_tween: Tween = null
+
 signal choice_made(choice_id: String, effects: Array)
 signal event_closed()
 
 func _ready():
 	visible = false
+	modulate.a = 1.0
+	scale = Vector2.ONE
 
 	_event_title_scene = load("res://scenes/2d/EventTitle.tscn")
 	if not _event_title_scene:
@@ -79,7 +86,7 @@ func append_event(event: Dictionary, party: Dictionary, node = null):
 	_current_event = event
 	_current_party = party
 	_current_node = node
-	visible = true
+	_show_animated()
 
 	var is_combat_outcome: bool = event.get("id", "") == "_combat_outcome"
 	if _log_has_content and not is_combat_outcome:
@@ -174,7 +181,7 @@ func _on_choice_resolved(choice_id: String, effects: Array):
 		EventManager.apply_effects(effects, _current_party, node_state)
 
 	_resume_gameplay()
-	visible = false
+	await _hide_animated()
 	event_closed.emit()
 
 ## Gracefully release any active choice lock and resume gameplay.
@@ -186,7 +193,7 @@ func close():
 		_active_choice_container = null
 		_awaiting_choice = false
 	_resume_gameplay()
-	visible = false
+	await _hide_animated()
 	event_closed.emit()
 
 ## Fallback choice when an event provides no choices
@@ -199,6 +206,40 @@ func _create_default_continue_choice() -> Dictionary:
 		"next_event": null,
 		"weight": 1
 	}
+
+## Fade + scale in. Fire-and-forget (no await needed at call site).
+func _show_animated() -> void:
+	if _anim_tween:
+		_anim_tween.kill()
+	_set_map_zoom_disabled(true)
+	pivot_offset = size / 2.0
+	modulate.a = 0.0
+	scale = Vector2(0.97, 0.97)
+	visible = true
+	_anim_tween = create_tween().set_parallel(true)
+	_anim_tween.tween_property(self, "modulate:a", 1.0, anim_open_duration)
+	_anim_tween.tween_property(self, "scale", Vector2.ONE, anim_open_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+## Fade + scale out. Awaitable — hides after animation completes.
+func _hide_animated() -> void:
+	if _anim_tween:
+		_anim_tween.kill()
+	pivot_offset = size / 2.0
+	_anim_tween = create_tween().set_parallel(true)
+	_anim_tween.tween_property(self, "modulate:a", 0.0, anim_close_duration)
+	_anim_tween.tween_property(self, "scale", Vector2(0.97, 0.97), anim_close_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await _anim_tween.finished
+	visible = false
+	modulate.a = 1.0
+	scale = Vector2.ONE
+	_set_map_zoom_disabled(false)
+
+## Enable or disable map zoom via the camera group
+func _set_map_zoom_disabled(disabled: bool) -> void:
+	if not get_tree():
+		return
+	for cam in get_tree().get_nodes_in_group("map_camera"):
+		cam.zoom_disabled = disabled
 
 ## Pause gameplay (disable map interaction while awaiting choice)
 func _pause_gameplay():

@@ -4,12 +4,15 @@
 
 [node name="EventTitle" type="MarginContainer"]
 script = ExtResource("1_10wwd")
+shadow_offset = 1
 
 [node name="TitleLabel" type="RichTextLabel" parent="."]
 layout_mode = 2
 theme_override_colors/default_color = Color(0.588235, 0.482353, 0.298039, 1)
 theme_override_colors/font_outline_color = Color(0.290196, 0.207843, 0.12549, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
 bbcode_enabled = true
 text = "The Journey Begins"
 fit_content = true

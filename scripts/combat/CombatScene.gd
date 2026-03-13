@@ -15,12 +15,14 @@ extends Control
 @export_group("Turn Announcer Animation")
 ## Turn announcer fade-in duration (seconds).
 @export var turn_announcer_fade_in: float = 0.25
-## Turn announcer scale-in duration (seconds).
-@export var turn_announcer_scale_in: float = 0.5
+## How long the announcer stays fully visible (seconds).
+@export var turn_announcer_hold: float = 0.7
 ## Turn announcer fade-out duration (seconds).
-@export var turn_announcer_fade_out: float = 0.35
-## Turn announcer scale-out duration (seconds).
-@export var turn_announcer_scale_out: float = 0.35
+@export var turn_announcer_fade_out: float = 0.4
+## Wave effect vertical amplitude in pixels.
+@export var turn_announcer_wave_amp: float = 8.0
+## Wave effect frequency (cycles per second).
+@export var turn_announcer_wave_freq: float = 2.0
 
 # Node references
 @onready var current_turn_label: Label = $MarginContainer/VBoxContainer/MarginContainer/CurrentTurnLabel
@@ -30,7 +32,7 @@ extends Control
 @onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
 @onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer/VBoxContainer
 @onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer/CombatLogContainer/CombatLogLabel
-@onready var turn_announcer_label: Label = $TurnAnnouncerLabel
+@onready var turn_announcer_label: RichTextLabel = $TurnAnnouncerLabel
 
 
 # Scene references for instantiation
@@ -98,28 +100,27 @@ func _ready():
 	
 	print("CombatScene initialized and signals connected")
 
-## Show turn announcer: "X's Turn" with color, fade in/out, scale grow.
+## Show turn announcer: "X's Turn" — fade in, wave while held, fade out.
 func _show_turn_announcer(combatant: CombatantData) -> void:
 	if not turn_announcer_label:
 		return
-	var base_color: Color = Color(0.2, 1.0, 0.3) if combatant.is_player else Color(1.0, 0.2, 0.2)
-	turn_announcer_label.text = "%s's Turn" % _safe_combatant_name(combatant)
+	var color_hex: String = "#55ff66" if combatant.is_player else "#ff4444"
+	turn_announcer_label.text = "[center][wave amp=%.1f freq=%.1f][color=%s]%s's Turn[/color][/wave][/center]" % [turn_announcer_wave_amp, turn_announcer_wave_freq, color_hex, _safe_combatant_name(combatant)]
+	turn_announcer_label.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	turn_announcer_label.visible = true
-	turn_announcer_label.modulate = Color(base_color.r, base_color.g, base_color.b, 0.0)
-	turn_announcer_label.scale = Vector2(0.7, 0.7)
+
 	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(turn_announcer_label, "modulate", Color(base_color.r, base_color.g, base_color.b, 1.0), turn_announcer_fade_in)
-	tween.tween_property(turn_announcer_label, "scale", Vector2(1.0, 1.0), turn_announcer_scale_in)
+	tween.tween_property(turn_announcer_label, "modulate:a", 1.0, turn_announcer_fade_in)
 	await tween.finished
+
+	await get_tree().create_timer(turn_announcer_hold).timeout
+
 	tween = create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(turn_announcer_label, "modulate", Color(base_color.r, base_color.g, base_color.b, 0.0), turn_announcer_fade_out)
-	tween.tween_property(turn_announcer_label, "scale", Vector2(1.2, 1.2), turn_announcer_scale_out)
+	tween.tween_property(turn_announcer_label, "modulate:a", 0.0, turn_announcer_fade_out)
 	await tween.finished
+
 	turn_announcer_label.visible = false
-	turn_announcer_label.modulate = base_color
-	turn_announcer_label.scale = Vector2(1.0, 1.0)
+	turn_announcer_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
 
 ## Safe display name for logging; avoids Nil access when target died or was removed
 func _safe_combatant_name(c) -> String:
@@ -610,6 +611,7 @@ func _on_ability_button_pressed(ability: Ability):
 	# SELF: no targeting UI, execute immediately
 	if ability.targeting_type == Ability.TargetingType.SELF:
 		CombatController.player_cast_ability(ability, [current_player_combatant])
+		_clear_ability_panel()
 		selected_ability = null
 		return
 	
@@ -647,6 +649,7 @@ func _on_combatant_clicked(combatant: CombatantData):
 			combatant_sprites[t].set_selected(true)
 	
 	CombatController.player_cast_ability(pending_ability, selected)
+	_clear_ability_panel()
 	_exit_targeting()
 	selected_ability = null
 

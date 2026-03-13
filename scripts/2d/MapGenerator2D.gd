@@ -174,6 +174,11 @@ class_name MapGenerator2D
 # @export var river_merge_distance: float = 20.0
 # @export var river_tributary_bonus: float = 1.5
 
+@export_group("Node Icons")
+## Fallback town icon used when a node's biome has no specific town_icon set.
+## Assign res://assets/map/icons/town.png (or any texture) here.
+@export var default_town_icon: Texture2D = null
+
 @export_group("Performance")
 @export var use_static_rendering: bool = true  # Bake static elements to texture
 @export var map_resolution_scale: float = 2.0  # Scale factor for static map texture (higher = crisper when zoomed)
@@ -3273,6 +3278,7 @@ func generate_towns():
 					candidate_node.is_town = true
 					candidate_node.node_type = MapNode2D.NodeType.TOWN
 					candidate_node.town_services = _pick_town_services()
+					_apply_town_icon(candidate_node)
 					town_nodes.append(candidate_node)
 					towns_created.append(candidate_node.node_index)
 					
@@ -3303,6 +3309,17 @@ func generate_towns():
 			debug_print("TOWN: Region %d (%s): No towns generated" % [region_id, region_biome_name])
 	
 	debug_print("TOWN: === Total towns generated: %d ===" % town_nodes.size())
+
+## Apply the correct town icon to a node.
+## Biome-specific icon takes priority; falls back to default_town_icon if the biome has none.
+func _apply_town_icon(node: MapNode2D):
+	var texture: Texture2D = null
+	if node.biome and node.biome.town_icon:
+		texture = node.biome.town_icon
+	elif default_town_icon:
+		texture = default_town_icon
+	if texture:
+		node.apply_node_icon(texture, 0.60)
 
 ## Pick town services. For testing: every town gets all options. Restore random subset when done testing.
 func _pick_town_services() -> Array:

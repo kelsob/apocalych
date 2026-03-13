@@ -44,8 +44,7 @@ func _get_planned_action_for_turn(preview: Array, turn_index: int, combatant: Co
 	var remaining: int = cast.remaining_cast_time - ticks_before_this_turn
 	if remaining <= 0:
 		return ""
-	var turn_str := "turn" if remaining == 1 else "turns"
-	return "%s - %d %s" % [cast.ability.ability_name, remaining, turn_str]
+	return cast.ability.ability_name
 
 ## Returns the remaining cast ticks for a combatant at a given preview index, or 0 if no active cast.
 func _get_cast_countdown(preview: Array, turn_index: int, combatant: CombatantData) -> int:

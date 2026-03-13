@@ -6,6 +6,7 @@ extends Control
 
 @onready var map_generator: MapGenerator2D = $MapGenerator
 @onready var ui_controller: CanvasLayer = $UIController
+@onready var fade_overlay: FadeOverlay = $FadeLayer/FadeOverlay
 
 # Game state
 enum GameState {
@@ -19,6 +20,7 @@ enum GameState {
 var _pending_combat_outcome: Dictionary = {}
 
 var current_state: GameState = GameState.MAIN_MENU
+var _fading_to_game: bool = false  # True while map is generating and we're waiting to fade in
 var game_started: bool = false
 var current_world_name: String = ""
 var current_party_members: Array[PartyMember] = []
@@ -110,7 +112,9 @@ func show_menu(state: GameState):
 
 ## Signal handlers for MainMenu
 func _on_main_menu_start_pressed():
+	await fade_overlay.fade_to_black()
 	show_menu(GameState.PARTY_SELECT)
+	await fade_overlay.fade_from_black()
 
 func _on_main_menu_quit_pressed():
 	get_tree().quit()
@@ -129,14 +133,17 @@ func _on_party_select_start_pressed(party_members: Array[PartyMember], world_nam
 	# Update map generator with world name
 	map_generator.set_world_name(world_name)
 	
-	# Show map generator (will be hidden until map is generated)
+	# Fade to black, then show the map (blank while generating) and kick off generation.
+	# The fade-in is deferred until _on_map_generation_complete fires.
+	await fade_overlay.fade_to_black()
 	show_menu(GameState.IN_GAME)
-	
-	# Start map generation now that party is selected
+	_fading_to_game = true
 	map_generator.generate_map()
 
 func _on_party_select_back_pressed():
+	await fade_overlay.fade_to_black()
 	show_menu(GameState.MAIN_MENU)
+	await fade_overlay.fade_from_black()
 
 ## Called when map generation is complete (initial or after reset)
 func _on_map_generation_complete():
@@ -148,6 +155,11 @@ func _on_map_generation_complete():
 	ui_controller.map_ui.initialize_party_ui(current_party_members)
 	_refresh_map_resource_labels()
 	start_game()
+	# Fade in to reveal the fully-generated map, then show the intro event
+	if _fading_to_game:
+		_fading_to_game = false
+		await fade_overlay.fade_from_black()
+	_show_introductory_event()
 
 ## Start the game - enables player interaction and begins gameplay loop
 func start_game():
@@ -160,9 +172,6 @@ func start_game():
 		TimeManager.reset_time()
 	print("=== Game Started ===")
 	print("Party can now navigate the map by clicking on connected nodes")
-	
-	# Show introductory event
-	_show_introductory_event()
 
 ## Show the introductory event to the player
 func _show_introductory_event():

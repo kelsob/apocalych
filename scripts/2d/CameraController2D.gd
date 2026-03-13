@@ -16,13 +16,15 @@ extends Camera2D
 var is_panning: bool = false
 var pan_start_position: Vector2 = Vector2.ZERO
 var original_map_size: Vector2 = Vector2.ZERO  # Store original map size for zoom-based limit calculations
+var zoom_disabled: bool = false  # Set externally to block zoom (e.g. while EventLog is open)
 
 func _ready():
+	add_to_group("map_camera")
 	# Camera will be centered after map generation
 	zoom = Vector2.ONE
 	# Limits will be set dynamically after map generation
 
-func _input(event):
+func _unhandled_input(event):
 	# Mouse wheel zoom - skip if any node is hovered
 	var should_skip_zoom = false
 	var parent = get_parent()
@@ -31,8 +33,8 @@ func _input(event):
 		if parent.hovered_node != null:
 			should_skip_zoom = true
 	
-	# Mouse wheel zoom - only if no node is hovered
-	if enable_mouse_zoom and not should_skip_zoom and event is InputEventMouseButton:
+	# Mouse wheel zoom - only if no node is hovered and zoom isn't externally disabled
+	if enable_mouse_zoom and not should_skip_zoom and not zoom_disabled and event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
 			zoom_camera(1.0 + zoom_speed)
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:

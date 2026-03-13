@@ -125,6 +125,15 @@ func set_mountain_color(color: Color = Color(0.588, 0.482, 0.298)):
 	node_color = color
 	modulate = node_color
 
+## Apply a contextual icon texture to this node's base sprite.
+## Called after node type is assigned (e.g. town) to swap in the appropriate icon.
+func apply_node_icon(texture: Texture2D, icon_scale: float = 1.0):
+	if not sprite_base or not texture:
+		return
+	sprite_base.texture = texture
+	sprite_base.scale = Vector2(icon_scale, icon_scale)
+	sprite_base.visible = true
+
 func become_mountain(frame: int = -1, scale_multiplier: float = 1.0):
 	# Called when this node is designated as a mountain
 	# Set hframes to match sprite sheet (15 frames)

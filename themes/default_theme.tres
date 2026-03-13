@@ -4,18 +4,30 @@
 
 [resource]
 Button/colors/font_color = Color(1, 1, 1, 1)
-Button/colors/font_outline_color = Color(0.286275, 0.227451, 0.121569, 1)
-Button/constants/outline_size = 1
+Button/colors/font_outline_color = Color(0, 0, 0, 1)
+Button/constants/outline_size = 2
+Button/font_sizes/font_size = 24
 Button/fonts/font = ExtResource("1_mlkpy")
 Label/colors/font_color = Color(1, 1, 1, 1)
 Label/colors/font_outline_color = Color(0.286275, 0.227451, 0.121569, 1)
 Label/constants/outline_size = 2
 Label/font_sizes/font_size = 24
 Label/fonts/font = ExtResource("1_mlkpy")
+LineEdit/colors/font_outline_color = Color(0, 0, 0, 1)
+LineEdit/constants/outline_size = 2
 MarginContainer/constants/margin_bottom = 8
 MarginContainer/constants/margin_left = 8
 MarginContainer/constants/margin_right = 8
 MarginContainer/constants/margin_top = 8
+OptionButton/colors/font_outline_color = Color(0, 0, 0, 1)
+OptionButton/constants/outline_size = 2
+OptionButton/fonts/font = ExtResource("1_mlkpy")
+PopupMenu/colors/font_outline_color = Color(0, 0, 0, 1)
+PopupMenu/constants/outline_size = 2
+PopupMenu/font_sizes/font_size = 24
+PopupMenu/fonts/font = ExtResource("1_mlkpy")
+PopupMenu/fonts/font_separator = ExtResource("1_mlkpy")
+PopupMenu/fonts/title_font = ExtResource("1_mlkpy")
 ProgressBar/fonts/font = ExtResource("1_mlkpy")
 RichTextLabel/font_sizes/normal_font_size = 24
 RichTextLabel/fonts/bold_font = ExtResource("1_mlkpy")

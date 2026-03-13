@@ -1,4 +1,4 @@
-extends Control
+extends MarginContainer
 class_name CharacterSelect
 
 ## Character Select - handles individual character creation (name, race, class)
@@ -14,6 +14,7 @@ var selected_class: Class = null
 @onready var name_input: LineEdit = $VBoxContainer/NameInput
 @onready var race_option_button: OptionButton = $VBoxContainer/RaceSelectButton
 @onready var class_option_button: OptionButton = $VBoxContainer/ClassSelectButton
+@onready var character_portrait: TextureRect = $VBoxContainer/CharacterPortrait
 
 # Available options (will be populated from resources)
 var available_races: Array[Race] = []
@@ -83,6 +84,10 @@ func _ready():
 	_load_available_options()
 	_populate_ui()
 	_connect_ui_signals()
+	# Set initial portrait for whichever race is selected at index 0
+	if available_races.size() > 0:
+		selected_race = available_races[0]
+		_update_portrait()
 
 ## Load all available races and classes from resources
 func _load_available_options():
@@ -112,13 +117,11 @@ func _load_available_options():
 func _populate_ui():
 	if race_option_button:
 		race_option_button.clear()
-		race_option_button.add_item("Select Race...")
 		for race in available_races:
 			race_option_button.add_item(race.race_name)
 	
 	if class_option_button:
 		class_option_button.clear()
-		class_option_button.add_item("Select Class...")
 		for class_resource in available_classes:
 			class_option_button.add_item(class_resource.name)
 
@@ -139,15 +142,34 @@ func _on_name_changed(new_text: String):
 	character_data_changed.emit(self)
 
 func _on_race_selected(index: int):
-	if index > 0 and index - 1 < available_races.size():
-		selected_race = available_races[index - 1]
+	if index >= 0 and index < available_races.size():
+		selected_race = available_races[index]
 	else:
 		selected_race = null
+	_update_portrait()
 	character_data_changed.emit(self)
 
+## Update the portrait TextureRect to reflect the currently selected race.
+## Randomly picks between portrait_1 and portrait_2 each time race changes.
+func _update_portrait():
+	if not character_portrait:
+		return
+	if not selected_race:
+		character_portrait.texture = null
+		return
+	var portraits: Array[Texture2D] = []
+	if selected_race.portrait_1:
+		portraits.append(selected_race.portrait_1)
+	if selected_race.portrait_2:
+		portraits.append(selected_race.portrait_2)
+	if portraits.is_empty():
+		character_portrait.texture = null
+	else:
+		character_portrait.texture = portraits[randi() % portraits.size()]
+
 func _on_class_selected(index: int):
-	if index > 0 and index - 1 < available_classes.size():
-		selected_class = available_classes[index - 1]
+	if index >= 0 and index < available_classes.size():
+		selected_class = available_classes[index]
 	else:
 		selected_class = null
 	character_data_changed.emit(self)
@@ -174,15 +196,14 @@ func randomize_character():
 	if available_races.size() > 0:
 		selected_race = available_races[randi() % available_races.size()]
 		if race_option_button:
-			var race_index = available_races.find(selected_race) + 1  # +1 for "Select Race..." option
-			race_option_button.selected = race_index
+			race_option_button.selected = available_races.find(selected_race)
+		_update_portrait()
 	
 	# Random class
 	if available_classes.size() > 0:
 		selected_class = available_classes[randi() % available_classes.size()]
 		if class_option_button:
-			var class_index = available_classes.find(selected_class) + 1  # +1 for "Select Class..." option
-			class_option_button.selected = class_index
+			class_option_button.selected = available_classes.find(selected_class)
 	
 	# Random name based on race
 	if selected_race:

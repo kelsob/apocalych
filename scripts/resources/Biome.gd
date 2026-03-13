@@ -8,3 +8,7 @@ class_name Biome
 @export var description: String = ""
 @export var color: Color = Color.WHITE  # Visual color for map representation
 @export var icon_name: String = ""  # Optional icon identifier for future use
+
+## Per-biome node icons. Leave null to use the MapGenerator default fallback.
+@export_group("Node Icons")
+@export var town_icon: Texture2D = null

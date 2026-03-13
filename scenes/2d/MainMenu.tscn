@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://b6w065e18g03u"]
+[gd_scene load_steps=4 format=3 uid="uid://b6w065e18g03u"]
 
 [ext_resource type="Script" uid="uid://cmpwemph8jh8n" path="res://scripts/menus/MainMenu.gd" id="1_h0k0g"]
+[ext_resource type="Texture2D" uid="uid://bhj5fldpvurhv" path="res://assets/art/main_title_card.png" id="2_wtnc7"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_nk1ya"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -11,19 +13,41 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_h0k0g")
 
-[node name="GameTitleLabel" type="Label" parent="."]
+[node name="ColorRect" type="ColorRect" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -77.5
-offset_top = -92.0
-offset_right = 77.5
-offset_bottom = -46.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_wtnc7")
+expand_mode = 3
+
+[node name="GameTitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -77.5
+offset_top = -214.0
+offset_right = 77.5
+offset_bottom = -168.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 8
 theme_override_font_sizes/font_size = 22
 text = "Apocalich"
 
@@ -35,23 +59,77 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -67.5
-offset_top = -369.0
+offset_top = -168.0
 offset_right = 67.5
-offset_bottom = -235.0
+offset_bottom = -112.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
-text = "New Game"
+flat = true
+
+[node name="Label" type="Label" parent="VBoxContainer/NewGameButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -7.5
+offset_bottom = -0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_nk1ya")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
+text = "new game"
+horizontal_alignment = 1
 
 [node name="OptionsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
-text = "Options"
+flat = true
+
+[node name="Label" type="Label" parent="VBoxContainer/OptionsButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -7.5
+offset_bottom = -0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_nk1ya")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
+text = "options"
+horizontal_alignment = 1
 
 [node name="QuitButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 16)
 layout_mode = 2
-text = "Quit"
+flat = true
+
+[node name="Label" type="Label" parent="VBoxContainer/QuitButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -7.5
+offset_bottom = -0.5
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_nk1ya")
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
+text = "exit"
+horizontal_alignment = 1
 
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/OptionsButton" to="." method="_on_options_button_pressed"]
