@@ -9,10 +9,11 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_d0kcm"]
 shader = ExtResource("2_jegi6")
-shader_parameter/speed = 0.3
-shader_parameter/scale = 2.5
-shader_parameter/warp = 3.5
-shader_parameter/contrast = 1.6
+shader_parameter/speed = 0.1
+shader_parameter/vortex_strength = 0.923
+shader_parameter/vortex_decay = 3.5
+shader_parameter/scale = 8.0
+shader_parameter/warp = 5.0
 shader_parameter/shimmer = 0.8
 shader_parameter/vignette = 0.506
 shader_parameter/col_shadow = Color(0.826935, 0.457581, 0, 1)
