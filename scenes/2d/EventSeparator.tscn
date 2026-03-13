@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://ccl4utf43qw3r"]
+
+[ext_resource type="Texture2D" uid="uid://cydbticb225pn" path="res://assets/map/event-separator.png" id="1_35fxr"]
+
+[node name="EventSeparator" type="TextureRect"]
+texture = ExtResource("1_35fxr")

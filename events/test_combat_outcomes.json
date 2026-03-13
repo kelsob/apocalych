@@ -5,7 +5,7 @@
     "biomes": ["forest"],
     "weight": 999,
     "one_shot": false,
-    "text": "You've barely taken three steps into the clearing when they come out of the treeline — four wargs, low and fast, no warning howl this time. Someone trained them, or something did.",
+    "text": "You've barely taken three steps into the clearing when they come out of the treeline — four wargs, low and fast, no warning at all. Someone trained them, or something did.",
     "choices": [
       {
         "id": "stand_and_fight",

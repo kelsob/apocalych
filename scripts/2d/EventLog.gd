@@ -14,12 +14,16 @@ var _event_title_scene: PackedScene = null
 var _event_body_scene: PackedScene = null
 var _event_rewards_scene: PackedScene = null
 var _event_choice_container_scene: PackedScene = null
+var _event_separator_scene: PackedScene = null
 
 # Reference to the active (unresolved) choice container - cleared once resolved
 var _active_choice_container: EventChoiceContainer = null
 
 # The most recently appended node - used for ensure_control_visible
 var _last_appended_node: Control = null
+
+# True after the first event has been appended - used to gate separator insertion
+var _log_has_content: bool = false
 
 # State for the in-flight event (needed for combat_outcomes stash)
 var _current_event: Dictionary = {}
@@ -51,6 +55,10 @@ func _ready():
 	if not _event_choice_container_scene:
 		push_error("EventLog: Could not load EventChoiceContainer scene")
 
+	_event_separator_scene = load("res://scenes/2d/EventSeparator.tscn")
+	if not _event_separator_scene:
+		push_error("EventLog: Could not load EventSeparator scene")
+
 	# Scroll to bottom whenever the log becomes visible
 	visibility_changed.connect(_on_visibility_changed)
 
@@ -72,6 +80,11 @@ func append_event(event: Dictionary, party: Dictionary, node = null):
 	_current_party = party
 	_current_node = node
 	visible = true
+
+	var is_combat_outcome: bool = event.get("id", "") == "_combat_outcome"
+	if _log_has_content and not is_combat_outcome:
+		_append_separator()
+	_log_has_content = true
 
 	_append_title(event.get("title", "Event"))
 
@@ -95,6 +108,13 @@ func append_event(event: Dictionary, party: Dictionary, node = null):
 	await get_tree().process_frame
 	if _last_appended_node and is_instance_valid(_last_appended_node):
 		scroll_container.ensure_control_visible(_last_appended_node)
+
+## Append a visual separator between events
+func _append_separator():
+	if not _event_separator_scene:
+		return
+	var separator = _event_separator_scene.instantiate()
+	log_container.add_child(separator)
 
 ## Append a title element to the log
 func _append_title(text: String):

@@ -1,7 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://dq8wpxtyg0atk"]
+[gd_scene load_steps=3 format=3 uid="uid://dq8wpxtyg0atk"]
 
 [ext_resource type="Script" uid="uid://c4cldxhd2bsd4" path="res://scripts/2d/EventLog.gd" id="1_cbifs"]
-[ext_resource type="PackedScene" uid="uid://b8auts47pto5b" path="res://scenes/2d/EventRewards.tscn" id="2_mwf7w"]
 [ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="2_xh3ds"]
 
 [node name="EventLog" type="Control"]
@@ -53,9 +52,6 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 0
-
-[node name="EventRewards" parent="MarginContainer/MarginContainer/ScrollContainer/ContentContainer" instance=ExtResource("2_mwf7w")]
-layout_mode = 2
 
 [node name="TextureRect" type="NinePatchRect" parent="."]
 layout_mode = 1

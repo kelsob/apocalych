@@ -4,8 +4,6 @@ class_name EventChoice
 ## EventChoice - A single selectable choice entry in the EventLog.
 ## Root is a Label. $Button handles clicks. Supports three visual states.
 ## States: AVAILABLE (default), SELECTED (green - chosen), REJECTED (gray - not chosen)
-
-@onready var panel: Panel = $Panel
 @onready var button: Button = $Button
 @onready var choice_text: Label = $HBoxContainer/Label
 @onready var choice_icon: TextureRect = $HBoxContainer/TextureRect
