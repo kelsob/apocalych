@@ -74,7 +74,6 @@ func _populate_hp_xp(member: PartyMember) -> void:
 		_current_hp_label.text = str(member.current_health)
 	if _max_hp_label:
 		_max_hp_label.text = str(member.max_health)
-	_hp_progress_bar.set_health(member.current_health, member.max_health)
 	if _next_lvl_label:
 		_next_lvl_label.text = "%d:" % (member.level + 1)
 	if _xp_to_lvl_label:

@@ -1,8 +1,33 @@
-[gd_scene load_steps=4 format=3 uid="uid://b6w065e18g03u"]
+[gd_scene load_steps=9 format=3 uid="uid://b6w065e18g03u"]
 
 [ext_resource type="Script" uid="uid://cmpwemph8jh8n" path="res://scripts/menus/MainMenu.gd" id="1_h0k0g"]
+[ext_resource type="Shader" uid="uid://dkew03s863s4u" path="res://assets/shaders/liquid_gold.gdshader" id="2_jegi6"]
 [ext_resource type="Texture2D" uid="uid://bhj5fldpvurhv" path="res://assets/art/main_title_card.png" id="2_wtnc7"]
+[ext_resource type="Shader" uid="uid://dou513uy4q83n" path="res://assets/shaders/painterly_edge.gdshader" id="3_d0kcm"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_nk1ya"]
+[ext_resource type="Texture2D" uid="uid://cix458gbp074d" path="res://assets/map/frame.png" id="6_p0jed"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d0kcm"]
+shader = ExtResource("2_jegi6")
+shader_parameter/speed = 0.3
+shader_parameter/scale = 2.5
+shader_parameter/warp = 3.5
+shader_parameter/contrast = 1.6
+shader_parameter/shimmer = 0.8
+shader_parameter/vignette = 0.506
+shader_parameter/col_shadow = Color(0.826935, 0.457581, 0, 1)
+shader_parameter/col_amber = Color(0.557926, 0.232129, 0.0289138, 1)
+shader_parameter/col_gold = Color(0.75, 0.46, 0.04, 1)
+shader_parameter/col_bright = Color(1, 0.82, 0.18, 1)
+shader_parameter/col_glint = Color(1, 0.97, 0.86, 1)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p0jed"]
+shader = ExtResource("3_d0kcm")
+shader_parameter/aspect = 0.616
+shader_parameter/edge_start = 0.236
+shader_parameter/softness = 0.055
+shader_parameter/distortion = 0.4
+shader_parameter/speed = 0.18
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -14,6 +39,7 @@ grow_vertical = 2
 script = ExtResource("1_h0k0g")
 
 [node name="ColorRect" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_d0kcm")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,6 +48,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="TextureRect" type="TextureRect" parent="."]
+material = SubResource("ShaderMaterial_p0jed")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -39,9 +66,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -77.5
-offset_top = -214.0
+offset_top = -206.0
 offset_right = 77.5
-offset_bottom = -168.0
+offset_bottom = -160.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
@@ -59,9 +86,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -67.5
-offset_top = -168.0
+offset_top = -160.0
 offset_right = 67.5
-offset_bottom = -112.0
+offset_bottom = -104.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -130,6 +157,19 @@ theme_override_constants/outline_size = 2
 theme_override_constants/shadow_outline_size = 4
 text = "exit"
 horizontal_alignment = 1
+
+[node name="NinePatchRect" type="NinePatchRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("6_p0jed")
+patch_margin_left = 10
+patch_margin_top = 10
+patch_margin_right = 10
+patch_margin_bottom = 10
 
 [connection signal="pressed" from="VBoxContainer/NewGameButton" to="." method="_on_new_game_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/OptionsButton" to="." method="_on_options_button_pressed"]
