@@ -1,15 +1,22 @@
 shader_type canvas_item;
 
-/// Match this to your image's width ÷ height so the oval isn't squashed
+/// Match to image width ÷ height
 uniform float aspect     : hint_range(0.3, 3.0)  = 1.33;
-/// How far from centre the edge zone begins (higher = smaller clean area)
+/// Where the edge zone begins
 uniform float edge_start : hint_range(0.0, 0.9)  = 0.42;
-/// How wide the stroke transition band is
+/// Width of the transition band
 uniform float softness   : hint_range(0.02, 0.7) = 0.38;
-/// How aggressively noise warps the edge — more = wilder brushstrokes
+/// How wildly the edge warps
 uniform float distortion : hint_range(0.0, 0.55) = 0.22;
-/// Animation speed — the edge slowly breathes and morphs
+/// Animation speed
 uniform float speed      : hint_range(0.0, 2.0)  = 0.18;
+/// How intensely the edge burns — 0 = plain fade, 1 = full char
+uniform float burn       : hint_range(0.0, 1.0)  = 0.90;
+
+// ── Burnt parchment palette ───────────────────────────────────────────────────
+uniform vec4 col_scorch : source_color = vec4(0.62, 0.28, 0.04, 1.0); // scorched amber
+uniform vec4 col_ember  : source_color = vec4(0.42, 0.10, 0.01, 1.0); // deep ember red
+uniform vec4 col_char   : source_color = vec4(0.05, 0.02, 0.00, 1.0); // charcoal black
 
 // ── Gradient noise (no grid-line artifacts) ───────────────────────────────────
 
@@ -47,32 +54,50 @@ void fragment() {
 	vec4  tex = texture(TEXTURE, UV);
 	float t   = TIME * speed;
 
-	// Elliptical distance from centre, corrected for aspect ratio
+	// Elliptical distance from centre
 	vec2  c   = (UV - 0.5) * vec2(aspect, 1.0);
 	float rad = length(c);
 
-	// Domain-warp the UV before sampling the edge noise.
-	// This is what gives the edge its organic, curling brushstroke quality —
-	// adjacent points get pulled in slightly different directions rather than
-	// shifting uniformly, so the boundary looks hand-painted.
+	// Two-pass domain warp for organic painterly edges
 	vec2 warp_uv = UV * 3.5 + vec2(t * 0.15, t * 0.09);
 	vec2 warp = vec2(
-		fbm(warp_uv,                    4),
-		fbm(warp_uv + vec2(5.2, 1.7),  4)
+		fbm(warp_uv,                   4),
+		fbm(warp_uv + vec2(5.2, 1.7), 4)
 	) - 0.5;
 
-	// A second warp pass fed by the first gives more complex, layered strokes
 	vec2 warp2_uv = UV * 2.8 + warp * 1.8 + vec2(t * 0.07, t * 0.12);
 	vec2 warp2 = vec2(
-		fbm(warp2_uv,                   3),
+		fbm(warp2_uv,                  3),
 		fbm(warp2_uv + vec2(3.1, 8.4), 3)
 	) - 0.5;
 
-	// Distort the effective radius by the warped noise field
 	float eff_rad = rad + dot(warp2, normalize(c + vec2(0.001))) * distortion;
 
-	// Smooth alpha ramp over the edge band
+	// edge_t: 0 = inner edge boundary, 1 = fully transparent outer edge
+	float edge_t = clamp((eff_rad - edge_start) / max(softness, 0.001), 0.0, 1.0);
+
+	// ── Burnt parchment ───────────────────────────────────────────────────────
+	// Extra noise to make the burn ragged and irregular — independent of the
+	// main warp so it has its own charred texture character.
+	// Slow drift so it feels like smouldering rather than animated fire.
+	float burn_noise = fbm(UV * 7.0 + warp2 * 0.6 + vec2(t * 0.04, t * 0.03), 4);
+
+	// Shift the edge position by noise so the burn boundary is never clean
+	float noisy_t = clamp(edge_t + (burn_noise - 0.5) * 0.40, 0.0, 1.0);
+
+	// Three overlapping zones from inside out:
+	//   scorch (warm amber) → ember (deep red-orange) → char (near black)
+	float scorch_amt = smoothstep(0.08, 0.45, noisy_t);
+	float ember_amt  = smoothstep(0.35, 0.68, noisy_t) * (1.0 - smoothstep(0.80, 1.00, noisy_t));
+	float char_amt   = smoothstep(0.62, 0.96, noisy_t);
+
+	vec3 col = tex.rgb;
+	col = mix(col, col_scorch.rgb, scorch_amt * burn);
+	col = mix(col, col_ember.rgb,  ember_amt  * burn);
+	col = mix(col, col_char.rgb,   char_amt   * burn);
+
+	// ── Alpha ─────────────────────────────────────────────────────────────────
 	float alpha = 1.0 - smoothstep(edge_start, edge_start + softness, eff_rad);
 
-	COLOR = vec4(tex.rgb, tex.a * clamp(alpha, 0.0, 1.0));
+	COLOR = vec4(col, tex.a * clamp(alpha, 0.0, 1.0));
 }

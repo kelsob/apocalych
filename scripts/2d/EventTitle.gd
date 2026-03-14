@@ -16,10 +16,10 @@ func _ready():
 	title_label.add_theme_constant_override("shadow_offset_y", shadow_offset)
 
 	if _pending_text:
-		title_label.text = "[u]%s[/u]" % _pending_text
+		title_label.text = _pending_text
 
 ## Set the title text. Safe to call before or after the node is in the scene tree.
 func set_title(text: String):
 	_pending_text = text
 	if title_label:
-		title_label.text = "[u]%s[/u]" % text
+		title_label.text = text

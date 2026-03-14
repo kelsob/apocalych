@@ -138,6 +138,25 @@ func get_rest_abilities() -> Array[RestAbility]:
 				result.append(ra)
 	return result
 
+## Simulate gain_experience(amount) and return the sequence of states for UI animation.
+## Does NOT modify any state. Each entry: {level, experience, experience_to_next_level}.
+## steps[0] = current state before XP is applied.
+## steps[1..n] = state after each level-up, with final resting experience in the last entry.
+func simulate_xp_gain(amount: int) -> Array:
+	var steps: Array = []
+	var sim_level := level
+	var sim_xp := experience
+	var sim_to_next := experience_to_next_level
+	steps.append({"level": sim_level, "experience": sim_xp, "experience_to_next_level": sim_to_next})
+	sim_xp += amount
+	while sim_xp >= sim_to_next:
+		sim_xp -= sim_to_next
+		sim_level += 1
+		sim_to_next = int(100 * pow(1.5, sim_level - 1))
+		steps.append({"level": sim_level, "experience": 0, "experience_to_next_level": sim_to_next})
+	steps[steps.size() - 1]["experience"] = sim_xp
+	return steps
+
 ## Gain experience and level up if threshold reached
 func gain_experience(amount: int):
 	experience += amount

@@ -36,6 +36,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
+event_debug_force = true
+event_debug_id = "debug_rewards_test"
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true

@@ -9,18 +9,17 @@ class_name EventLog
 
 @onready var scroll_container: ScrollContainer = $MarginContainer/MarginContainer/ScrollContainer
 @onready var log_container: VBoxContainer = $MarginContainer/MarginContainer/ScrollContainer/ContentContainer
+@onready var visibility_spacer: Control = $MarginContainer/MarginContainer/ScrollContainer/ContentContainer/VisibilitySpacer
 
 var _event_title_scene: PackedScene = null
 var _event_body_scene: PackedScene = null
 var _event_rewards_scene: PackedScene = null
 var _event_choice_container_scene: PackedScene = null
 var _event_separator_scene: PackedScene = null
+var _item_reward_scene: PackedScene = null
 
 # Reference to the active (unresolved) choice container - cleared once resolved
 var _active_choice_container: EventChoiceContainer = null
-
-# The most recently appended node - used for ensure_control_visible
-var _last_appended_node: Control = null
 
 # True after the first event has been appended - used to gate separator insertion
 var _log_has_content: bool = false
@@ -38,7 +37,7 @@ var _awaiting_choice: bool = false
 @export var anim_close_duration: float = 0.12
 var _anim_tween: Tween = null
 
-signal choice_made(choice_id: String, effects: Array)
+signal choice_made(choice_id: String, effects: Array, outcome_text: String)
 signal event_closed()
 
 func _ready():
@@ -66,13 +65,17 @@ func _ready():
 	if not _event_separator_scene:
 		push_error("EventLog: Could not load EventSeparator scene")
 
+	_item_reward_scene = load("res://scenes/2d/ItemReward.tscn")
+	if not _item_reward_scene:
+		push_error("EventLog: Could not load ItemReward scene")
+
 	# Scroll to bottom whenever the log becomes visible
 	visibility_changed.connect(_on_visibility_changed)
 
 func _on_visibility_changed():
-	if visible and _last_appended_node and is_instance_valid(_last_appended_node):
+	if visible and is_instance_valid(visibility_spacer):
 		await get_tree().process_frame
-		scroll_container.ensure_control_visible(_last_appended_node)
+		scroll_container.ensure_control_visible(visibility_spacer)
 
 ## Append a new event to the log. Main entry point called by Main.
 ## event: pre-processed event dict from EventManager.present_event()
@@ -113,8 +116,12 @@ func append_event(event: Dictionary, party: Dictionary, node = null):
 	_pause_gameplay()
 
 	await get_tree().process_frame
-	if _last_appended_node and is_instance_valid(_last_appended_node):
-		scroll_container.ensure_control_visible(_last_appended_node)
+	scroll_container.ensure_control_visible(visibility_spacer)
+
+## Ensures VisibilitySpacer is always the final child so scrolling to it shows the log bottom
+func _push_spacer_to_end() -> void:
+	if is_instance_valid(visibility_spacer):
+		log_container.move_child(visibility_spacer, -1)
 
 ## Append a visual separator between events
 func _append_separator():
@@ -122,6 +129,7 @@ func _append_separator():
 		return
 	var separator = _event_separator_scene.instantiate()
 	log_container.add_child(separator)
+	_push_spacer_to_end()
 
 ## Append a title element to the log
 func _append_title(text: String):
@@ -130,7 +138,7 @@ func _append_title(text: String):
 	var title_node = _event_title_scene.instantiate()
 	title_node.set_title(text)
 	log_container.add_child(title_node)
-	_last_appended_node = title_node
+	_push_spacer_to_end()
 
 ## Append a body element to the log
 func _append_body(text: String):
@@ -139,7 +147,7 @@ func _append_body(text: String):
 	var body_node = _event_body_scene.instantiate()
 	body_node.set_body(text)
 	log_container.add_child(body_node)
-	_last_appended_node = body_node
+	_push_spacer_to_end()
 
 ## Append a rewards display block (XP and gold earned)
 func _append_rewards(rewards: Dictionary):
@@ -148,7 +156,7 @@ func _append_rewards(rewards: Dictionary):
 	var rewards_node: EventRewards = _event_rewards_scene.instantiate()
 	rewards_node.set_rewards(rewards)
 	log_container.add_child(rewards_node)
-	_last_appended_node = rewards_node
+	_push_spacer_to_end()
 
 ## Append a choice container holding all choices for this event
 func _append_choice_container(choices: Array):
@@ -159,18 +167,56 @@ func _append_choice_container(choices: Array):
 	container.choice_resolved.connect(_on_choice_resolved)
 	_active_choice_container = container
 	log_container.add_child(container)
-	_last_appended_node = container
+	_push_spacer_to_end()
 
-## Called when the active choice container resolves a player choice
-func _on_choice_resolved(choice_id: String, effects: Array):
+## Creates and adds an ItemReward node to the log. Returns it so the caller can await member_chosen.
+## Returns null if the scene is missing or the party is empty.
+func _spawn_item_reward_node(reward: Dictionary) -> ItemReward:
+	if not _item_reward_scene:
+		push_warning("EventLog: _item_reward_scene is null — ItemReward.tscn not loaded")
+		return null
+	var main = get_tree().get_first_node_in_group("main") if get_tree() else null
+	var members: Array = main.current_party_members if main else []
+	if members.is_empty():
+		push_warning("EventLog: no party members, cannot present item reward")
+		return null
+	var reward_node: ItemReward = _item_reward_scene.instantiate()
+	log_container.add_child(reward_node)
+	_push_spacer_to_end()
+	reward_node.setup(reward.item, reward.count, members)
+	return reward_node
+
+## Sequential item reward for the no-outcome-text path: spawn, await selection, fulfill.
+func _present_item_reward(reward: Dictionary) -> void:
+	var rn := _spawn_item_reward_node(reward)
+	if not rn:
+		return
+	await get_tree().process_frame
+	scroll_container.ensure_control_visible(visibility_spacer)
+	var chosen: PartyMember = await rn.member_chosen
+	EventManager.fulfill_item_reward(reward.item_id, reward.count, chosen)
+
+## Called when the active choice container resolves a player choice.
+## outcome_text is non-empty when the choice used a probabilistic outcomes pool.
+func _on_choice_resolved(choice_id: String, effects: Array, outcome_text: String):
 	if not _awaiting_choice:
 		return
 	_awaiting_choice = false
+
+	# Collect continue containers to free after the close animation — not before.
+	var _deferred_free: Array = []
+
+	# Default no-choice continue: defer cleanup until after hide animation
+	if choice_id == "continue" and _active_choice_container and is_instance_valid(_active_choice_container):
+		_deferred_free.append(_active_choice_container)
 	_active_choice_container = null
 
-	choice_made.emit(choice_id, effects)
+	choice_made.emit(choice_id, effects, outcome_text)
 
-	if EventManager and effects.size() > 0:
+	# Helper to apply effects and extract pending item reward entries.
+	var _apply_and_drain := func() -> Array:
+		if not (EventManager and effects.size() > 0):
+			return []
 		var node_state: Dictionary = {}
 		if _current_node:
 			node_state["current_node"] = _current_node
@@ -179,10 +225,66 @@ func _on_choice_resolved(choice_id: String, effects: Array):
 				EventManager.pending_combat_outcomes = _current_event.get("combat_outcomes", {}).duplicate(true)
 				break
 		EventManager.apply_effects(effects, _current_party, node_state)
+		var entries: Array = []
+		for reward in EventManager.drain_pending_item_rewards():
+			var rn := _spawn_item_reward_node(reward)
+			if rn:
+				entries.append({ "node": rn, "reward": reward })
+		return entries
+
+	if not outcome_text.is_empty():
+		_append_body(outcome_text)
+
+		# Apply effects and spawn all item reward widgets BEFORE the Continue button appears.
+		var item_entries: Array = _apply_and_drain.call()
+
+		# Continue button — disabled while item rewards are awaiting assignment.
+		var continue_container: EventChoiceContainer = _event_choice_container_scene.instantiate()
+		continue_container.populate_choices([_create_default_continue_choice()])
+		_active_choice_container = continue_container
+		log_container.add_child(continue_container)
+		_push_spacer_to_end()
+		# Must disable AFTER add_child so _ready() has populated _choice_nodes.
+		if not item_entries.is_empty():
+			continue_container.set_all_disabled(true)
+		_awaiting_choice = true
+
+		await get_tree().process_frame
+		scroll_container.ensure_control_visible(visibility_spacer)
+
+		# Resolve each item reward in sequence, then unlock Continue.
+		for entry in item_entries:
+			var chosen: PartyMember = await entry.node.member_chosen
+			EventManager.fulfill_item_reward(entry.reward.item_id, entry.reward.count, chosen)
+
+		if not item_entries.is_empty():
+			continue_container.set_all_disabled(false)
+
+		await continue_container.choice_resolved
+		_awaiting_choice = false
+		_active_choice_container = null
+		_deferred_free.append(continue_container)
+
+	else:
+		# No outcome text: apply effects and present any item rewards sequentially, then close.
+		for entry in _apply_and_drain.call():
+			await _present_item_reward_entry(entry)
 
 	_resume_gameplay()
 	await _hide_animated()
+
+	for node in _deferred_free:
+		if is_instance_valid(node):
+			node.queue_free()
+
 	event_closed.emit()
+
+## Awaits a pre-spawned item reward node's selection and fulfills the grant.
+func _present_item_reward_entry(entry: Dictionary) -> void:
+	await get_tree().process_frame
+	scroll_container.ensure_control_visible(visibility_spacer)
+	var chosen: PartyMember = await entry.node.member_chosen
+	EventManager.fulfill_item_reward(entry.reward.item_id, entry.reward.count, chosen)
 
 ## Gracefully release any active choice lock and resume gameplay.
 ## Called when something external (vendor open, etc.) needs to interrupt.

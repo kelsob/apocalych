@@ -51,7 +51,10 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 0
+
+[node name="VisibilitySpacer" type="Control" parent="MarginContainer/MarginContainer/ScrollContainer/ContentContainer"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
 
 [node name="TextureRect" type="NinePatchRect" parent="."]
 layout_mode = 1

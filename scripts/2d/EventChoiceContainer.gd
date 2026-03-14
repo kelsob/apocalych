@@ -13,8 +13,9 @@ var _pending_choices: Array = []
 var _choice_nodes: Array = []
 var _resolved: bool = false
 
-## Emitted once when any choice in this group is selected
-signal choice_resolved(choice_id: String, effects: Array)
+## Emitted once when any choice in this group is selected.
+## outcome_text is non-empty when the choice used a probabilistic outcomes array.
+signal choice_resolved(choice_id: String, effects: Array, outcome_text: String)
 
 func _ready():
 	_event_choice_scene = load("res://scenes/2d/EventChoice.tscn")
@@ -51,7 +52,24 @@ func _on_choice_selected(choice: Dictionary):
 			choice_node.select()
 		else:
 			choice_node.reject()
-	choice_resolved.emit(choice_id, choice.get("effects", []))
+
+	var effects: Array = []
+	var outcome_text: String = ""
+
+	if choice.has("outcomes") and choice.outcomes is Array and not choice.outcomes.is_empty():
+		var outcome: Dictionary = EventManager.pick_weighted_outcome(choice.outcomes)
+		effects = outcome.get("effects", [])
+		outcome_text = outcome.get("text", "")
+	else:
+		effects = choice.get("effects", [])
+
+	choice_resolved.emit(choice_id, effects, outcome_text)
+
+## Enable or disable all unresolved choice buttons (used to gate Continue behind item rewards).
+func set_all_disabled(disabled: bool) -> void:
+	for choice_node in _choice_nodes:
+		if choice_node.button:
+			choice_node.button.disabled = disabled
 
 ## Gray out all choices without resolving (called by EventLog.close() on external interrupt)
 func reject_all():

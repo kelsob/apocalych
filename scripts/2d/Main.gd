@@ -403,6 +403,7 @@ func _on_event_closed():
 	refresh_rest_button_visibility()
 	refresh_town_button_visibility()
 	_refresh_map_resource_labels()
+	ui_controller.map_ui.refresh_party_xp()
 
 const CAMPING_SUPPLIES_ITEM_ID: String = "camping_supplies"
 const HEALTH_POTION_ITEM_ID: String = "health_potion"

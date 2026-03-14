@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://dv0fapbow2kbx"]
+
+[ext_resource type="Shader" uid="uid://c44ojrwh50ddy" path="res://assets/shaders/embers.gdshader" id="1_lhfyh"]
+
+[resource]
+shader = ExtResource("1_lhfyh")
+shader_parameter/count = 60
+shader_parameter/speed = 1.0
+shader_parameter/sway = 0.255
+shader_parameter/brightness = 2.5
+shader_parameter/col_hot = Color(1, 0.96, 0.72, 1)
+shader_parameter/col_warm = Color(1, 0.48, 0.06, 1)
+shader_parameter/col_cool = Color(0.5, 0.08, 0.01, 1)

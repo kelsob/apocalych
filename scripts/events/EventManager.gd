@@ -16,6 +16,14 @@ var seen_one_shot_events: Array[String] = []
 ## Set by EventLog before apply_effects, read by Main after combat ends, then cleared.
 var pending_combat_outcomes: Dictionary = {}
 
+## Character (non-bulk) item rewards that need player assignment via ItemReward UI.
+## Populated by _apply_give_item, drained by EventLog after apply_effects.
+var pending_item_rewards: Array = []
+
+## XP animation sequences populated before gain_experience/level_up modifies the member.
+## Keyed by PartyMember reference. Read and cleared by CharacterDetails.refresh_xp().
+var _xp_animation_data: Dictionary = {}
+
 # Seedable RNG for deterministic event selection
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -374,6 +382,30 @@ func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
 	
 	return presented_event
 
+## Pick a weighted-random outcome from a choice's outcomes array.
+## Each outcome dict should have a "weight" field (defaults to 1 if absent).
+## Returns the winning outcome Dictionary, or an empty Dictionary if the array is empty.
+func pick_weighted_outcome(outcomes: Array) -> Dictionary:
+	if outcomes.is_empty():
+		return {}
+
+	var total_weight: float = 0.0
+	for outcome in outcomes:
+		total_weight += float(outcome.get("weight", 1))
+
+	if total_weight <= 0.0:
+		return outcomes[0]
+
+	var roll: float = rng.randf_range(0.0, total_weight)
+	var accumulated: float = 0.0
+	for outcome in outcomes:
+		accumulated += float(outcome.get("weight", 1))
+		if roll <= accumulated:
+			return outcome
+
+	# Fallback — should only be reached due to float precision edge cases
+	return outcomes[outcomes.size() - 1]
+
 ## Apply effects from a choice
 func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {}):
 	debug_print("SECRET PATH: EventManager apply_effects() called with %d effects" % effects.size())
@@ -440,6 +472,15 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 
 			"consume_item":
 				_apply_consume_item(effect, party)
+
+			"give_item_from_pool":
+				_apply_give_item_from_pool(effect, party)
+
+			"give_xp":
+				_apply_give_xp(effect, party)
+
+			"heal_party":
+				_apply_heal_party(effect, party)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -547,9 +588,12 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 	if not effect.has("item_id"):
 		push_warning("EventManager: give_item effect missing 'item_id' field")
 		return
-	
-	var count: int = int(effect.get("count", 1))
-	var target_index: int = int(effect.get("target", 0))
+
+	var count: int
+	if effect.has("min_count") and effect.has("max_count"):
+		count = rng.randi_range(int(effect.min_count), int(effect.max_count))
+	else:
+		count = int(effect.get("count", 1))
 	var main: Node = _get_main_node()
 	if not main:
 		push_warning("EventManager: give_item requires Main node")
@@ -558,8 +602,8 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 		push_warning("EventManager: Unknown item_id '%s'" % effect.item_id)
 		return
 	var item := ItemDatabase.get_item(effect.item_id)
-	
-	# Resource items go to party-wide store
+
+	# Resource items go to party-wide store (target is irrelevant for bulk)
 	if ItemDatabase.is_bulk_loot(effect.item_id):
 		var added := 0
 		for i in count:
@@ -568,24 +612,41 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 		if added > 0:
 			print("EventManager: Gave %s x%d to party resources" % [item.name, added])
 		return
-	
-	# Non-resource items go to target character
+
+	# Non-bulk items are queued for player assignment via ItemReward UI
 	if main.current_party_members.is_empty():
 		push_warning("EventManager: give_item requires party members for non-resource items")
 		return
+	pending_item_rewards.append({ "item_id": effect.item_id, "count": count, "item": item })
+
+## Returns all queued character item rewards and clears the queue.
+## Called by EventLog after apply_effects so ItemReward UI can be shown.
+func drain_pending_item_rewards() -> Array:
+	var drained := pending_item_rewards.duplicate()
+	pending_item_rewards.clear()
+	return drained
+
+## Actually grants a character item to the chosen member after the player picks via ItemReward UI.
+func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> void:
+	if not ItemDatabase.has_item(item_id):
+		push_warning("EventManager: fulfill_item_reward unknown item_id '%s'" % item_id)
+		return
+	var item := ItemDatabase.get_item(item_id)
+	var main: Node = _get_main_node()
 	var party_total: int = 0
-	for m in main.current_party_members:
-		party_total += m.get_item_count(effect.item_id)
+	if main:
+		for m in main.current_party_members:
+			party_total += m.get_item_count(item_id)
 	var capacity_headroom: int = 999
 	if item.capacity > 0:
 		capacity_headroom = item.capacity - party_total
 	if capacity_headroom <= 0:
+		print("EventManager: %s is at capacity, could not give to %s" % [item.name, member.member_name])
 		return
-	var member: PartyMember = main.current_party_members[target_index]
 	var to_add: int = mini(count, capacity_headroom)
 	var added := 0
 	for i in to_add:
-		if member.add_item(effect.item_id, 1):
+		if member.add_item(item_id, 1):
 			added += 1
 	if added > 0:
 		print("EventManager: Gave %s x%d to %s" % [item.name, added, member.member_name])
@@ -729,7 +790,11 @@ func _apply_pay_gold(effect: Dictionary, party: Dictionary, node_state: Dictiona
 	print("EventManager: Paid %d gold (remaining: %d)" % [amount, main.party_gold])
 
 func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
-	var amount: int = int(effect.get("amount", 0))
+	var amount: int
+	if effect.has("min_amount") and effect.has("max_amount"):
+		amount = rng.randi_range(int(effect.min_amount), int(effect.max_amount))
+	else:
+		amount = int(effect.get("amount", 0))
 	if amount <= 0:
 		return
 	var main: Node = _get_main_node()
@@ -819,6 +884,98 @@ func _apply_consume_item(effect: Dictionary, party: Dictionary):
 				remaining -= to_remove
 		if remaining > 0:
 			push_warning("EventManager: consume_item – could not consume full quantity of %s" % item_id)
+
+## Pick a random item_id from the pool, then give a fixed or random count of it.
+## Supports all the same count/min_count/max_count options as give_item.
+## JSON: { "type": "give_item_from_pool", "pool": ["health_potion", "camping_supplies"], "min_count": 1, "max_count": 3 }
+func _apply_give_item_from_pool(effect: Dictionary, party: Dictionary):
+	var pool: Array = effect.get("pool", [])
+	if pool.is_empty():
+		push_warning("EventManager: give_item_from_pool effect has empty 'pool' array")
+		return
+	var item_id: String = str(pool[rng.randi() % pool.size()])
+	var synthetic_effect: Dictionary = effect.duplicate()
+	synthetic_effect["item_id"] = item_id
+	_apply_give_item(synthetic_effect, party)
+
+## Grant XP to party members.
+## target: "all" | "random" | integer index. force_level_up skips XP math and calls level_up() directly.
+## JSON: { "type": "give_xp", "amount": 75, "target": "all" }
+##       { "type": "give_xp", "force_level_up": true, "target": "random" }
+func _apply_give_xp(effect: Dictionary, party: Dictionary):
+	var main: Node = _get_main_node()
+	if not main:
+		push_warning("EventManager: give_xp could not find Main")
+		return
+	var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+	if alive.is_empty():
+		return
+	var force_level_up: bool = effect.get("force_level_up", false)
+	var amount: int = int(effect.get("amount", 0))
+	var target = effect.get("target", "all")
+	var targets: Array = _resolve_member_targets(target, alive)
+	for member in targets:
+		if force_level_up:
+			# Snapshot for animation: bar fills → level increments → bar resets to 0
+			var new_level: int = member.level + 1
+			var new_to_next: int = int(100 * pow(1.5, new_level - 1))
+			_xp_animation_data[member] = [
+				{"level": member.level, "experience": member.experience, "experience_to_next_level": member.experience_to_next_level},
+				{"level": new_level, "experience": 0, "experience_to_next_level": new_to_next}
+			]
+			member.level_up()
+			print("EventManager: Force level-up → %s is now level %d" % [member.member_name, member.level])
+		elif amount > 0:
+			_xp_animation_data[member] = member.simulate_xp_gain(amount)
+			member.gain_experience(amount)
+			print("EventManager: Gave %d XP to %s" % [amount, member.member_name])
+
+## Heal party members.
+## target: "all" | "random" | integer index.
+## amount: integer (flat heal) | "full" (restore to max). percent: 0–100 (percent of max HP).
+## JSON: { "type": "heal_party", "target": "all", "amount": 20 }
+##       { "type": "heal_party", "target": "random", "amount": "full" }
+##       { "type": "heal_party", "target": "all", "percent": 50 }
+func _apply_heal_party(effect: Dictionary, party: Dictionary):
+	var main: Node = _get_main_node()
+	if not main:
+		push_warning("EventManager: heal_party could not find Main")
+		return
+	var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+	if alive.is_empty():
+		return
+	var target = effect.get("target", "all")
+	var targets: Array = _resolve_member_targets(target, alive)
+	for member in targets:
+		var healed: int = 0
+		if effect.has("percent"):
+			healed = int(member.max_health * float(effect.percent) / 100.0)
+			member.heal(healed)
+		elif effect.get("amount", "") == "full":
+			healed = member.max_health - member.current_health
+			member.heal(member.max_health)
+		else:
+			healed = int(effect.get("amount", 0))
+			member.heal(healed)
+		print("EventManager: Healed %s for %d HP (%d/%d)" % [member.member_name, healed, member.current_health, member.max_health])
+
+## Resolve a target field into an Array of PartyMember references from the alive pool.
+## target: "all" → all alive members | "random" → one random alive member | int → member at that index (if alive)
+func _resolve_member_targets(target, alive: Array) -> Array:
+	if target == "all":
+		return alive
+	if target == "random":
+		return [alive[rng.randi() % alive.size()]]
+	# Integer index into current_party_members (not the alive-filtered list)
+	var main: Node = _get_main_node()
+	if main and typeof(target) == TYPE_INT or (typeof(target) == TYPE_STRING and target.is_valid_int()):
+		var idx: int = int(target)
+		if idx >= 0 and idx < main.current_party_members.size():
+			var m = main.current_party_members[idx]
+			if m.is_alive():
+				return [m]
+	push_warning("EventManager: _resolve_member_targets: unrecognised target '%s', defaulting to random" % str(target))
+	return [alive[rng.randi() % alive.size()]]
 
 func _get_main_node() -> Node:
 	var root: Window = get_tree().root

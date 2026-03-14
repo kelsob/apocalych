@@ -132,9 +132,31 @@
       {
         "id": "help_right_cart",
         "text": "Help him right the cart",
-        "effects": [
-          { "type": "give_gold", "amount": 20 },
-          { "type": "add_tag", "tag": "helped_merchant" }
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "He's genuinely relieved. Counts out coin with shaking hands. More than you expected.",
+            "effects": [
+              { "type": "give_gold", "amount": 30 },
+              { "type": "add_tag", "tag": "helped_merchant" }
+            ]
+          },
+          {
+            "weight": 35,
+            "text": "He pays you what he promised and shakes your hand. Fair enough.",
+            "effects": [
+              { "type": "give_gold", "amount": 20 },
+              { "type": "add_tag", "tag": "helped_merchant" }
+            ]
+          },
+          {
+            "weight": 15,
+            "text": "He thanks you profusely but claims he doesn't have coin—presses a crate of preserved goods into your arms instead.",
+            "effects": [
+              { "type": "give_item", "item_id": "ration", "count": 4 },
+              { "type": "add_tag", "tag": "helped_merchant" }
+            ]
+          }
         ],
         "next_event": null
       },

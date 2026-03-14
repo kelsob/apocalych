@@ -1,0 +1,18 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://fgejuq82jtvh"]
+
+[ext_resource type="Shader" uid="uid://dkew03s863s4u" path="res://assets/shaders/liquid_gold.gdshader" id="1_s1g25"]
+
+[resource]
+shader = ExtResource("1_s1g25")
+shader_parameter/speed = 0.1
+shader_parameter/vortex_strength = 0.923
+shader_parameter/vortex_decay = 3.5
+shader_parameter/scale = 8.0
+shader_parameter/warp = 5.0
+shader_parameter/shimmer = 0.8
+shader_parameter/vignette = 0.506
+shader_parameter/col_shadow = Color(0.826935, 0.457581, 0, 1)
+shader_parameter/col_amber = Color(0.557926, 0.232129, 0.0289138, 1)
+shader_parameter/col_gold = Color(0.75, 0.46, 0.04, 1)
+shader_parameter/col_bright = Color(1, 0.82, 0.18, 1)
+shader_parameter/col_glint = Color(1, 0.97, 0.86, 1)

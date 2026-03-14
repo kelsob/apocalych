@@ -9,8 +9,9 @@ class_name XPBar
 var _xp_tween: Tween = null
 
 ## Set current XP and the threshold for the next level.
-## Pass animated=false during count-up loops to avoid fighting with external animation.
-func set_experience(current: int, to_next_level: int, animated: bool = true):
+## Returns the Tween when animated so callers can await tween.finished for sequencing.
+## Pass animated=false for instant changes (returns null).
+func set_experience(current: int, to_next_level: int, animated: bool = true) -> Tween:
 	max_value = to_next_level if to_next_level > 0 else 1
 	min_value = 0
 	var target := float(clampi(current, 0, to_next_level))
@@ -18,8 +19,9 @@ func set_experience(current: int, to_next_level: int, animated: bool = true):
 		if _xp_tween:
 			_xp_tween.kill()
 		value = target
-		return
+		return null
 	if _xp_tween:
 		_xp_tween.kill()
 	_xp_tween = create_tween()
 	_xp_tween.tween_property(self, "value", target, animation_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	return _xp_tween

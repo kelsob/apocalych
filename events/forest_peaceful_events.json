@@ -267,8 +267,30 @@
       {
         "id": "harvest_carefully",
         "text": "Harvest carefully—you're fairly confident they're safe",
-        "effects": [
-          { "type": "give_item", "item_id": "mushroom", "count": 4 }
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "They're fine. A good haul. You pocket them carefully and move on.",
+            "effects": [
+              { "type": "give_item", "item_id": "mushroom", "count": 4 }
+            ]
+          },
+          {
+            "weight": 30,
+            "text": "Edible, but barely. A faint bitterness lingers and your stomach cramps for an hour.",
+            "effects": [
+              { "type": "give_item", "item_id": "mushroom", "count": 2 },
+              { "type": "change_stat", "stat": "hp", "amount": -4 }
+            ]
+          },
+          {
+            "weight": 10,
+            "text": "Your herbalist was right. Your legs go numb before you've left the clearing.",
+            "effects": [
+              { "type": "change_stat", "stat": "hp", "amount": -12 },
+              { "type": "add_tag", "tag": "mushroom_poisoned" }
+            ]
+          }
         ],
         "next_event": null
       },

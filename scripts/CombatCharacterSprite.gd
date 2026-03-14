@@ -27,7 +27,6 @@ var _combat_text_active_count: int = 0
 func _ready():
 	# Hide casting label by default
 	if casting_label:
-		casting_label.visible = false
 		casting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	
 	
@@ -110,17 +109,13 @@ func update_casting_display():
 	if CombatController.combat_timeline:
 		var active_cast = CombatController.combat_timeline.get_active_cast(combatant)
 		if active_cast:
-			casting_label.visible = true
 			var remaining = active_cast.remaining_cast_time
 			casting_label.text = "Casting: %s - %d turn%s" % [
 				active_cast.ability.ability_name,
 				remaining,
 				"s" if remaining != 1 else ""
 			]
-		else:
-			casting_label.visible = false
-	else:
-		casting_label.visible = false
+
 
 ## Set sprite modulation (for death, highlighting, etc.)
 func set_sprite_modulation(color: Color):
