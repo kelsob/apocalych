@@ -98,7 +98,6 @@ Conditions are used on `prereqs` (event-level gating), `condition` (per-choice g
 "forbids_tags": ["tag_a"]                  // NONE of these tags can be present
 "requires_any": ["tag_a", "tag_b"]         // AT LEAST ONE must be present
 "min_gold": 50                             // Party must have ≥ 50 gold
-"min_reputation": { "militia": 20 }        // Faction reputation minimum
 "variables": { "var_name": { "min": 1, "max": 10 } }  // Custom variable range
 ```
 
@@ -143,7 +142,6 @@ Applied when a choice is selected. Multiple effects can be stacked in the `effec
 | `give_gold` | `amount` | Adds gold to party |
 | `pay_gold` | `amount` | Removes gold from party |
 | `change_stat` | `stat`, `amount` | Modifies party stat (e.g., `"hp"`, negative = damage) |
-| `change_reputation` | `faction`, `amount` | Modifies faction rep |
 | `set_variable` | `variable`, `value` | Sets a named variable |
 | `unlock_event` | `event_id` | Makes a one-shot event fireable |
 | `start_combat` | `encounter_id` | Triggers a combat encounter |
@@ -246,14 +244,13 @@ A future **`repeatable`** property (e.g. on the event or on the tag-grant) could
 
 **Definition:** A follow-up event is a full event that only becomes eligible when the party has a **specific outcome tag** from a prior event (e.g. `warg_ambush_fled`). It is the narrative consequence of that outcome.
 
-**Storage:** Follow-up events live in their **own JSON file** and are loaded and stored **separately** from normal events:
+**Storage:** Follow-up events live in **`events/followup_events.json`**. That file is **not** scanned by the bulk events directory loader (to avoid double-loading). EventManager merges each entry into the **same** `events` registry used for the world pool: **`trigger_tag` is converted into `prereqs.requires_tags`** (merged with any existing `prereqs`). Selection is **one weighted pool** with all other events; use a high `weight` (e.g. `100`) to make a follow-up fire almost always when eligible.
 
-- **File:** `events/followup_events.json` (single file; loaded by EventManager after the main events directory).
-- **Registry:** EventManager keeps them in `followup_events` (id → event), not in `events`. They are merged into the selection pool only when the party has the required tag.
+**Field:** **`trigger_tag`** (string) is required for the old convention; it becomes a required tag alongside any `prereqs` you already defined. If `weight` is omitted, merged follow-ups default to **8** (slightly above generic events).
 
-**Required field:** Every follow-up event must have **`trigger_tag`** (string). The event is only considered for selection when the party has that tag (from TagManager). All other fields are the same as a normal event: `id`, `title`, `biomes`, `weight`, `one_shot`, `text`, `choices`, etc.
+**Example:** An event with `"trigger_tag": "warg_ambush_fled"` and `"one_shot": true` competes on weight with other eligible events; tune `weight` so it surfaces as often as you want.
 
-**Example:** An event with `"trigger_tag": "warg_ambush_fled"` and `"one_shot": true` will appear at most once per run when the party has fled the warg ambush, then never again even though they keep the tag.
+**Contextual tags (race, traits, items, biome, lunar, gold):** See **`docs/EVENT_TAGS.md`**.
 
 ### Rules
 
@@ -372,15 +369,16 @@ Dark fantasy. Grounded. The world is post-apocalyptic and grim, with an underlyi
 |---|---|
 | `condition` (hide choice) | ✅ Implemented |
 | `requires_item` (visible-disabled) | ✅ Implemented |
-| Tags, gold, variable, reputation conditions | ✅ Implemented |
+| Tags, gold, variable conditions | ✅ Implemented |
 | `next_event` chaining | ✅ Implemented |
 | `one_shot` events | ✅ Implemented |
 | `prereqs` (event-level gating) | ✅ Implemented |
 | Post-combat outcomes (`combat_outcomes`) | ❌ Not yet implemented |
-| Follow-up events (`followup_events.json`, `trigger_tag`) | ✅ Implemented |
-| `requires_class` condition | ❌ Not yet implemented |
-| `requires_race` / `forbids_race` condition | ❌ Not yet implemented |
-| `moon_phase` condition | ❌ Not yet implemented |
+| Follow-up events (`followup_events.json` → merged pool, `trigger_tag`) | ✅ Implemented |
+| TagManager computed tags (trait/item/biome/lunar/gold) | ✅ Implemented |
+| `requires_class` condition | ❌ Not yet implemented (use `<class>` tags in `requires_tags`) |
+| `requires_race` / `forbids_race` condition | ❌ Not yet implemented (use `<race>` tags in `requires_tags`) |
+| `moon_phase` condition | ✅ Use `lunar:<phase>` tags (see `docs/EVENT_TAGS.md`) |
 | `has_resource` condition | ❌ Not yet implemented |
 | Blue Moon lunar phase | ❌ Not yet in WorldClock |
 | Flee-locked combat flag | ❌ Not yet implemented |

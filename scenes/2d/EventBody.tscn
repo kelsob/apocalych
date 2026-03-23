@@ -4,16 +4,21 @@
 [ext_resource type="Script" uid="uid://dk37ogc5v4git" path="res://scripts/2d/EventBody.gd" id="1_ea1pd"]
 
 [node name="EventBody" type="MarginContainer"]
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
 script = ExtResource("1_ea1pd")
 
-[node name="BodyLabel" type="Label" parent="."]
+[node name="BodyLabel" type="RichTextLabel" parent="."]
 layout_mode = 2
 theme = ExtResource("1_3y2bf")
-theme_override_colors/font_color = Color(0.928701, 0.860845, 0.744217, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_colors/font_outline_color = Color(0.290196, 0.207843, 0.12549, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_constants/shadow_outline_size = 8
-theme_override_font_sizes/font_size = 32
 text = "asdf asdf fdgs "
-autowrap_mode = 3
+fit_content = true

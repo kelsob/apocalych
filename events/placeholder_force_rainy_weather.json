@@ -1,0 +1,25 @@
+[
+  {
+    "id": "placeholder_force_rainy_weather",
+    "title": "Sudden squall",
+    "biomes": [],
+    "weight": 12,
+    "one_shot": false,
+    "prereqs": {
+      "requires_tags": ["weather:clear"]
+    },
+    "immediate_effects": [
+      { "type": "set_weather", "weather_id": "rainy" }
+    ],
+    "text": "The wind and rain batter the party as a sudden squall opens overhead.",
+    "choices": [
+      {
+        "id": "continue",
+        "text": "Continue",
+        "effects": [],
+        "next_event": null,
+        "weight": 1
+      }
+    ]
+  }
+]

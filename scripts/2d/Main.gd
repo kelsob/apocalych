@@ -35,11 +35,15 @@ var _blacksmith_opened_from_town: bool = false
 var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns player has been granted entry to
 var _in_potion_target_mode: bool = false  # True when awaiting character click to apply health potion
 
-## Event debug: when true, EventManager forces this event ID on the next node (e.g. "test_warg_ambush_outcomes"). Editable in Main scene inspector.
+## Event debug: when true, EventManager forces this event ID on the next eligible pick (e.g. "debug_rewards_test"). Cleared automatically after one successful force unless `event_debug_keep_forcing` is true. Also turns on EventManager [SELECT] lines for that pick (tags + note that pool was skipped).
 @export var event_debug_force: bool = false
 @export var event_debug_id: String = ""
-## When true, EventManager prints detailed event selection logs (follow-up checks, rolls, normal pool). Set in Main scene inspector.
+## When true, forced event applies every node; when false (default), `event_debug_force` turns off after the first successful forced event so normal selection resumes.
+@export var event_debug_keep_forcing: bool = false
+## When true, EventManager prints one-line `event selection:` summaries (chosen id, pool size, roll).
 @export var debug_event_selection: bool = false
+## Unused: selection is tag-driven only; remove from scenes when convenient.
+@export var debug_prefer_contextual_events: bool = false
 
 func _ready():
 	add_to_group("main")
@@ -121,7 +125,7 @@ func _on_main_menu_quit_pressed():
 
 ## Signal handlers for PartySelectMenu
 func _on_party_select_start_pressed(party_members: Array[PartyMember], world_name: String):
-	# Update TagManager with party composition
+	# TagManager: party + gold (biome filled on map after spawn; party_resources refresh when bulk items change)
 	if TagManager:
 		TagManager.update_tags_from_party(party_members)
 	
@@ -321,11 +325,11 @@ func _launch_node_event(node: MapNode2D):
 	
 	# Check if event was found
 	if selected_event.is_empty():
-		push_warning("Main: Generic arrival event not found in EventManager")
+		push_warning("event selection: pick returned empty (no event to show)")
 		return
 	
 	# Present the event (filter choices, interpolate text)
-	var presented_event = EventManager.present_event(selected_event, party_dict)
+	var presented_event = EventManager.present_event(selected_event, party_dict, node_state)
 	
 	# Display the event with current node (for rest state effects)
 	ui_controller.event_log.append_event(presented_event, party_dict, node)
@@ -368,14 +372,14 @@ func _build_party_dict() -> Dictionary:
 	party_dict.party_level = _calculate_average_party_level()
 	party_dict.leader_name = current_party_members[0].member_name if current_party_members.size() > 0 else ""
 	
-	# Add reputation (empty for now, can be populated later if needed)
-	party_dict.reputation = {}
-
 	# Add variables (empty for now, can be populated later if needed)
 	party_dict.variables = {}
 
 	# Party gold (for event conditions e.g. min_gold, and interpolation)
 	party_dict.party_gold = party_gold
+
+	# Party-wide bulk resources (health potions, camping supplies, etc.) for EventManager quantity checks
+	party_dict.party_resources = party_resources.duplicate(true)
 
 	return party_dict
 
@@ -396,7 +400,21 @@ func _calculate_average_party_level() -> int:
 
 ## Called when party moves to a new node
 func _on_party_moved_to_node(node: MapNode2D):
-	pass  # Rest button visibility is handled by MapGenerator2D
+	if WeatherManager and WeatherManager.debug_log_weather:
+		var bname: String = ""
+		if node != null and node.biome != null:
+			bname = str(node.biome.biome_name)
+		print("WEATHER Main party_moved → sync_biome_from_node (weather not rolled) | node=%s biome=%s party_size=%d frame=%s" % [
+			node.name if node != null else "null",
+			bname,
+			current_party_members.size(),
+			str(Engine.get_process_frames())
+		])
+	if WeatherManager and WeatherManager.has_method("sync_biome_from_node"):
+		WeatherManager.sync_biome_from_node(node)
+	# Include `weather:*` in derived tags whenever the party exists (initial spawn fires before `game_started`).
+	if current_party_members.size() > 0:
+		_refresh_tag_manager_tags()
 
 ## Called when event window closes - update rest and town button visibility
 func _on_event_closed():
@@ -408,6 +426,18 @@ func _on_event_closed():
 const CAMPING_SUPPLIES_ITEM_ID: String = "camping_supplies"
 const HEALTH_POTION_ITEM_ID: String = "health_potion"
 const HEALTH_POTION_HEAL_PERCENT: int = 50  # Heals 50% of max HP
+
+## Refreshes TagManager derived tags (includes `item:<id>` from party_resources + members). Call after bulk resource changes.
+func _refresh_tag_manager_tags() -> void:
+	if not TagManager:
+		return
+	var biome_name := ""
+	if map_generator and map_generator.current_party_node:
+		var pn = map_generator.current_party_node
+		if pn.biome:
+			biome_name = pn.biome.biome_name
+	TagManager.refresh_tags(self, current_party_members, party_gold, biome_name)
+
 
 ## Add to party-wide resources (bulk items only). Returns true if added.
 func add_party_resource(item_id: String, count: int = 1) -> bool:
@@ -422,6 +452,7 @@ func add_party_resource(item_id: String, count: int = 1) -> bool:
 	if can_add <= 0:
 		return false
 	party_resources[item_id] = current + can_add
+	_refresh_tag_manager_tags()
 	return true
 
 ## Remove from party-wide resources. Returns true if removed.
@@ -435,6 +466,7 @@ func remove_party_resource(item_id: String, count: int = 1) -> bool:
 	party_resources[item_id] = current - to_remove
 	if party_resources[item_id] <= 0:
 		party_resources.erase(item_id)
+	_refresh_tag_manager_tags()
 	return true
 
 ## Get party-wide count for a resource item.

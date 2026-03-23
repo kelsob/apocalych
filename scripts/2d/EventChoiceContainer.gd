@@ -16,8 +16,15 @@ var _resolved: bool = false
 ## Emitted once when any choice in this group is selected.
 ## outcome_text is non-empty when the choice used a probabilistic outcomes array.
 signal choice_resolved(choice_id: String, effects: Array, outcome_text: String)
+signal intro_done
+
+## Seconds between each choice fading in. Set by EventLog.
+var choice_stagger: float = 0.05
+## Duration of each individual choice fade. Set by EventLog.
+var choice_fade_duration: float = 0.10
 
 func _ready():
+	visible = false
 	_event_choice_scene = load("res://scenes/2d/EventChoice.tscn")
 	if not _event_choice_scene:
 		push_error("EventChoiceContainer: Could not load EventChoice scene")
@@ -42,6 +49,17 @@ func _create_choice_node(choice: Dictionary):
 	_choice_nodes.append(node)
 	vbox.add_child(node)
 
+## JSON sometimes uses a single effect object instead of an array — normalize so EventLog can iterate.
+func _coerce_effects_array(raw: Variant) -> Array:
+	if raw is Array:
+		return raw
+	if raw is Dictionary:
+		return [raw]
+	if raw == null:
+		return []
+	push_warning("EventChoiceContainer: 'effects' must be an array or object, got type %s — using empty" % typeof(raw))
+	return []
+
 func _on_choice_selected(choice: Dictionary):
 	if _resolved:
 		return
@@ -58,10 +76,10 @@ func _on_choice_selected(choice: Dictionary):
 
 	if choice.has("outcomes") and choice.outcomes is Array and not choice.outcomes.is_empty():
 		var outcome: Dictionary = EventManager.pick_weighted_outcome(choice.outcomes)
-		effects = outcome.get("effects", [])
+		effects = _coerce_effects_array(outcome.get("effects", []))
 		outcome_text = outcome.get("text", "")
 	else:
-		effects = choice.get("effects", [])
+		effects = _coerce_effects_array(choice.get("effects", []))
 
 	choice_resolved.emit(choice_id, effects, outcome_text)
 
@@ -78,3 +96,28 @@ func reject_all():
 	_resolved = true
 	for choice_node in _choice_nodes:
 		choice_node.reject()
+
+## Staggered fade-in of all choices. Awaitable — resolves when the last choice finishes fading.
+func animate_in() -> void:
+	visible = true
+	for i in _choice_nodes.size():
+		_choice_nodes[i].animate_in(i * choice_stagger, choice_fade_duration)
+	var total_wait: float = 0.0
+	if not _choice_nodes.is_empty():
+		total_wait = (_choice_nodes.size() - 1) * choice_stagger + choice_fade_duration
+	await get_tree().create_timer(total_wait).timeout
+	intro_done.emit()
+
+## Snap all choices to fully visible immediately, resolving any in-flight animate_in await.
+func snap_visible() -> void:
+	visible = true
+	for choice_node in _choice_nodes:
+		choice_node.snap_visible()
+	intro_done.emit()
+
+## Lock or unlock choice buttons for input (used during intro animation).
+## Does not touch the disabled state of natively-disabled choices (requires_item, etc.).
+func set_anim_locked(locked: bool) -> void:
+	for cn in _choice_nodes:
+		if cn.button:
+			cn.button.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP

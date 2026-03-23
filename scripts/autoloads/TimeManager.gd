@@ -69,3 +69,30 @@ func advance_time_from_travel(path_distance_pixels: float) -> void:
 func reset_time() -> void:
 	print("[TimeManager] Time reset (was %.2f)" % game_time)
 	game_time = 0.0
+
+
+# --- Lunar cycle (abstract game-time phases; not tied to real calendar) ---
+## Length of one full lunar cycle in arbitrary time units (same units as game_time).
+@export var lunar_cycle_length: float = 6720.0
+
+const _LUNAR_NAMES: Array[String] = [
+	"new", "waxing_crescent", "first_quarter", "waxing_gibbous",
+	"full", "waning_gibbous", "third_quarter", "waning_crescent"
+]
+
+## 0 .. 7 index into _LUNAR_NAMES
+func get_lunar_phase_index() -> int:
+	if lunar_cycle_length <= 0.0:
+		return 0
+	var t: float = fposmod(game_time, lunar_cycle_length)
+	var segment: float = lunar_cycle_length / 8.0
+	return int(t / segment) % 8
+
+func get_lunar_phase_name() -> String:
+	return _LUNAR_NAMES[get_lunar_phase_index()]
+
+## Tags for TagManager / events: lunar:<phase> plus lunar:any
+func get_lunar_tags() -> Array[String]:
+	var name: String = get_lunar_phase_name()
+	return ["lunar:%s" % name, "lunar:any"]
+

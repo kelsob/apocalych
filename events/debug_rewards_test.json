@@ -242,6 +242,148 @@
         ]
       },
       {
+        "id": "choice_specific_grant_one",
+        "text": "Item Choice, Specific, Grant ONE: Pick one of iron_luck_charm / faerie_tea / warden_signet",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "Three curious objects drift into view. They cannot all be carried. Choose one to keep.",
+            "effects": [
+              {
+                "type": "give_item_choice",
+                "grant": "one",
+                "items": [
+                  { "item_id": "iron_luck_charm" },
+                  { "item_id": "faerie_tea" },
+                  { "item_id": "warden_signet" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "choice_specific_grant_all",
+        "text": "Item Choice, Specific, Grant ALL: Everyone gets iron_luck_charm AND faerie_tea",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "Two items materialise together — both are yours to distribute among the party.",
+            "effects": [
+              {
+                "type": "give_item_choice",
+                "grant": "all",
+                "items": [
+                  { "item_id": "iron_luck_charm" },
+                  { "item_id": "faerie_tea" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "choice_pool_grant_one",
+        "text": "Item Choice, Pool draw 3, Grant ONE: Pick one from a pool of 3 random draws",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "The void draws three items from its cache and fans them out before you. Take one.",
+            "effects": [
+              {
+                "type": "give_item_choice",
+                "grant": "one",
+                "pool": ["iron_luck_charm", "faerie_tea", "warden_signet", "dwarven_ale"],
+                "pool_draw": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "choice_pool_grant_all",
+        "text": "Item Choice, Pool draw 2, Grant ALL: Both drawn items are awarded",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "The void pulls two items at random from its reserves. Both are yours — distribute them as you see fit.",
+            "effects": [
+              {
+                "type": "give_item_choice",
+                "grant": "all",
+                "pool": ["iron_luck_charm", "faerie_tea", "warden_signet", "dwarven_ale"],
+                "pool_draw": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "trait_random",
+        "text": "TRAIT: Give a random member the Werewolf's Curse",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "The moon hangs heavy. {member} feels something shift beneath their skin.",
+            "effects": [
+              { "type": "give_trait", "trait_id": "werewolf_curse", "target": "random" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "trait_all",
+        "text": "TRAIT: Give the whole party Survivor's Bond",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "What you have endured together has forged something unbreakable between you.",
+            "effects": [
+              { "type": "give_trait", "trait_id": "survivors_bond", "target": "all" }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "trait_volunteer_slot0",
+        "text": "{slot0} volunteers — Natural Hunter (party slot 0)",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+            "effects": [
+              { "type": "give_trait", "trait_id": "natural_hunter", "target": 0 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "trait_volunteer_slot1",
+        "text": "{slot1} volunteers — Natural Hunter (party slot 1)",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+            "effects": [
+              { "type": "give_trait", "trait_id": "natural_hunter", "target": 1 }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "trait_volunteer_slot2",
+        "text": "{slot2} volunteers — Natural Hunter (party slot 2)",
+        "outcomes": [
+          {
+            "weight": 1,
+            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+            "effects": [
+              { "type": "give_trait", "trait_id": "natural_hunter", "target": 2 }
+            ]
+          }
+        ]
+      },
+      {
         "id": "combo_everything",
         "text": "COMBO, Jackpot: All reward types fire at once",
         "outcomes": [

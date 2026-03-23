@@ -1,0 +1,68 @@
+[
+  {
+    "id": "clear",
+    "display_name": "Clear",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "rainy",
+    "display_name": "Rainy",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "cloudy",
+    "display_name": "Cloudy",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "foggy",
+    "display_name": "Foggy",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "windy",
+    "display_name": "Windy",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "thunderstorms",
+    "display_name": "Thunderstorms",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "hail",
+    "display_name": "Hail",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "snow",
+    "display_name": "Snow",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "ashen_rain",
+    "display_name": "Ashen rain",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "sea_mist",
+    "display_name": "Sea mist",
+    "icon": "",
+    "combat_effect_ids": []
+  },
+  {
+    "id": "heat_wave",
+    "display_name": "Heat wave",
+    "icon": "",
+    "combat_effect_ids": []
+  }
+]

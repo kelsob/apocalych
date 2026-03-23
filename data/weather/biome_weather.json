@@ -1,0 +1,66 @@
+{
+  "default": [
+    { "weather_id": "clear", "weight": 72 },
+    { "weather_id": "cloudy", "weight": 22 },
+    { "weather_id": "rainy", "weight": 6 }
+  ],
+  "plains": [
+    { "weather_id": "clear", "weight": 78 },
+    { "weather_id": "cloudy", "weight": 12 },
+    { "weather_id": "windy", "weight": 6 },
+    { "weather_id": "heat_wave", "weight": 3 },
+    { "weather_id": "rainy", "weight": 1 }
+  ],
+  "hills": [
+    { "weather_id": "clear", "weight": 58 },
+    { "weather_id": "cloudy", "weight": 22 },
+    { "weather_id": "windy", "weight": 12 },
+    { "weather_id": "rainy", "weight": 3 },
+    { "weather_id": "foggy", "weight": 1 },
+    { "weather_id": "snow", "weight": 4 }
+  ],
+  "forest": [
+    { "weather_id": "clear", "weight": 42 },
+    { "weather_id": "cloudy", "weight": 28 },
+    { "weather_id": "foggy", "weight": 14 },
+    { "weather_id": "rainy", "weight": 12 },
+    { "weather_id": "thunderstorms", "weight": 2 }
+  ],
+  "swamp": [
+    { "weather_id": "cloudy", "weight": 38 },
+    { "weather_id": "foggy", "weight": 32 },
+    { "weather_id": "rainy", "weight": 22 },
+    { "weather_id": "clear", "weight": 8 }
+  ],
+  "mountain": [
+    { "weather_id": "clear", "weight": 34 },
+    { "weather_id": "cloudy", "weight": 22 },
+    { "weather_id": "windy", "weight": 18 },
+    { "weather_id": "rainy", "weight": 8 },
+    { "weather_id": "hail", "weight": 6 },
+    { "weather_id": "snow", "weight": 8 },
+    { "weather_id": "thunderstorms", "weight": 2 },
+    { "weather_id": "foggy", "weight": 2 }
+  ],
+  "coast": [
+    { "weather_id": "clear", "weight": 46 },
+    { "weather_id": "cloudy", "weight": 22 },
+    { "weather_id": "windy", "weight": 14 },
+    { "weather_id": "rainy", "weight": 6 },
+    { "weather_id": "sea_mist", "weight": 8 },
+    { "weather_id": "thunderstorms", "weight": 4 }
+  ],
+  "badlands": [
+    { "weather_id": "clear", "weight": 58 },
+    { "weather_id": "windy", "weight": 22 },
+    { "weather_id": "heat_wave", "weight": 14 },
+    { "weather_id": "cloudy", "weight": 6 }
+  ],
+  "ash_plains": [
+    { "weather_id": "cloudy", "weight": 40 },
+    { "weather_id": "ashen_rain", "weight": 28 },
+    { "weather_id": "clear", "weight": 18 },
+    { "weather_id": "windy", "weight": 10 },
+    { "weather_id": "foggy", "weight": 4 }
+  ]
+}

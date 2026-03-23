@@ -23,10 +23,18 @@ custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 expand_mode = 5
 
-[node name="ItemNameLabel" type="Label" parent="HBoxContainer/HBoxContainer"]
+[node name="RewardLabel" type="RichTextLabel" parent="HBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme = ExtResource("2_ar7uu")
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_constants/shadow_outline_size = 4
+bbcode_enabled = true
+fit_content = true
+autowrap_mode = 0
+vertical_alignment = 1
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer"]
 layout_mode = 2

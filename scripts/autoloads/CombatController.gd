@@ -54,6 +54,17 @@ func _safe_display_name(c) -> String:
 		return (c as CombatantData).display_name
 	return str(c)
 
+
+func _pull_weather_combat_modifiers() -> Array:
+	var root: Window = get_tree().root if get_tree() else null
+	if root == null:
+		return []
+	var wm: Node = root.get_node_or_null("WeatherManager")
+	if wm != null and wm.has_method("get_active_combat_weather_modifiers"):
+		return wm.get_active_combat_weather_modifiers()
+	return []
+
+
 ## Start combat from an encounter and party members
 func start_combat_from_encounter(encounter: Resource, party_members: Array):
 	if combat_active:
@@ -63,6 +74,12 @@ func start_combat_from_encounter(encounter: Resource, party_members: Array):
 	print("=== COMBAT STARTING ===")
 	combat_active = true
 	current_encounter = encounter
+
+	# Weather → combat (stub): read modifiers when WeatherManager implements non-empty returns.
+	var _weather_mods: Array = _pull_weather_combat_modifiers()
+	# When non-empty, apply modifiers to encounter / combatants here.
+	if not _weather_mods.is_empty():
+		print("CombatController: weather modifiers registered (application not implemented): ", _weather_mods)
 	
 	# Initialize timeline
 	combat_timeline = CombatTimeline.new()

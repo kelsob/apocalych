@@ -1,0 +1,37 @@
+[
+  {
+    "id": "werewolf_curse",
+    "name": "Werewolf's Curse",
+    "description": "Beneath a full moon, this character's nature unravels into something primal and dangerous.",
+    "icon": "",
+    "tags": ["curse", "supernatural", "beast"]
+  },
+  {
+    "id": "natural_hunter",
+    "name": "Natural Hunter",
+    "description": "Born with an instinct for the hunt. Deadly against beast-type enemies.",
+    "icon": "",
+    "tags": ["positive", "beast_slayer"]
+  },
+  {
+    "id": "hemophiliac",
+    "name": "Hemophiliac",
+    "description": "Blood excites this character in ways that are difficult to explain.",
+    "icon": "",
+    "tags": ["curse", "blood"]
+  },
+  {
+    "id": "survivors_bond",
+    "name": "Survivor's Bond",
+    "description": "Having faced death together, this character is bound to their companions in a way that transcends ordinary loyalty.",
+    "icon": "",
+    "tags": ["positive", "bond"]
+  },
+  {
+    "id": "wanderers_mark",
+    "name": "Wanderer's Mark",
+    "description": "The road has left its mark. This character feels at home nowhere and everywhere.",
+    "icon": "",
+    "tags": ["neutral", "travel"]
+  }
+]

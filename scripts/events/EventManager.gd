@@ -1,13 +1,12 @@
 extends Node
 
-## EventManager - Data-driven event system for narrative events
-## Loads events from JSON, selects events by biome/prerequisites, filters choices, applies effects
+## EventManager - Data-driven narrative events.
+## Node arrival: `pick_event_for_node` → debug force (optional one-shot) → **tag_driven_event_pool**
+## (events whose `prereqs` reference a current TagManager tag and pass filters) → weighted random →
+## fallback `__tag_driven_pool_empty__` if the pool is empty.
 
 # Event registry: id -> event Dictionary
 var events: Dictionary = {}
-
-# Follow-up events: id -> event Dictionary. Only eligible when party has event's trigger_tag.
-var followup_events: Dictionary = {}
 
 # Track one-shot events that have been seen
 var seen_one_shot_events: Array[String] = []
@@ -20,6 +19,17 @@ var pending_combat_outcomes: Dictionary = {}
 ## Populated by _apply_give_item, drained by EventLog after apply_effects.
 var pending_item_rewards: Array = []
 
+## Item choice sets from give_item_choice with grant:"one".
+## Each entry: { "items": [{item_id, count, item}, ...] }
+## Drained by EventLog, which shows ItemChoiceReward UI then member assignment.
+var pending_item_choices: Array = []
+
+## Substitution variables populated during apply_effects for use in outcome text.
+## EventLog replaces {key} placeholders in outcome text with these values.
+## Cleared at the start of each apply_effects call.
+## "member" → name of the party member most recently selected by a random/single-target effect.
+var text_vars: Dictionary = {}
+
 ## XP animation sequences populated before gain_experience/level_up modifies the member.
 ## Keyed by PartyMember reference. Read and cleared by CharacterDetails.refresh_xp().
 var _xp_animation_data: Dictionary = {}
@@ -30,18 +40,48 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 # Party state reference (will be set by external systems)
 var party_state: Dictionary = {}
 
-## Debug: fallback when Main is not in tree. Prefer setting event_debug_force / event_debug_id / debug_event_selection on Main (inspector).
+## Debug: fallback when Main is not in tree. Prefer Main exports. Cleared after one successful forced pick unless Main.event_debug_keep_forcing.
 var debug_force_event: bool = false
 var debug_event_id: String = ""
+
+## Last pick snapshot (always updated — inspect EventManager in Remote tree if console overflow drops prints).
+var debug_last_pick_biome: String = ""
+var debug_last_pick_is_town: bool = false
+var debug_last_pick_selected_id: String = ""
+var debug_last_pick_was_forced: bool = false
+var debug_last_pick_eligible_count: int = 0
+var debug_last_pick_rolled_pool_size: int = 0
+var debug_last_pick_total_weight: float = 0.0
+var debug_last_pick_roll: float = -1.0
 
 # Debug helper
 func debug_print(msg: String):
 	print(msg)
 
-func _log_selection(msg: String) -> void:
-	var main: Node = _get_main_node()
-	if main and "debug_event_selection" in main and main.debug_event_selection:
-		print("EventManager [SELECT]: %s" % msg)
+
+func _event_pick_log_enabled(main: Node) -> bool:
+	if main != null and "debug_event_selection" in main and main.debug_event_selection:
+		return true
+	return false
+
+
+const EVENT_SELECTION_LOG_PREFIX := "event selection: "
+
+
+func _event_pick_log(main: Node, msg: String) -> void:
+	if _event_pick_log_enabled(main):
+		print("%s%s" % [EVENT_SELECTION_LOG_PREFIX, msg])
+
+
+func _clear_debug_event_force_after_pick(main_node: Node, main_had_force: bool) -> void:
+	var keep: bool = main_node != null and "event_debug_keep_forcing" in main_node and main_node.event_debug_keep_forcing
+	if keep:
+		return
+	debug_force_event = false
+	debug_event_id = ""
+	if main_had_force and main_node != null and "event_debug_force" in main_node:
+		main_node.event_debug_force = false
+
 
 func _ready():
 	# Initialize RNG with a seed (can be set externally for determinism)
@@ -106,6 +146,10 @@ func load_events_from_directory(dir_path: String) -> int:
 	
 	while file_name != "":
 		if file_name.ends_with(".json"):
+			# Merged separately via load_followup_events_from_json (trigger_tag → prereqs)
+			if file_name.to_lower() == "followup_events.json":
+				file_name = dir.get_next()
+				continue
 			var full_path = dir_path + "/" + file_name
 			if load_events_from_json(full_path):
 				loaded_count += 1
@@ -114,8 +158,9 @@ func load_events_from_directory(dir_path: String) -> int:
 	print("EventManager: Loaded %d event files from directory" % loaded_count)
 	return loaded_count
 
-## Load follow-up events from a single JSON file. Each event must have "id" and "trigger_tag".
-## Follow-up events are stored separately and only considered when party has the trigger_tag.
+## Load follow-up style events and merge into the main `events` pool (same weighted pick as everything else).
+## trigger_tag becomes prereqs.requires_tags (merged with existing prereqs.requires_tags if present).
+## Default weight 8 if omitted (slightly above generic world events) — tune per event in JSON.
 func load_followup_events_from_json(path: String) -> bool:
 	var file = FileAccess.open(path, FileAccess.READ)
 	if not file:
@@ -141,18 +186,119 @@ func load_followup_events_from_json(path: String) -> bool:
 		if not event.has("id"):
 			push_error("EventManager: Follow-up event missing 'id' field, skipping")
 			continue
-		if not event.has("trigger_tag"):
-			push_error("EventManager: Follow-up event '%s' missing 'trigger_tag' field, skipping" % event.get("id", ""))
-			continue
-		if followup_events.has(event.id):
-			push_warning("EventManager: Duplicate follow-up event ID '%s', overwriting" % event.id)
-		followup_events[event.id] = event
+		var e: Dictionary = event.duplicate(true)
+		var tt: String = str(e.get("trigger_tag", ""))
+		e.erase("trigger_tag")
+
+		var prereqs: Dictionary = {}
+		if e.has("prereqs") and e.prereqs is Dictionary:
+			prereqs = e.prereqs.duplicate(true)
+		var req_arr: Array = []
+		if prereqs.has("requires_tags"):
+			var rt: Variant = prereqs["requires_tags"]
+			if rt is Array:
+				req_arr = rt.duplicate()
+		if not tt.is_empty() and not req_arr.has(tt):
+			req_arr.append(tt)
+		if not req_arr.is_empty():
+			prereqs["requires_tags"] = req_arr
+		if not prereqs.is_empty():
+			e["prereqs"] = prereqs
+		elif not tt.is_empty():
+			e["prereqs"] = {"requires_tags": [tt]}
+
+		if not e.has("weight"):
+			e["weight"] = 8
+
+		if events.has(e.id):
+			push_warning("EventManager: follow-up merge overwrites existing event id '%s'" % e.id)
+		events[e.id] = e
 		loaded_count += 1
 	
-	print("EventManager: Loaded %d follow-up events from %s" % [loaded_count, path])
+	print("EventManager: Merged %d follow-up events from %s into main pool" % [loaded_count, path])
 	return true
 
-## Check if a condition passes given party state
+
+## Quantity for party stash + gold: `gold` uses party gold; other ids use Main.party_resources (bulk items).
+func _quantity_party_resource_id(item_id: String, party_state: Dictionary) -> int:
+	var iid: String = item_id.strip_edges()
+	if iid.is_empty():
+		return 0
+	if iid == "gold":
+		var main_g: Node = _get_main_node()
+		if main_g != null and "party_gold" in main_g:
+			return int(main_g.party_gold)
+		return int(party_state.get("party_gold", 0))
+	var main: Node = _get_main_node()
+	if main != null and main.has_method("get_party_resource_count"):
+		return int(main.call("get_party_resource_count", iid))
+	return int(party_state.get("party_resources", {}).get(iid, 0))
+
+
+## Sum of item_id across character inventories only (ignores party_resources).
+func _quantity_character_inventory_only(item_id: String) -> int:
+	var main: Node = _get_main_node()
+	if main == null or not ("current_party_members" in main):
+		return 0
+	var total: int = 0
+	for m in main.current_party_members:
+		if m is PartyMember:
+			total += m.get_item_count(item_id)
+	return total
+
+
+## One JSON entry: { "id": "camping_supplies", "gte": 10 } — use any of eq, ne, lt, lte, gt, gte (can combine multiple predicates; all must pass).
+func _quantity_check_entry_passes(actual: int, entry: Dictionary) -> bool:
+	var found: bool = false
+	var ok: bool = true
+	if entry.has("eq"):
+		found = true
+		ok = ok and (actual == int(entry.eq))
+	if entry.has("ne"):
+		found = true
+		ok = ok and (actual != int(entry.ne))
+	if entry.has("lt"):
+		found = true
+		ok = ok and (actual < int(entry.lt))
+	if entry.has("lte"):
+		found = true
+		ok = ok and (actual <= int(entry.lte))
+	if entry.has("gt"):
+		found = true
+		ok = ok and (actual > int(entry.gt))
+	if entry.has("gte"):
+		found = true
+		ok = ok and (actual >= int(entry.gte))
+	if not found:
+		push_warning("EventManager: quantity check for id '%s' needs at least one of eq, ne, lt, lte, gt, gte" % str(entry.get("id", "")))
+		return false
+	return ok
+
+
+func _evaluate_quantity_condition_entries(entries: Variant, party_state: Dictionary, use_party_resources: bool) -> bool:
+	if not entries is Array:
+		return true
+	if entries.is_empty():
+		return true
+	for raw in entries:
+		if not raw is Dictionary:
+			continue
+		var e: Dictionary = raw
+		var rid: String = str(e.get("id", "")).strip_edges()
+		if rid.is_empty():
+			push_warning("EventManager: party_resources / character_items entry missing 'id'")
+			return false
+		var qty: int = _quantity_party_resource_id(rid, party_state) if use_party_resources else _quantity_character_inventory_only(rid)
+		if not _quantity_check_entry_passes(qty, e):
+			return false
+	return true
+
+
+## Check if a condition passes given party state (from `_build_party_state`).
+## Optional quantity gates (AND with everything else):
+## • `party_resources`: [ { "id": "camping_supplies"|"gold"|bulk id, "gte": 10, ... } ] — stash + gold only.
+## • `character_items`: [ { "id": "item_id", "eq": 2, ... } ] — sum across party members' inventories only.
+## Comparators per entry: eq, ne, lt, lte, gt, gte (int). Multiple comparators on one entry = AND.
 func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 	# requires_tags: all tags must be present
 	if condition.has("requires_tags"):
@@ -182,16 +328,6 @@ func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 			if not found_any:
 				return false
 	
-	# min_reputation: check minimum reputation with a faction
-	if condition.has("min_reputation"):
-		var rep_checks = condition.min_reputation
-		if rep_checks is Dictionary:
-			for faction in rep_checks:
-				var min_rep = rep_checks[faction]
-				var current_rep = party.get("reputation", {}).get(faction, 0)
-				if current_rep < min_rep:
-					return false
-	
 	# variables: check min/max values
 	if condition.has("variables"):
 		var var_checks = condition.variables
@@ -211,137 +347,271 @@ func condition_passes(condition: Dictionary, party: Dictionary) -> bool:
 		if party.get("party_gold", 0) < min_gold:
 			return false
 
+	# max_gold: party must not exceed this much gold
+	if condition.has("max_gold"):
+		if party.get("party_gold", 0) > condition.max_gold:
+			return false
+
+	# Party stash + gold quantities (not character inventory). id "gold" uses party_gold.
+	if condition.has("party_resources"):
+		if not _evaluate_quantity_condition_entries(condition.party_resources, party, true):
+			return false
+
+	# Character inventory totals only (equipment/consumables on members — ignores party_resources).
+	if condition.has("character_items"):
+		if not _evaluate_quantity_condition_entries(condition.character_items, party, false):
+			return false
+
 	return true
 
-## Pick an event for a node based on biome and prerequisites
+
+## True if arr has at least one required tag that is not a biome layer tag (biome:* is map/node, not contextual party tags).
+func _has_non_biome_tag_requirement(arr: Variant) -> bool:
+	if not arr is Array:
+		return false
+	for t in arr:
+		var s: String = str(t).strip_edges().to_lower()
+		if s.is_empty():
+			continue
+		if s.begins_with("biome:"):
+			continue
+		return true
+	return false
+
+
+## Positive tag requirements only (requires_tags / requires_any). Biome:* entries ignored here. forbids_tags not used.
+func _tag_gate_dict_is_active(gate: Dictionary) -> bool:
+	if _has_non_biome_tag_requirement(gate.get("requires_tags", [])):
+		return true
+	if _has_non_biome_tag_requirement(gate.get("requires_any", [])):
+		return true
+	return false
+
+
+## True if `tag` appears in prereqs.requires_tags or prereqs.requires_any (exact string match).
+func _prereqs_reference_tag(prereqs: Dictionary, tag: String) -> bool:
+	var rt: Variant = prereqs.get("requires_tags", [])
+	if rt is Array:
+		for t in rt:
+			if str(t) == tag:
+				return true
+	var ra: Variant = prereqs.get("requires_any", [])
+	if ra is Array:
+		for t in ra:
+			if str(t) == tag:
+				return true
+	return false
+
+
+## Biome list, town vs wilderness, one_shot consumption, positive weight.
+func _event_passes_node_filters(ev: Dictionary, event_id: String, biome: String, is_town_node: bool) -> bool:
+	if ev.get("one_shot", false) and event_id in seen_one_shot_events:
+		return false
+	if ev.has("biomes"):
+		var event_biomes = ev.biomes
+		if event_biomes is Array and event_biomes.size() > 0 and biome not in event_biomes:
+			return false
+	if is_town_node and not ev.get("town_entry", false):
+		return false
+	if not is_town_node and ev.get("town_entry", false):
+		return false
+	var w: float = float(ev.get("weight", 1))
+	return w > 0.0
+
+
+## Event is tag-driven if `prereqs` has at least one positive non-biome tag requirement (requires_tags / requires_any).
+func _event_prereqs_are_tag_driven(prereqs: Dictionary) -> bool:
+	return _tag_gate_dict_is_active(prereqs)
+
+
+## True if prereqs use structured checks that are NOT tag-list gates (gold/resources/variables/forbids). Used for pool pass 2.
+func _prereqs_have_structured_conditions(prereqs: Dictionary) -> bool:
+	if prereqs.has("min_gold"):
+		return true
+	if prereqs.has("max_gold"):
+		return true
+	if prereqs.has("party_resources"):
+		var pr: Variant = prereqs.party_resources
+		if pr is Array and not pr.is_empty():
+			return true
+	if prereqs.has("character_items"):
+		var ci: Variant = prereqs.character_items
+		if ci is Array and not ci.is_empty():
+			return true
+	if prereqs.has("variables"):
+		var v: Variant = prereqs.variables
+		if v is Dictionary and not v.is_empty():
+			return true
+	if prereqs.has("forbids_tags"):
+		var ft: Variant = prereqs.forbids_tags
+		if ft is Array and not ft.is_empty():
+			return true
+	return false
+
+
+## Build pool: (1) tag-keyed events matching a party tag + condition_passes; (2) events with only structured prereqs (gold/resources/etc., forbids) that pass condition_passes — no gold milestone tags required.
+func _build_tag_driven_event_pool(biome: String, is_town_node: bool, party_state: Dictionary) -> Array:
+	var pool: Array = []
+	var seen_ids: Dictionary = {}
+	var all_tags: Array[String] = TagManager.get_all_tags() if TagManager else []
+
+	for party_tag in all_tags:
+		var tag_str: String = str(party_tag)
+		if tag_str.strip_edges().to_lower().begins_with("biome:"):
+			continue
+		for event_id in events.keys():
+			if seen_ids.has(event_id):
+				continue
+			var ev: Dictionary = events[event_id]
+			if not _event_passes_node_filters(ev, event_id, biome, is_town_node):
+				continue
+			if not ev.has("prereqs") or not ev.prereqs is Dictionary:
+				continue
+			var prereqs: Dictionary = ev.prereqs
+			if not _event_prereqs_are_tag_driven(prereqs):
+				continue
+			if not _prereqs_reference_tag(prereqs, tag_str):
+				continue
+			if not condition_passes(prereqs, party_state):
+				continue
+			var weight: float = float(ev.get("weight", 1))
+			seen_ids[event_id] = true
+			pool.append({"event": ev, "weight": weight})
+
+	# Numeric / resource / forbids-only prereqs (no requires_tags/requires_any) — evaluated when gold or stash changes via condition_passes at pick time.
+	for event_id in events.keys():
+		if seen_ids.has(event_id):
+			continue
+		var ev2: Dictionary = events[event_id]
+		if not _event_passes_node_filters(ev2, event_id, biome, is_town_node):
+			continue
+		if not ev2.has("prereqs") or not ev2.prereqs is Dictionary:
+			continue
+		var prereqs2: Dictionary = ev2.prereqs
+		if _event_prereqs_are_tag_driven(prereqs2):
+			continue
+		if not _prereqs_have_structured_conditions(prereqs2):
+			continue
+		if not condition_passes(prereqs2, party_state):
+			continue
+		var w2: float = float(ev2.get("weight", 1))
+		seen_ids[event_id] = true
+		pool.append({"event": ev2, "weight": w2})
+
+	return pool
+
+
+func _weighted_random_from_event_pool(pool: Array) -> Dictionary:
+	if pool.is_empty():
+		return {}
+	var total_weight: float = 0.0
+	for item in pool:
+		total_weight += item.weight
+	var roll: float = rng.randf_range(0.0, total_weight)
+	var acc: float = 0.0
+	for item in pool:
+		acc += item.weight
+		if roll <= acc:
+			return item.event
+	return pool[0].event
+
+
+const TAG_DRIVEN_FALLBACK_EVENT_ID := "__tag_driven_pool_empty__"
+
+
+func _make_tag_driven_fallback_event() -> Dictionary:
+	return {
+		"id": TAG_DRIVEN_FALLBACK_EVENT_ID,
+		"title": "SYSTEM: Event pool empty",
+		"biomes": [],
+		"weight": 0,
+		"one_shot": false,
+		"text": "No tag-driven event matched this node. The tag_driven_event_pool was empty after filtering (add event.prereqs with requires_tags / requires_any, or structured gates: min_gold, max_gold, party_resources [{id,gte,...}], character_items, forbids_tags. Gold uses prereqs — not tags.)",
+		"choices": [
+			{
+				"id": "acknowledge",
+				"text": "Continue",
+				"effects": [],
+				"next_event": null,
+				"weight": 1
+			}
+		]
+	}
+
+
+func _snapshot_last_pick(biome: String, is_town: bool, forced: bool, selected_id: String, pool_size: int, total_w: float, roll: float) -> void:
+	debug_last_pick_biome = biome
+	debug_last_pick_is_town = is_town
+	debug_last_pick_was_forced = forced
+	debug_last_pick_selected_id = selected_id
+	debug_last_pick_rolled_pool_size = pool_size
+	debug_last_pick_total_weight = total_w
+	debug_last_pick_roll = roll
+
+
+## Universal entry: refresh tags, optional debug force (one-shot or sticky), then eligibility pool (tags + structured prereqs), weighted pick, else fallback error event.
 func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionary = {}) -> Dictionary:
-	# Return empty dict if no events are loaded
 	if events.is_empty():
-		push_warning("EventManager: No events loaded, cannot pick random event")
+		push_warning("%sno events loaded, cannot pick" % EVENT_SELECTION_LOG_PREFIX)
+		_snapshot_last_pick(biome, node_state.get("is_town", false), false, "", 0, 0.0, -1.0)
+		debug_last_pick_eligible_count = 0
 		return {}
 
-	# Build party state and eligible follow-ups first (needed for "force steps aside" when follow-up eligible)
-	var party_state_dict = _build_party_state(party)
+	var main_node: Node = _get_main_node()
+	if TagManager:
+		if main_node:
+			TagManager.refresh_tags(main_node, main_node.current_party_members, int(party.get("party_gold", 0)), biome)
+		else:
+			TagManager.refresh_tags(null, [], int(party.get("party_gold", 0)), biome)
+
+	var party_state_dict: Dictionary = _build_party_state(party)
 	var is_town_node: bool = node_state.get("is_town", false)
-	
-	_log_selection("Node: biome=%s is_town=%s party_tags=%s" % [biome, is_town_node, str(party_state_dict.get("tags", []))])
-	
-	var eligible_followup_ids: Array[String] = []
-	for event_id in followup_events.keys():
-		var followup = followup_events[event_id]
-		var trigger_tag: String = followup.get("trigger_tag", "")
-		if trigger_tag.is_empty():
-			_log_selection("  follow-up '%s': skip (no trigger_tag)" % event_id)
-			continue
-		if not party_state_dict.has("tags") or trigger_tag not in party_state_dict.tags:
-			_log_selection("  follow-up '%s': skip (party lacks tag '%s')" % [event_id, trigger_tag])
-			continue
-		if followup.get("one_shot", true) and event_id in seen_one_shot_events:
-			_log_selection("  follow-up '%s': skip (one_shot already seen)" % event_id)
-			continue
-		if followup.has("biomes"):
-			var event_biomes = followup.biomes
-			if event_biomes is Array and event_biomes.size() > 0 and biome not in event_biomes:
-				_log_selection("  follow-up '%s': skip (biome '%s' not in %s)" % [event_id, biome, str(event_biomes)])
-				continue
-		if is_town_node and not followup.get("town_entry", false):
-			_log_selection("  follow-up '%s': skip (town node, event not town_entry)" % event_id)
-			continue
-		if not is_town_node and followup.get("town_entry", false):
-			_log_selection("  follow-up '%s': skip (not town, event is town_entry only)" % event_id)
-			continue
-		eligible_followup_ids.append(event_id)
-		_log_selection("  follow-up '%s': ELIGIBLE (tag=%s)" % [event_id, trigger_tag])
-	
-	_log_selection("Eligible follow-ups: %d — %s" % [eligible_followup_ids.size(), str(eligible_followup_ids)])
-	
-	# Debug override: prefer Main's scene-tree exports. Steps aside when any follow-up is eligible so you can test follow-up flow.
+
 	var force_event: bool = debug_force_event
 	var force_id: String = debug_event_id
-	var main: Node = _get_main_node()
-	if main and "event_debug_force" in main:
-		if main.event_debug_force:
-			force_event = true
-			force_id = main.event_debug_id
-	if force_event and not force_id.is_empty():
-		if eligible_followup_ids.size() > 0:
-			_log_selection("Force override SKIPPED — follow-up(s) eligible, using normal selection")
-			print("EventManager [DEBUG]: Follow-up(s) eligible (%s), skipping force — using normal selection" % str(eligible_followup_ids))
-		else:
-			if events.has(force_id):
-				print("EventManager [DEBUG]: Forcing event '%s'" % force_id)
-				return events[force_id]
-			elif followup_events.has(force_id):
-				print("EventManager [DEBUG]: Forcing follow-up event '%s'" % force_id)
-				return followup_events[force_id]
-			else:
-				push_warning("EventManager: debug event id '%s' not found in loaded events or follow-up events" % force_id)
-	elif force_event and force_id.is_empty():
-		push_warning("EventManager: debug force event is true but event_debug_id / debug_event_id is not set")
-	
-	# Step 1: Follow-up events — one 50/50 roll per eligible; first hit wins.
-	eligible_followup_ids.sort()
-	for event_id in eligible_followup_ids:
-		var roll: float = rng.randf()
-		var passed: bool = roll < 0.5
-		_log_selection("  roll '%s': %.3f → %s" % [event_id, roll, "PASS (< 0.5)" if passed else "fail (>= 0.5)"])
-		if passed:
-			var selected = followup_events[event_id]
-			if selected.get("one_shot", true):
-				seen_one_shot_events.append(selected.id)
-			_log_selection("SELECTED (follow-up): %s" % event_id)
-			return selected
-	
-	_log_selection("No follow-up won (all rolls failed). Using normal event pool.")
-	
-	# Step 2: No follow-up won; build pool from normal events only
-	var eligible_events: Array = []
-	for event_id in events.keys():
-		var event = events[event_id]
-		
-		if event.get("one_shot", false) and event_id in seen_one_shot_events:
-			continue
-		if event.has("biomes"):
-			var event_biomes = event.biomes
-			if event_biomes is Array and event_biomes.size() > 0 and biome not in event_biomes:
-				continue
-		if is_town_node and not event.get("town_entry", false):
-			continue
-		if not is_town_node and event.get("town_entry", false):
-			continue
-		if event.has("prereqs"):
-			if not condition_passes(event.prereqs, party_state_dict):
-				continue
-		var weight = event.get("weight", 1)
-		eligible_events.append({"event": event, "weight": weight})
-	
-	if eligible_events.is_empty():
-		_log_selection("Normal pool: 0 eligible → return {}")
-		return {}
-	
-	var total_weight = 0
-	for item in eligible_events:
-		total_weight += item.weight
-	
-	var random_value = rng.randf_range(0, total_weight)
-	var accumulated_weight = 0.0
-	
-	_log_selection("Normal pool: %d eligible, total_weight=%d, roll=%.3f" % [eligible_events.size(), total_weight, random_value])
-	
-	for item in eligible_events:
-		accumulated_weight += item.weight
-		if random_value <= accumulated_weight:
-			var selected_event = item.event
-			if selected_event.get("one_shot", false):
-				seen_one_shot_events.append(selected_event.id)
-			_log_selection("SELECTED (normal): %s" % selected_event.get("id", ""))
-			return selected_event
-	
-	_log_selection("SELECTED (normal fallback): %s" % eligible_events[0].event.get("id", ""))
-	return eligible_events[0].event
+	var main_wants_force: bool = main_node != null and "event_debug_force" in main_node and main_node.event_debug_force
+	if main_node and main_wants_force:
+		force_event = true
+		force_id = str(main_node.event_debug_id)
 
-## Present an event - returns event with filtered choices
-func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
+	if force_event and not force_id.is_empty():
+		if events.has(force_id):
+			print("%sforced debug event '%s' (clear after pick unless event_debug_keep_forcing)" % [EVENT_SELECTION_LOG_PREFIX, force_id])
+			_event_pick_log(main_node, "forced id=%s (pool skipped)" % force_id)
+			_snapshot_last_pick(biome, is_town_node, true, force_id, -1, 0.0, -1.0)
+			debug_last_pick_eligible_count = -1
+			_clear_debug_event_force_after_pick(main_node, main_wants_force)
+			return events[force_id]
+		push_warning("%sdebug event id '%s' not found" % [EVENT_SELECTION_LOG_PREFIX, force_id])
+	elif force_event and force_id.is_empty():
+		push_warning("%sdebug force on but no event_debug_id set" % EVENT_SELECTION_LOG_PREFIX)
+
+	var tag_pool: Array = _build_tag_driven_event_pool(biome, is_town_node, party_state_dict)
+	debug_last_pick_eligible_count = tag_pool.size()
+
+	if tag_pool.is_empty():
+		push_warning("%stag_driven_event_pool empty (biome='%s', town=%s) — showing fallback event" % [EVENT_SELECTION_LOG_PREFIX, biome, str(is_town_node)])
+		var fb: Dictionary = _make_tag_driven_fallback_event()
+		_snapshot_last_pick(biome, is_town_node, false, TAG_DRIVEN_FALLBACK_EVENT_ID, 0, 0.0, -1.0)
+		_event_pick_log(main_node, "biome=%s tag_driven_pool=0 → FALLBACK '%s'" % [biome, TAG_DRIVEN_FALLBACK_EVENT_ID])
+		return fb
+
+	var total_weight: float = 0.0
+	for it in tag_pool:
+		total_weight += it.weight
+	var roll: float = rng.randf_range(0.0, total_weight)
+	var chosen: Dictionary = _weighted_random_from_event_pool(tag_pool)
+	var chosen_id: String = str(chosen.get("id", ""))
+	if chosen.get("one_shot", false):
+		seen_one_shot_events.append(chosen_id)
+
+	_snapshot_last_pick(biome, is_town_node, false, chosen_id, tag_pool.size(), total_weight, roll)
+	_event_pick_log(main_node, "biome=%s chose '%s' | tag_driven_pool=%d tags total_weight=%.1f roll=%.3f" % [biome, chosen_id, tag_pool.size(), total_weight, roll])
+	return chosen
+
+## Present an event - returns event with filtered choices.
+## If **`immediate_effects`** (array) is set on the event, those effects run here as soon as the event is presented (before the log UI), not when a choice is picked.
+func present_event(event: Dictionary, party: Dictionary, node_state: Dictionary = {}) -> Dictionary:
 	if event.is_empty():
 		return {}
 	
@@ -380,6 +650,10 @@ func present_event(event: Dictionary, party: Dictionary) -> Dictionary:
 		if presented_event.choices[i].has("text"):
 			presented_event.choices[i].text = _interpolate_text(presented_event.choices[i].text, party)
 	
+	var immediate: Variant = presented_event.get("immediate_effects", [])
+	if immediate is Array and not immediate.is_empty():
+		apply_effects(immediate as Array, party, node_state)
+	
 	return presented_event
 
 ## Pick a weighted-random outcome from a choice's outcomes array.
@@ -408,6 +682,7 @@ func pick_weighted_outcome(outcomes: Array) -> Dictionary:
 
 ## Apply effects from a choice
 func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {}):
+	text_vars.clear()
 	debug_print("SECRET PATH: EventManager apply_effects() called with %d effects" % effects.size())
 	
 	if not effects is Array:
@@ -432,8 +707,8 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 				_apply_give_item(effect, party)
 			
 			"change_reputation":
-				_apply_change_reputation(effect, party)
-			
+				pass # Legacy JSON — no reputation system; ignored silently
+
 			"change_stat":
 				_apply_change_stat(effect, party)
 			
@@ -476,11 +751,20 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 			"give_item_from_pool":
 				_apply_give_item_from_pool(effect, party)
 
+			"give_item_choice":
+				_apply_give_item_choice(effect, party)
+
+			"give_trait":
+				_apply_give_trait(effect, party)
+
 			"give_xp":
 				_apply_give_xp(effect, party)
 
 			"heal_party":
 				_apply_heal_party(effect, party)
+
+			"set_weather":
+				_apply_set_weather(effect)
 			
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
@@ -495,12 +779,6 @@ func _build_party_state(party: Dictionary) -> Dictionary:
 	else:
 		state.tags = []
 	
-	# Reputation (if party dict has it)
-	if party.has("reputation"):
-		state.reputation = party.reputation
-	else:
-		state.reputation = {}
-	
 	# Variables (if party dict has it)
 	if party.has("variables"):
 		state.variables = party.variables
@@ -509,6 +787,12 @@ func _build_party_state(party: Dictionary) -> Dictionary:
 
 	# Party gold (for conditions like min_gold)
 	state.party_gold = party.get("party_gold", 0)
+
+	# Copy of party_resources for fallbacks when Main is unavailable (e.g. tests)
+	if party.has("party_resources") and party.party_resources is Dictionary:
+		state.party_resources = party.party_resources.duplicate(true)
+	else:
+		state.party_resources = {}
 	
 	# Party members info (for interpolation)
 	if party.has("members"):
@@ -626,6 +910,125 @@ func drain_pending_item_rewards() -> Array:
 	pending_item_rewards.clear()
 	return drained
 
+## Returns all queued item choice sets and clears the queue.
+func drain_pending_item_choices() -> Array:
+	var drained := pending_item_choices.duplicate()
+	pending_item_choices.clear()
+	return drained
+
+## give_trait effect handler — traits are never assigned via a member-picker UI (unlike items).
+## Who receives the trait comes from the event data + the choice the player picked:
+##
+##   member_name  — grant to the first alive party member whose member_name matches (case-insensitive).
+##                  Use when each narrative choice names a specific character.
+##   target       — "all" | "random" | party slot index (0 = first member in Main.current_party_members).
+##                  JSON numbers may arrive as float; whole-number floats are accepted.
+##
+## Outcome text can use {member} after a single-recipient grant (random, slot, or member_name).
+## Deprecated: target "acted" (old member-picker) — logs a warning and behaves like "random".
+func _apply_give_trait(effect: Dictionary, party: Dictionary) -> void:
+	var trait_id: String = str(effect.get("trait_id", ""))
+	# Main._build_party_dict() does NOT set party["alive"] — must resolve PartyMember refs from Main
+	# (same as give_xp / heal_party). Using party.get("alive", []) alone always failed silently.
+	var alive: Array = _get_alive_party_members()
+	if alive.is_empty():
+		push_warning("EventManager: give_trait — no alive party members (Main missing or party empty)")
+		return
+
+	var members: Array = _resolve_give_trait_recipients(effect, alive)
+
+	if members.is_empty():
+		return
+
+	# Set text_vars before any database validation so {member} always substitutes correctly.
+	if members.size() == 1:
+		text_vars["member"] = members[0].member_name
+
+	if trait_id.is_empty() or not TraitDatabase.has_trait(trait_id):
+		push_warning("EventManager: give_trait unknown or missing trait_id '%s'" % trait_id)
+		return
+
+	for member in members:
+		member.add_trait(trait_id)
+		print("EventManager: %s gained trait '%s'" % [member.member_name, trait_id])
+
+func _resolve_give_trait_recipients(effect: Dictionary, alive: Array) -> Array:
+	var member_name: String = str(effect.get("member_name", "")).strip_edges()
+	if not member_name.is_empty():
+		for m in alive:
+			if m.member_name.to_lower() == member_name.to_lower():
+				return [m]
+		push_warning("EventManager: give_trait member_name '%s' not found among alive party" % member_name)
+		return []
+
+	var target = effect.get("target", "random")
+	if str(target) == "acted":
+		push_warning("EventManager: give_trait target \"acted\" was removed — use \"member_name\" or slot index 0,1,… (or separate choices). Using random.")
+		target = "random"
+
+	return _resolve_member_targets(target, alive)
+
+## Resolve count from an effect/item entry supporting count, min_count, max_count.
+func _resolve_item_count(entry: Dictionary) -> int:
+	if entry.has("min_count") and entry.has("max_count"):
+		return rng.randi_range(int(entry.min_count), int(entry.max_count))
+	return int(entry.get("count", 1))
+
+## Fisher-Yates shuffle using the seeded RNG; returns a new array.
+func _shuffle_array(arr: Array) -> Array:
+	var result := arr.duplicate()
+	for i in range(result.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp = result[i]
+		result[i] = result[j]
+		result[j] = tmp
+	return result
+
+## give_item_choice effect handler.
+## grant:"all"  → every resolved item goes to pending_item_rewards (or party resources if bulk).
+## grant:"one"  → all resolved items are bundled into one pending_item_choices entry;
+##                EventLog shows them simultaneously and the player picks exactly one.
+##
+## Sources:
+##   pool + pool_draw  — draw pool_draw distinct items from pool (default 1)
+##   items             — explicit list of {item_id [, count|min_count|max_count]} entries
+func _apply_give_item_choice(effect: Dictionary, party: Dictionary) -> void:
+	var grant: String = effect.get("grant", "all")
+
+	# Build resolved candidate list: [{item_id, count}]
+	var candidates: Array = []
+	if effect.has("pool"):
+		var pool: Array = effect.get("pool", [])
+		var draw: int = int(effect.get("pool_draw", 1))
+		var drawn: Array = _shuffle_array(pool).slice(0, mini(draw, pool.size()))
+		for item_id in drawn:
+			candidates.append({ "item_id": str(item_id), "count": _resolve_item_count(effect) })
+	else:
+		for entry in effect.get("items", []):
+			candidates.append({ "item_id": str(entry.get("item_id", "")), "count": _resolve_item_count(entry) })
+
+	if candidates.is_empty():
+		push_warning("EventManager: give_item_choice has no items or pool")
+		return
+
+	if grant == "all":
+		for c in candidates:
+			_apply_give_item({ "item_id": c.item_id, "count": c.count }, party)
+	else:
+		# "one" — collect Item resources and queue as a choice set
+		var valid_items: Array = []
+		for c in candidates:
+			if not ItemDatabase.has_item(c.item_id):
+				push_warning("EventManager: give_item_choice unknown item_id '%s'" % c.item_id)
+				continue
+			valid_items.append({
+				"item_id": c.item_id,
+				"count":   c.count,
+				"item":    ItemDatabase.get_item(c.item_id)
+			})
+		if not valid_items.is_empty():
+			pending_item_choices.append({ "items": valid_items })
+
 ## Actually grants a character item to the chosen member after the player picks via ItemReward UI.
 func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> void:
 	if not ItemDatabase.has_item(item_id):
@@ -650,14 +1053,6 @@ func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> vo
 			added += 1
 	if added > 0:
 		print("EventManager: Gave %s x%d to %s" % [item.name, added, member.member_name])
-
-func _apply_change_reputation(effect: Dictionary, party: Dictionary):
-	if not effect.has("faction") or not effect.has("amount"):
-		push_warning("EventManager: change_reputation effect missing 'faction' or 'amount' field")
-		return
-	
-	# TODO: Connect to reputation system
-	print("EventManager: Would change reputation with %s by %d" % [effect.faction, effect.amount])
 
 func _apply_change_stat(effect: Dictionary, party: Dictionary):
 	if not effect.has("stat") or not effect.has("amount"):
@@ -846,6 +1241,8 @@ func _party_has_item(item_id: String, count: int) -> bool:
 	var main := _get_main_node()
 	if not main:
 		return false
+	if item_id == "gold" and "party_gold" in main:
+		return int(main.party_gold) >= count
 	if ItemDatabase.is_bulk_loot(item_id):
 		return main.get_party_resource_count(item_id) >= count
 	# Non-bulk: sum across all party members
@@ -951,7 +1348,7 @@ func _apply_heal_party(effect: Dictionary, party: Dictionary):
 		if effect.has("percent"):
 			healed = int(member.max_health * float(effect.percent) / 100.0)
 			member.heal(healed)
-		elif effect.get("amount", "") == "full":
+		elif str(effect.get("amount", "")) == "full":
 			healed = member.max_health - member.current_health
 			member.heal(member.max_health)
 		else:
@@ -960,20 +1357,36 @@ func _apply_heal_party(effect: Dictionary, party: Dictionary):
 		print("EventManager: Healed %s for %d HP (%d/%d)" % [member.member_name, healed, member.current_health, member.max_health])
 
 ## Resolve a target field into an Array of PartyMember references from the alive pool.
-## target: "all" → all alive members | "random" → one random alive member | int → member at that index (if alive)
+## target: "all" → all alive members | "random" → one random alive member | int/float → slot in Main.current_party_members
 func _resolve_member_targets(target, alive: Array) -> Array:
-	if target == "all":
-		return alive
-	if target == "random":
-		return [alive[rng.randi() % alive.size()]]
-	# Integer index into current_party_members (not the alive-filtered list)
+	# JSON numbers are often float; never compare float to String (runtime error in GDScript 4).
+	if typeof(target) == TYPE_STRING:
+		if target == "all":
+			return alive
+		if target == "random":
+			return [alive[rng.randi() % alive.size()]]
 	var main: Node = _get_main_node()
-	if main and typeof(target) == TYPE_INT or (typeof(target) == TYPE_STRING and target.is_valid_int()):
-		var idx: int = int(target)
-		if idx >= 0 and idx < main.current_party_members.size():
-			var m = main.current_party_members[idx]
-			if m.is_alive():
-				return [m]
+	if not main:
+		push_warning("EventManager: _resolve_member_targets: no Main node, defaulting to random")
+		return [alive[rng.randi() % alive.size()]]
+
+	var idx: int = -1
+	if typeof(target) == TYPE_INT:
+		idx = target
+	elif typeof(target) == TYPE_FLOAT:
+		var f: float = target
+		if is_equal_approx(f, roundf(f)):
+			idx = int(f)
+	elif typeof(target) == TYPE_STRING:
+		var s: String = str(target)
+		if s.is_valid_int():
+			idx = int(s)
+
+	if idx >= 0 and idx < main.current_party_members.size():
+		var m = main.current_party_members[idx]
+		if m.is_alive():
+			return [m]
+
 	push_warning("EventManager: _resolve_member_targets: unrecognised target '%s', defaulting to random" % str(target))
 	return [alive[rng.randi() % alive.size()]]
 
@@ -983,6 +1396,46 @@ func _get_main_node() -> Node:
 		if child.name == "Main" or child.is_in_group("main"):
 			return child
 	return null
+
+
+## After weather changes mid-event, rebuild derived tags so `weather:*` prereqs match until the next node move (which re-rolls weather).
+func _sync_tag_manager_after_weather_change() -> void:
+	if not TagManager:
+		return
+	var main: Node = _get_main_node()
+	if main == null:
+		return
+	var biome_name: String = ""
+	if "map_generator" in main and main.map_generator:
+		var mg: Variant = main.map_generator
+		if mg.current_party_node and mg.current_party_node.biome:
+			biome_name = str(mg.current_party_node.biome.biome_name)
+	var members: Array = main.current_party_members if "current_party_members" in main else []
+	var gold: int = int(main.party_gold) if "party_gold" in main else 0
+	TagManager.refresh_tags(main, members, gold, biome_name)
+
+
+## JSON: `{ "type": "set_weather", "weather_id": "rainy" }` — must match an id in `data/weather/weather_types.json`.
+func _apply_set_weather(effect: Dictionary) -> void:
+	var wid: String = str(effect.get("weather_id", "")).strip_edges()
+	if wid.is_empty():
+		push_warning("EventManager: set_weather effect missing weather_id")
+		return
+	var root: Window = get_tree().root if get_tree() else null
+	var wm: Node = root.get_node_or_null("WeatherManager") if root else null
+	if wm == null or not wm.has_method("set_weather"):
+		push_warning("EventManager: WeatherManager missing or has no set_weather")
+		return
+	wm.call("set_weather", wid)
+	_sync_tag_manager_after_weather_change()
+
+## Alive PartyMember instances for effects that target party members by index / random / name.
+## Do not use party_dict["members"] — those are plain dictionaries for text interpolation.
+func _get_alive_party_members() -> Array:
+	var main: Node = _get_main_node()
+	if not main:
+		return []
+	return main.current_party_members.filter(func(m): return m.is_alive())
 
 func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	debug_print("SECRET PATH: === EventManager _apply_reveal_secrets() called ===")

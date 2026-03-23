@@ -24,6 +24,9 @@ var portrait_model: int = 1
 # Character inventory: item_id -> count
 var inventory: Dictionary = {}
 
+# Intrinsic traits this character carries (trait IDs). Cannot be traded or removed normally.
+var traits: Array[String] = []
+
 # Equipped weapon and armour
 var weapon: Weapon = null
 var armour: Armour = null
@@ -61,6 +64,24 @@ func get_item_count(item_id: String) -> int:
 
 func has_item(item_id: String) -> bool:
 	return inventory.get(item_id, 0) > 0
+
+## Add a trait to this character. No-ops silently if they already have it.
+func add_trait(trait_id: String) -> bool:
+	if trait_id.is_empty():
+		return false
+	if not TraitDatabase.has_trait(trait_id):
+		push_warning("PartyMember.add_trait: Unknown trait_id '%s'" % trait_id)
+		return false
+	if trait_id in traits:
+		return false
+	traits.append(trait_id)
+	return true
+
+func has_trait(trait_id: String) -> bool:
+	return trait_id in traits
+
+func get_trait_ids() -> Array[String]:
+	return traits.duplicate()
 
 func get_inventory_ids() -> Array[String]:
 	var ids: Array[String] = []
