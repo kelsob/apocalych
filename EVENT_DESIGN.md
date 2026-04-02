@@ -1,22 +1,95 @@
 # Event Design Reference — Apocalych
 
-> This document is the canonical reference for writing events. Refer to it before writing any new event. Every event should be held to the standard described here.
+> This document is the **canonical reference** for writing events: **narrative and combat vision** (why the systems exist together), then **technical authoring** (JSON fields, pipelines, what is implemented). Every event should meet both the creative standard and the schema below.
 
 ---
 
 ## Philosophy
 
-Events are FTL-style: short, punchy, consequential. Most are one interaction deep. A handful chain. Almost all have at least one conditional ("blue") option that rewards smart party composition or preparation. The tone is **dark fantasy with sparse humor** — grounded and serious by default, occasionally wry, never silly. Events should feel authored, not procedural.
+**Events and combat are not separate silos** — they are part of one **state-driven loop** on a run. Map events generate consequences; combat resolves crises; both feed **tags**, resources, and story keys that change what can happen later. The feel is **FTL-style**: short, punchy, consequential. Most beats are one interaction deep; a handful chain. Almost every event should offer at least one conditional (“blue”) option that rewards party composition or preparation. The tone is **dark fantasy with sparse humor** — grounded and serious by default, occasionally wry, never silly. Content should feel **authored**, not procedural.
 
-**The failure mode to avoid:** Events that describe something interesting but then offer only meaningless choices (advance time, -5 HP) or no real decisions. If writing an event and the choices don't feel meaningfully different, rewrite it.
+**The failure mode to avoid:** Events that describe something interesting but then offer only meaningless choices (advance time, −5 HP) or no real decisions. If the choices don’t feel meaningfully different, rewrite them.
 
-> **Direction — recursive events (planning only):** The shipped JSON/runtime below still uses separate **`outcomes`**, **`tier_outcomes`**, and inert **`next_event`**. The **intended** model is a **single recursive “event step”** type (text → optional effects → optional choices → each choice leads to another step). See **Recursive event model — planning (draft)**. **No implementation commitment** until that section is approved and tasks are scheduled.
+> **Recursive events (shipped in runtime):** **`EventManager`** + **`EventChoiceContainer`** + **`EventLog`** support **nested steps** — each choice can lead to a **`then`** step or a **`weighted_branches`** roll. Effects support per-effect **`timing`** (`before_text`, default / `after_text`, `on_event_close`). **Dual authoring:** older world JSON still uses flat **`effects`**, choice **`outcomes`**, and **`stat_challenge` / `tier_outcomes`**; new and migrated content uses **`then`** / **`weighted_branches`**. **`next_event`** is still not loaded by **`EventLog`** — use nested steps for multi-beat stories. See **Recursive event model** and **Authoring: nested steps, timing, and fields** below.
 
 ### Stat-driven challenges (**implemented**)
 
 Choices may declare **`stat_challenge`** (primary stat + four tier outcomes). The runtime picks a default actor (highest stat), shows them on the choice label (with aggregate fail/success odds), and allows **cycling the actor** when `allow_actor_override` is true (wired in `EventChoice` / scene). Resolution uses **`EventStatCheck`** (tiered RNG). Effects on each tier use the **same `effects` pipeline** as ordinary choices; use **`target`: `"stat_actor"`** (or `"actor"`) on `change_stat` / `give_trait` / etc. when the consequence should hit whoever rolled.
 
 See **Stat-driven challenges — JSON (implemented)** below. The roadmap section at the end of this file is **historical**; keep it only for process ideas, not “not implemented” claims.
+
+---
+
+## Narrative & combat vision
+
+This section merges **design intent** (how events and combat should feel as a system) with **what the engine supports today**. Detailed mechanics, field names, and effect types appear in **Event Anatomy** onward; **Implementation Status** lists gaps.
+
+### Core philosophy
+
+- **Continuity over isolation:** Player decisions are meant to **carry forward** via **tags**, modifiers, and branching outcomes — supporting replayability and emergent story **without** relying on a single linear quest chain.
+- **State, not scripts:** Prefer **accumulated tags + prereqs** over hard-coded “Event A → Event B” chains wherever possible; follow-up pools and nested **`then`** steps handle explicit sequencing when needed.
+
+### Events as state generators
+
+- **Stat-driven choices** use a **default actor** (highest relevant stat), optional **player override**, and **tiered RNG** (`crit_fail` → `crit_success`) where stats **shift probabilities**, not guaranteed outcomes. Implemented: **`stat_challenge`**, **`EventStatCheck`**, **`EventChoice`** (see below).
+- **Forward-moving outcomes:** Each tier should do something that matters — **HP**, **resources**, **`add_tag` / `remove_tag`**, **`start_combat`**, etc. Avoid purely decorative failures unless tone demands it.
+
+### Tags & world state
+
+**Tags** are the main **bridge** between events, combat aftermath, and future eligibility:
+
+- Events **grant or clear** tags via effects; **prereqs** and **conditions** read them.
+- Tags can gate **hidden choices**, **altered pools**, and (when combat supports it) **modifiers**. Outcomes that depend on tags should feel **logical in hindsight** even if the player didn’t predict them.
+
+Authoring details: **Event eligibility**, **Unique Outcome Tags**, **`docs/EVENT_TAGS.md`**.
+
+### Combat as narrative (design goals)
+
+Combat is treated as a **scenario with stakes**, not only a binary win/lose screen.
+
+**Design targets** (not all are fully expressed in data or combat code yet):
+
+| Idea | Role in the vision |
+|------|-------------------|
+| **Objectives** | e.g. eliminate all enemies, survive N turns, defeat a target, escape, protect/capture — makes fights feel distinct. |
+| **Rich end states** | Beyond “everyone dead”: partial success, flight, surrender, non-lethal resolution — each should be able to **emit tags** and drive follow-ups. |
+| **Enemy agency** | Fleeing, surrendering, prioritizing survival — makes fights feel like situations, not static puzzles. |
+| **Mid-combat beats** | Triggers on HP, turn count, or objective progress that open **choices** or shift goals — must **change gameplay**, not only flavor. |
+
+**Today’s contract in this doc:** Events **start** combat with **`start_combat`**; the **parent event** may define **`combat_outcomes`** for **`victory`**, **`party_fled`**, **`defeat`** (and optionally **`enemies_fled`** when wired). See **Post-Combat Outcomes** and **Implementation Status** for what Main/combat actually report today.
+
+### Event → combat integration
+
+- **From events:** Use **`effects`** on choices or nested steps — **`start_combat`**, **`add_tag`** (pre-fight setup), environmental or rule changes **expressed as** tags + encounter design until a dedicated “modifier bundle” schema exists.
+- **After combat:** **`combat_outcomes`** runs through the same **effect pipeline** as map events (aftermath **Continue**), including **`give_item`** → reward UI where applicable.
+
+### Gameplay loop (intent)
+
+1. **Event** presents choices → resolves (**stat tiers**, **`then`**, **`weighted_branches`**, or flat effects).  
+2. **Effects + tags** update party/world state.  
+3. **Tags + prereqs** change which events appear and how choices read.  
+4. **Combat** (when triggered) produces an end state → **`combat_outcomes`** + tags.  
+5. **Loop** continues — the run should feel like one evolving story, not disconnected nodes.
+
+### Gold standard example — Roadside Ambush (authoring target)
+
+This **pattern** is what high-tier content should aspire to; wire it with **today’s** fields (`stat_challenge`, tags, `start_combat`, nested steps, follow-ups).
+
+**Setup:** Bandits emerge; leader confronts the party.
+
+**1 — Intimidate (e.g. Strength `stat_challenge`)**  
+Tiers might apply: **`add_tag`** (`bandits_hostile`, `bandits_shaken`), **`change_stat`**, or **`start_combat`** with a **consistent `encounter_id`**. “Enemies act first” or “one enemy flees” are expressed as **tags + encounter tuning** (or future modifier hooks) — not a separate JSON mini-language yet.
+
+**2 — Negotiate (e.g. Charisma `stat_challenge`)**  
+Critical failure → bad tags + harder fight; success → **pay gold** / avoid combat + **`bandits_bribed`**; crit success → avoid combat + **`bandits_friendly`**.
+
+**Combat (if triggered):** Base goal in the **encounter resource**; dynamic behaviors (flee, surrender) are **combat/AI** concerns; aftermath still lands in **`combat_outcomes`** + tags.
+
+**Mid-combat beat (aspirational):** e.g. leader yields below ~30% party HP → **future** hook: in-combat branch or post-combat tag only (`bandits_spared` vs `bandits_slaughtered`) depending on what the engine supports when you build it.
+
+**Long-term follow-up:** **`followup_events.json`** or high-weight tag-gated events for **ally**, **revenge ambush**, **discounts**, etc.
+
+**Why this works:** Event tiers **shape** how the fight starts; combat (when extended) **adds** beats and tags; **tags** feed the world pool — **without** one immutable script chain.
 
 ---
 
@@ -31,6 +104,8 @@ See **Stat-driven challenges — JSON (implemented)** below. The roadmap section
   "one_shot": true,
   "prereqs": { ...condition block... },
   "text": "Flavor text describing what the party encounters.",
+  "immediate_effects": [ ...optional — run in present_event before UI... ],
+  "rewards": { "xp": 0, "gold": 0 },
   "choices": [ ...choice objects... ],
   "combat_outcomes": { ...post-combat block... }
 }
@@ -48,6 +123,8 @@ See **Stat-driven challenges — JSON (implemented)** below. The roadmap section
 | `prereqs` | Optional **object** (not `required_tags` at top level). **All** fields you put inside it must pass together (**AND**). See **Event eligibility** below. |
 | `text` | The main flavor text. See Writing Guidelines below. |
 | `choices` | Array of choice objects. See Choice Anatomy below. |
+| `immediate_effects` | Optional. Array of effects run in **`present_event`** before the log UI (see **Authoring: nested steps…**). |
+| `rewards` | Optional on a **segment** (root or nested): `{ "xp": <int>, "gold": <int> }` — queues an **EventRewards** row for that segment. |
 | `combat_outcomes` | Optional. Post-combat follow-up text per outcome. See Combat section. |
 
 ### Event eligibility — **multiple requirements (implemented)**
@@ -263,6 +340,8 @@ High-frequency: **`add_tag`**, **`change_stat`** (`hp`), **`give_gold`** / **`pa
 
 ## Combat in Events
 
+How combat fits the **larger run** (objectives, agency, long-term tags) is summarized in **Narrative & combat vision** above; this section covers **JSON and hooks** only.
+
 ### Starting Combat
 
 Any choice can start a combat with `{ "type": "start_combat", "encounter_id": "path/to/encounter" }`. The path matches the encounter resource path under `resources/encounters/`.
@@ -356,15 +435,13 @@ A future **`repeatable`** property (e.g. on the event or on the tag-grant) could
 
 ### Implementation note (**implemented**)
 
-When a choice runs **`start_combat`**, the parent event’s **`combat_outcomes`** is copied to **`EventManager.pending_combat_outcomes`** (`EventLog` / `EventWindow`). After combat, **`Main._on_combat_ended`** picks **`victory`** / **`party_fled`** / **`defeat`** and stores the matching block. **`Main._show_combat_outcome`** builds a synthetic **`_combat_outcome`** event whose single **Continue** choice carries that block’s **`effects`**. Those effects run when the player confirms — same pipeline as normal choices (including **`give_item`** → `ItemReward` when applicable). If both **`text`** and combat **`rewards`** are empty, the aftermath panel is skipped.
+When a choice runs **`start_combat`**, the parent event’s **`combat_outcomes`** is copied to **`EventManager.pending_combat_outcomes`** (`EventLog` / `EventWindow`). After combat, **`Main._on_combat_ended`** picks **`victory`** / **`party_fled`** / **`defeat`** and stores the matching block. **`Main._show_combat_outcome`** builds a synthetic **`_combat_outcome`** event whose single **Continue** choice carries that block’s **`effects`** (and optional **`title`** / **`text`**). Those effects run when the player confirms — same pipeline as normal choices (including **`give_item`** → `ItemReward` when applicable). If there is nothing to show (e.g. no aftermath **text** and no **effects** to apply), the aftermath flow can be skipped.
 
 ---
 
 ## Event Chaining (`next_event`) — **current runtime**
 
-The **`next_event`** field on a choice is **present in JSON** but **not honored** by `EventLog` / `EventWindow` (no follow-up load by id). Multi-step stories today use **tags**, **follow-up pools**, **weighted `outcomes`**, or **nested content in a future schema**.
-
-**Intended replacement:** **Recursive event model — planning (draft)** — nested steps in one tree, no separate “outcome type.”
+The **`next_event`** field on a choice is **present in JSON** but **not honored** by **`EventLog`** (no follow-up load by id). For **linear or branching narrative inside one map event**, use **`then`** and **`weighted_branches`** on choices (see **Authoring: nested steps, timing, and fields**). Multi-step stories can also use **tags**, **follow-up pools** (`followup_events.json`), and legacy **weighted `outcomes`** on a choice where you have not migrated yet.
 
 ### Depth guidelines (narrative — still applies to nested steps)
 
@@ -461,53 +538,55 @@ Dark fantasy. Grounded. The world is post-apocalyptic and grim, with an underlyi
 
 ---
 
-## Recursive event model — planning (draft)
+## Recursive event model (**runtime implemented**)
 
-> **Status:** Design and migration plan only. **Do not treat this as implemented** in code or JSON until an explicit implementation pass lands. Existing events continue to use **Event Anatomy** and **Choice Anatomy** above.
+> **Status:** Core navigation and **`EventLog`** presentation are **implemented** (`play_event`, `then`, `weighted_branches`, effect **`timing`**, segment **`rewards`**). **Still open:** migrating all world JSON off legacy choice shapes; optional future work: **`tier_outcomes`** / **`combat_outcomes`** expressed as full nested steps (see checklist). Older files may still use **Event Anatomy** and **Choice Anatomy** exactly as documented above.
 
 ### Goal
 
-- **One conceptual type** for “what happens next” after the player acts: call it an **event step** (name TBD). It is **the same shape** whether it is the root of a map event or the result of picking a choice.
+- **One conceptual type** for “what happens next” after the player acts: an **event step**. It is **the same pipeline** whether it is the root of a map event or a nested **`then`** / **`weighted_branches`** result.
 - Each step has:
-  - **`text`** (optional) — body copy for this beat.
-  - **`effects`** (optional) — same effect objects as today.
-  - **`choices`** (optional) — list of **choices**; each choice leads to **another nested event step** (not a separate “outcome” schema).
-- **Order of operations (decided):** Per-effect **timing** (see **Decisions**): (1) before that step’s text / on step enter, (2) after text, before choices, (3) **only when the player finishes the event** — e.g. **Continue** and the **event window has closed** (third bucket). **Continue** always means **end this event segment and return to the map** — never “go back” to a previous choice.
-- If **`choices`** is absent or empty, the UI shows a **default Continue** (same as today’s fallback) and the flow resolves upward (end this branch / end event).
+  - **`body`** or **`text`** (optional) — narrative for this beat (`body` is preferred in nested steps; **`EventLog`** accepts either).
+  - **`title`** (optional) — shown when present (mostly on root events).
+  - **`effects`** (optional) — same effect objects as elsewhere; each effect may set **`timing`** (see **Decisions**).
+  - **`rewards`** (optional) — `{ "xp": <int>, "gold": <int> }` on a step; queues a compact **EventRewards** row after that segment’s title/body intro.
+  - **`choices`** (optional) — list of **choices**; each can point to **`then`**, **`weighted_branches`**, legacy **`outcomes`**, **`stat_challenge`**, or flat **`effects`**.
+- **Order of operations:** Not a single “text then all effects” pass — see **per-effect `timing`** in **Decisions §1** (before body, after body / default, on event close). **Continue** ends the **current segment** and returns toward the map — never “undo” a previous choice.
+- If **`choices`** is absent or empty, the UI uses a **default Continue** and the flow resolves upward (end this branch / end event session when appropriate).
 - **Infinite depth in one file** is allowed by recursion; file size is an authoring concern, not a schema blocker.
 
 ### Why separate files are optional, not required
 
 - Splitting across files (`next_event` by id) was a workaround for **non-recursive** data and for **unimplemented** chaining. Under the recursive model, **one authored tree** can live in one JSON object; splitting remains optional for very large stories or shared sub-steps.
 
-### Proposed shape (sketch — not final)
+### Shapes in data (authoritative)
 
-Top-level **map event** keeps registry fields (`id`, `title`, `biomes`, `weight`, `one_shot`, `prereqs`, `combat_outcomes`, …). The narrative body becomes a **step** (exact field name TBD, e.g. **`step`**, **`root`**, or flatten `text`/`choices` at top level with same meaning as nested).
+Top-level **map event** keeps registry fields (`id`, `title`, `biomes`, `weight`, `one_shot`, `prereqs`, `combat_outcomes`, …) plus optional **`immediate_effects`** (see **Authoring** section). Root narrative uses **`text`** (and **`title`**) the same as before; nested beats use **`body`** or **`text`**.
 
-**Choice object (conceptual):**
+**Choice object:**
 
-- Identity / UI: `id`, `text`, `condition`, `requires_item`, **`stat_challenge`** (if we keep it as a choice modifier).
-- **Resolution:** instead of parallel **`effects`** + **`outcomes`** arrays, each choice points to **one nested step** always. **Canonical key for implementers:** use a **single** name (`then` is the default pick — simplest, one pattern). Value shape: `{ "text": "...", "effects": [...], "choices": [...] }`. No effects-only shortcuts on the choice row. A “simple” leaf is still a nested block: **only text** (no effects, no choices), or **no choices** so the UI shows Continue — simplicity comes from empty fields, not from a different object type.
+- Identity / UI: `id`, `text`, `condition`, `requires_item`, **`stat_challenge`** (tiered resolution — still the older **`tier_outcomes`** object shape in JSON until migrated).
+- **Nested continuation (preferred for new content):** **`then`**: nested step dict `{ "body"?, "text"?, "effects"?, "rewards"?, "choices"? }`.
+- **Weighted nested branches:** **`weighted_branches`**: `[ { "weight": <n>, "step": { ... } } ]`. One branch → no random roll; two or more → weighted pick, then show that **`step`** like any other beat.
+- **Legacy:** choice **`outcomes`** (weighted `{ weight, text, effects }`) and flat **`effects`** on the choice row remain supported.
 
-Weighted random (today’s **`outcomes`**) uses **one weighted list in data** (decided): e.g. several `{ "weight": <n>, "step": { ... } }` entries. **If there is only one branch,** there is nothing to roll — use that step. **If there are two or more,** pick one at random using the weights, then show that step like any other beat.
-
-**Stat challenge (today’s `tier_outcomes`):** each tier should be **the same step type** as anywhere else (`text`, `effects`, `choices`). Resolution picks **one** tier, then the UI treats that value like any other nested step (no special-case “outcome” object).
+**Stat challenge:** still resolves via **`tier_outcomes`** tiers (`text` + **`effects`** per tier). Long-term, tiers could become full step dicts (checklist item).
 
 ### What goes away or changes
 
 | Current | Under recursive model |
 |---|---|
-| Choice `effects` only when no `outcomes` | Effects live on **steps** only; each choice points to a **nested step**. Order per step: **text → effects → choices** (with per-effect timing — see **Decisions**). |
+| Choice `effects` only when no `outcomes` | Preferred: effects on **nested steps** via **`then`** / **`weighted_branches`**. Per-effect **`timing`** orders application (see **Decisions §1**). Legacy flat **`effects`** on the choice still work. |
 | `outcomes` array with `weight` / `text` / `effects` | Replaced by **one weighted list of nested steps** (roll, then show the chosen step). |
 | `next_event` string | **Removed** as the primary pattern; optional **`ref`** / **`include`** later if the same subtree is reused without copy-paste. |
 | `tier_outcomes.{tier}` as a different shape from a “normal” beat | Same **step** shape per tier. |
 
-### Code areas (for a future implementation pass — not now)
+### Code areas (status)
 
-- **`EventChoiceContainer` / `EventChoice`:** Resolve a choice to a **nested step** dict; no separate `outcomes` / stat tier dict shapes in the long run (stat roll picks which step to navigate to).
-- **`EventLog`:** Already appends title/body/choice rows into one scroll; nested beats should **continue that pattern** — new nodes below the old, ongoing story — **not** a separate screen system. Expect **targeted** wiring for recursive steps, not a full rewrite of the log UI.
-- **`EventManager`:** `present_event` / filtering may need to operate on the root only; nested steps might not re-run world **`prereqs`**. **`apply_effects`** stays one pipeline; may run once per entered step.
-- **Combat / `combat_outcomes`:** Likely remain a **special top-level** block (combat is not a normal step), but each key’s payload could adopt the **same step shape** for text/effects/choices.
+- **`EventChoiceContainer`:** Resolves **`then`**, **`weighted_branches`**, legacy **`outcomes`**, **`stat_challenge`**, then flat **`effects`** (see **choice resolution order** in **Authoring**).
+- **`EventLog`:** **`play_event`** drives root and nested segments; one scroll, append-only.
+- **`EventManager`:** Root **`prereqs`** / pool selection for map picks; nested steps do not re-run world registration gates. **`apply_effects`** + **`timing`** split / queues per step.
+- **Combat / `combat_outcomes`:** Still a **special top-level** block; optional future: each outcome key as a full step dict.
 
 ### Migration strategy (high level)
 
@@ -517,7 +596,7 @@ Weighted random (today’s **`outcomes`**) uses **one weighted list in data** (d
 
 ### Decisions (locked in)
 
-1. **What happens first on each step?** **Show the text → then run the effects → then show the buttons.** (So the player reads the beat, then consequences fire, then they choose.)
+1. **What runs when on each step?** Effects use **per-effect `timing`** (not a single global “after all text”): **`before_text`** — before that segment’s body is shown; **default / `after_text`** — after body (and phased “after” application in the segment pipeline); **`on_event_close`** — queued until the event session ends (`drain_effects_on_event_close`). The player typically sees title/body animation, then segment rewards / queued item rows, then choices — exact order is implemented in **`EventLog.play_event`** + **`EventManager`** split helpers.
 
 2. **Nested block always.**  
    Every choice leads to **one nested step** (`text` / `effects` / `choices` — same shape everywhere). There is no separate “effects-only on the button” shortcut. Simplicity is: **no further choices** (empty or omitted `choices` → default Continue), and/or **no effects** (nested block is just **text**, which is minimal).
@@ -559,6 +638,75 @@ Weighted random (today’s **`outcomes`**) uses **one weighted list in data** (d
 
 ---
 
+## Authoring: nested steps, timing, and fields (**implemented**)
+
+Use this when writing **new** content or migrating off legacy choice rows. Code paths: **`EventManager.present_event`**, **`EventManager`** effect timing / queues, **`EventChoiceContainer._on_choice_selected`**, **`EventLog.play_event`**.
+
+### Root-only fields
+
+| Field | Purpose |
+|---|---|
+| **`immediate_effects`** | Array of effect objects. Run once when **`present_event`** runs (after choice filtering, before the event log UI). Use for world-state changes that must happen before the first beat is shown. |
+| **`text`** | Main body copy for the root beat (supports **`{{...}}`** interpolation from **`EventManager.present_event`**). |
+| **`rewards`** (optional) | `{ "xp": <int>, "gold": <int> }` on root or nested **segment** — queues an **EventRewards** row after that segment’s intro (same queue path as effect-driven rewards). |
+
+### Nested step dict (`then` value, or `weighted_branches[].step`)
+
+| Field | Purpose |
+|---|---|
+| **`body`** / **`text`** | Narrative for this segment. **`body`** is preferred; **`text`** is accepted. Root events typically use **`text`** only. |
+| **`title`** | Optional; shown when set. |
+| **`effects`** | Array of effects. Each may include **`timing`**: **`before_text`**, **`after_text`** (or omit for default after-text behavior in the nested pipeline), **`on_event_close`**. |
+| **`rewards`** | `{ "xp", "gold" }` — compact XP/gold line for this segment (queued with other log visuals). |
+| **`choices`** | Choice objects for this segment. Empty / omitted → default **Continue** for that segment. |
+
+### Choice → what happens next (resolution **order** in `EventChoiceContainer`)
+
+When the player picks a button, the runtime evaluates **at most one** of these branches, **in this order**:
+
+1. **`stat_challenge`** — tier roll → tier `text` + `effects` (legacy **`tier_outcomes`** shape).
+2. **`outcomes`** — weighted pool of `{ weight, text, effects }` (legacy).
+3. **`weighted_branches`** — weighted `step` dicts (recursive model).
+4. **`then`** — single nested step dict (recursive model).
+5. Else **flat `effects`** on the choice.
+
+Do not combine competing resolution styles on one choice unless you have verified behavior; **`stat_challenge`** + **`outcomes`** is called out elsewhere as risky.
+
+### Chaining and follow-ups
+
+- **`next_event`** on a choice is **not** loaded — use **`then`** / **`weighted_branches`**, or **tag + `followup_events.json`**.
+
+### Debug / playtest (`Main` scene)
+
+- **`event_debug_force`**, **`event_debug_id`**, **`event_debug_id_1` … `_3`** (ordered queue), **`event_debug_keep_forcing`**, **`event_debug_respect_prereqs`** (when true, only **`prereqs`** must pass — not pool **weight** / biome / town). See **`Main.gd`** exports.
+
+### Minimal examples
+
+**Timed gold on a nested step** (from `debug_recursive_model_test.json`):
+
+```json
+"then": {
+  "body": "...",
+  "effects": [
+    { "type": "give_gold", "amount": 5, "timing": "before_text" },
+    { "type": "give_gold", "amount": 10, "timing": "after_text" },
+    { "type": "give_gold", "amount": 25, "timing": "on_event_close" }
+  ],
+  "choices": [{ "id": "continue", "text": "Continue", "effects": [] }]
+}
+```
+
+**Weighted branches:**
+
+```json
+"weighted_branches": [
+  { "weight": 1, "step": { "body": "Branch A.", "choices": [] } },
+  { "weight": 1, "step": { "body": "Branch B.", "choices": [] } }
+]
+```
+
+---
+
 ## Recursive events — implementation checklist
 
 Use this as the live task list until the migration is finished.
@@ -567,13 +715,13 @@ Use this as the live task list until the migration is finished.
 |---|------|--------|
 | 1 | **`EventManager`:** `timing` on effects (`before_text`, `after_text`, `on_event_close`); split/apply order; queue + **`drain_effects_on_event_close()`** | ✅ |
 | 2 | **`EventChoiceContainer`:** resolve **`then`**, **`weighted_branches`** (single branch = no roll); extend **`choice_resolved`** with **`next_step`** | ✅ |
-| 3 | **`EventLog`:** nested **`_run_nested_event_chain`** / **`_present_single_nested_step`**, **`_nested_choice_resume`** routing; append title/body/choices per step | ✅ |
+| 3 | **`EventLog`:** **`play_event`**, **`_run_nested_event_chain`**, **`_nested_choice_resume`**; append title/body/choices per step | ✅ |
 | 4 | **`EventLog`:** call **`drain_effects_on_event_close()`** whenever the event session ends (**`event_closed`**) | ✅ |
-| 5 | **Migrate all `events/*.json`** to nested steps + remove legacy `outcomes` / flat-only paths once loader is strict | ⬜ |
+| 5 | **Migrate remaining `events/*.json`** (world pool) to nested steps; remove reliance on legacy-only paths when ready | ⬜ — intro + debug/test JSON migrated as reference |
 | 6 | **Stat / combat:** map **`tier_outcomes`** → full steps; **`combat_outcomes`** payloads → step shape (if needed) | ⬜ |
-| 7 | **Docs:** example JSON for **`then`** + **`weighted_branches`** + **`timing`** | ⬜ |
+| 7 | **Docs:** **`then`** + **`weighted_branches`** + **`timing`** for authors | ✅ — **Authoring: nested steps…** section in this file; sample `events/debug_recursive_model_test.json` |
 
-**Progress:** rows 1–4 implemented; JSON migration (5–6) and docs (7) follow when the runtime is exercised. **Playtest event:** `events/debug_recursive_model_test.json` (`id`: **`debug_recursive_model_test`**) — set **Main** `event_debug_force` and `event_debug_id` to that id to force it on the next eligible event pick.
+**Progress:** rows 1–4 and **7** done; **5–6** ongoing. **Playtest event:** `events/debug_recursive_model_test.json` (`id`: **`debug_recursive_model_test`**) — set **Main** `event_debug_force` and **`event_debug_id`** (or sequence slots) to force it on the next eligible pick.
 
 ---
 
@@ -581,10 +729,11 @@ Use this as the live task list until the migration is finished.
 
 | Feature | Status |
 |---|---|
+| Nested steps (`then`, `weighted_branches`), effect `timing`, `EventLog.play_event` | ✅ Implemented |
 | `condition` (hide choice) | ✅ Implemented |
 | `requires_item` (visible-disabled) | ✅ Implemented |
 | Tags, gold, variable conditions | ✅ Implemented (`variables` prereq — storage for `set_variable` effect still stub) |
-| `next_event` chaining | ❌ **Not implemented** in `EventLog` / runtime (field ignored). Replaced long-term by **Recursive event model — planning** unless explicitly implemented earlier. |
+| `next_event` chaining | ❌ **Not implemented** in `EventLog` (field ignored). Use **`then`** / **`weighted_branches`** for multi-beat flow in one event. |
 | `one_shot` events | ✅ Implemented |
 | `prereqs` (event-level gating) | ✅ Implemented |
 | Post-combat outcomes (`combat_outcomes`) | ✅ Implemented (`Main._show_combat_outcome` + effects on Continue) |
@@ -601,6 +750,11 @@ Use this as the live task list until the migration is finished.
 | Primary stats in tier resolution | ✅ `EventStatCheck` + `get_final_stats()` |
 | `remove_trait` / primary-stat `change_stat` / real `set_variable` | ❌ See **Gaps and unification ideas** |
 | `change_reputation` | ⚠️ Parsed, **no gameplay** |
+| Combat **objectives** (survive N turns, protect target, etc.) as first-class event/encounter JSON | ❌ **Design goal** — implement in encounter/combat layer; not event schema alone |
+| **Mid-combat** narrative choices / triggers (HP, turn count) | ❌ **Design goal** — not wired to `EventLog`; future combat ↔ event integration |
+| **`enemies_fled`** post-combat key | ⚠️ Schema exists; **Main** may not map combat end-state yet — see **Post-Combat Outcomes** |
+| Distinct **surrender / partial success** end states (beyond victory / flee / wipe) | ⚠️ **Design goal** — needs combat reporting + possibly new `combat_outcomes` keys |
+| **Enemy AI** (flee, surrender, objective-driven behavior) | ⚠️ **Encounter / combat systems** — not specified in `EVENT_DESIGN.md` JSON |
 
 ---
 

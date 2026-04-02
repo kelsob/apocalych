@@ -51,6 +51,9 @@ var party_state: Dictionary = {}
 var debug_force_event: bool = false
 var debug_event_id: String = ""
 
+## When Main forces events: next slot to read from `event_debug_id_1` … `_3` (0–3). Reset when `event_debug_force` is off at pick time.
+var _debug_sequence_slot: int = 0
+
 ## Last pick snapshot (always updated — inspect EventManager in Remote tree if console overflow drops prints).
 var debug_last_pick_biome: String = ""
 var debug_last_pick_is_town: bool = false
@@ -88,6 +91,26 @@ func _clear_debug_event_force_after_pick(main_node: Node, main_had_force: bool) 
 	debug_event_id = ""
 	if main_had_force and main_node != null and "event_debug_force" in main_node:
 		main_node.event_debug_force = false
+
+
+## `Object.get()` only accepts one argument — use this for optional Main debug exports.
+func _main_debug_seq_export(main_node: Node, key: String) -> String:
+	var v: Variant = main_node.get(key)
+	if v == null:
+		return "__none__"
+	var s := str(v)
+	return s if not s.is_empty() else "__none__"
+
+
+## Debug force + `event_debug_respect_prereqs`: only **`prereqs`** (tags, gold, resources, forbids, variables, …).
+## Do **not** apply pool filters (`weight`, biome list, town vs wilderness, one_shot) — those exist so events like `debug_rewards_test` (weight 0) stay out of the random pool, not to block an explicit forced id.
+func _forced_debug_event_respects_prereqs(ev: Dictionary, party_state: Dictionary) -> bool:
+	if not ev.has("prereqs") or not ev.prereqs is Dictionary:
+		return true
+	var pr: Dictionary = ev.prereqs
+	if pr.is_empty():
+		return true
+	return condition_passes(pr, party_state)
 
 
 func _ready():
@@ -574,25 +597,54 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 	var party_state_dict: Dictionary = _build_party_state(party)
 	var is_town_node: bool = node_state.get("is_town", false)
 
+	var seq_restore: int = _debug_sequence_slot
 	var force_event: bool = debug_force_event
 	var force_id: String = debug_event_id
 	var main_wants_force: bool = main_node != null and "event_debug_force" in main_node and main_node.event_debug_force
+	if not main_wants_force:
+		_debug_sequence_slot = 0
 	if main_node and main_wants_force:
 		force_event = true
-		force_id = str(main_node.event_debug_id)
-		# Main.gd uses @export_enum sentinel when no forced id is selected.
-		if force_id == "__none__":
-			force_id = ""
+		force_id = ""
+		# Ordered sequence (optional): event_debug_id_1 → _2 → _3, skipping __none__ without burning a map pick.
+		var seq_slots: Array = [
+			_main_debug_seq_export(main_node, "event_debug_id_1"),
+			_main_debug_seq_export(main_node, "event_debug_id_2"),
+			_main_debug_seq_export(main_node, "event_debug_id_3"),
+		]
+		while _debug_sequence_slot < 3:
+			var cand: String = seq_slots[_debug_sequence_slot]
+			_debug_sequence_slot += 1
+			if cand != "__none__" and not cand.is_empty():
+				force_id = cand
+				break
+		if force_id.is_empty():
+			force_id = str(main_node.event_debug_id)
+			if force_id == "__none__":
+				force_id = ""
 
 	if force_event and not force_id.is_empty():
 		if events.has(force_id):
-			print("%sforced debug event '%s' (clear after pick unless event_debug_keep_forcing)" % [EVENT_SELECTION_LOG_PREFIX, force_id])
-			_event_pick_log(main_node, "forced id=%s (pool skipped)" % force_id)
-			_snapshot_last_pick(biome, is_town_node, true, force_id, -1, 0.0, -1.0)
-			debug_last_pick_eligible_count = -1
-			_clear_debug_event_force_after_pick(main_node, main_wants_force)
-			return events[force_id]
-		push_warning("%sdebug event id '%s' not found" % [EVENT_SELECTION_LOG_PREFIX, force_id])
+			var ev_force: Dictionary = events[force_id]
+			var respect_prereqs: bool = true
+			if main_node != null:
+				var rp: Variant = main_node.get("event_debug_respect_prereqs")
+				if rp != null:
+					respect_prereqs = bool(rp)
+			if respect_prereqs and not _forced_debug_event_respects_prereqs(ev_force, party_state_dict):
+				push_warning("%sdebug force skipped '%s' — event `prereqs` not met (tags / gold / resources / forbids); set Main.event_debug_respect_prereqs = false to force anyway" % [EVENT_SELECTION_LOG_PREFIX, force_id])
+				_event_pick_log(main_node, "forced skip id=%s (prereqs)" % force_id)
+				_debug_sequence_slot = seq_restore
+				force_event = false
+			else:
+				print("%sforced debug event '%s' (clear after pick unless event_debug_keep_forcing)" % [EVENT_SELECTION_LOG_PREFIX, force_id])
+				_event_pick_log(main_node, "forced id=%s (pool skipped)" % force_id)
+				_snapshot_last_pick(biome, is_town_node, true, force_id, -1, 0.0, -1.0)
+				debug_last_pick_eligible_count = -1
+				_clear_debug_event_force_after_pick(main_node, main_wants_force)
+				return ev_force
+		else:
+			push_warning("%sdebug event id '%s' not found" % [EVENT_SELECTION_LOG_PREFIX, force_id])
 	elif force_event and force_id.is_empty():
 		push_warning("%sdebug force on but no event_debug_id set" % EVENT_SELECTION_LOG_PREFIX)
 

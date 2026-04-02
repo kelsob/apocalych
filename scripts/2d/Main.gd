@@ -64,8 +64,89 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 	"debug_cond_variables",
 	"debug_cond_weather_cloudy"
 ) var event_debug_id: String = "__none__"
+## Optional ordered queue: 1st map event → 2nd → 3rd. `__none__` skips that slot (same pick keeps advancing until a real id or sequence ends). After the three slots are consumed, falls back to **`event_debug_id`** if not `__none__`.
+@export_enum(
+	"__none__",
+	"debug_rewards_test",
+	"debug_recursive_model_test",
+	"master_test",
+	"test_combat_event_01",
+	"test_warg_ambush_outcomes",
+	"introductory_event_01",
+	"debug_cond_all_same_race",
+	"debug_cond_biome_forest",
+	"debug_cond_class_cleric",
+	"debug_cond_forbids_tags",
+	"debug_cond_item_health_potion",
+	"debug_cond_lunar_full",
+	"debug_cond_max_gold",
+	"debug_cond_min_gold",
+	"debug_cond_multi_requires_tags",
+	"debug_cond_party_resources_gold_eq",
+	"debug_cond_party_resources_gold_gte",
+	"debug_cond_party_resources_gold_lte",
+	"debug_cond_race_human",
+	"debug_cond_requires_any",
+	"debug_cond_trait_natural_hunter",
+	"debug_cond_variables",
+	"debug_cond_weather_cloudy"
+) var event_debug_id_1: String = "__none__"
+@export_enum(
+	"__none__",
+	"debug_rewards_test",
+	"debug_recursive_model_test",
+	"master_test",
+	"test_combat_event_01",
+	"test_warg_ambush_outcomes",
+	"introductory_event_01",
+	"debug_cond_all_same_race",
+	"debug_cond_biome_forest",
+	"debug_cond_class_cleric",
+	"debug_cond_forbids_tags",
+	"debug_cond_item_health_potion",
+	"debug_cond_lunar_full",
+	"debug_cond_max_gold",
+	"debug_cond_min_gold",
+	"debug_cond_multi_requires_tags",
+	"debug_cond_party_resources_gold_eq",
+	"debug_cond_party_resources_gold_gte",
+	"debug_cond_party_resources_gold_lte",
+	"debug_cond_race_human",
+	"debug_cond_requires_any",
+	"debug_cond_trait_natural_hunter",
+	"debug_cond_variables",
+	"debug_cond_weather_cloudy"
+) var event_debug_id_2: String = "__none__"
+@export_enum(
+	"__none__",
+	"debug_rewards_test",
+	"debug_recursive_model_test",
+	"master_test",
+	"test_combat_event_01",
+	"test_warg_ambush_outcomes",
+	"introductory_event_01",
+	"debug_cond_all_same_race",
+	"debug_cond_biome_forest",
+	"debug_cond_class_cleric",
+	"debug_cond_forbids_tags",
+	"debug_cond_item_health_potion",
+	"debug_cond_lunar_full",
+	"debug_cond_max_gold",
+	"debug_cond_min_gold",
+	"debug_cond_multi_requires_tags",
+	"debug_cond_party_resources_gold_eq",
+	"debug_cond_party_resources_gold_gte",
+	"debug_cond_party_resources_gold_lte",
+	"debug_cond_race_human",
+	"debug_cond_requires_any",
+	"debug_cond_trait_natural_hunter",
+	"debug_cond_variables",
+	"debug_cond_weather_cloudy"
+) var event_debug_id_3: String = "__none__"
 ## When true, forced event applies every node; when false (default), `event_debug_force` turns off after the first successful forced event so normal selection resumes.
 @export var event_debug_keep_forcing: bool = false
+## When debug forcing: if **true**, the forced event’s own **`prereqs`** must pass (`condition_passes`: tags, gold, resources, forbids, variables — not biome/weight/town; those only affect random pool eligibility).
+@export var event_debug_respect_prereqs: bool = true
 ## When true, EventManager prints one-line `event selection:` summaries (chosen id, pool size, roll).
 @export var debug_event_selection: bool = false
 ## Unused: selection is tag-driven only; remove from scenes when convenient.
