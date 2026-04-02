@@ -44,7 +44,7 @@ var cache_dirty: bool = true
 func initialize_from_party_member(member: PartyMember):
 	max_health = member.max_health
 	current_health = member.current_health
-	core_stats = member.get_final_stats().duplicate()
+	core_stats = member.get_combat_core_stats().duplicate()
 
 	# Fold equipment bonuses directly into stats
 	if member.weapon:

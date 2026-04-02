@@ -10,65 +10,71 @@
       {
         "id": "enter_town",
         "text": "Enter town",
-        "effects": [{"type": "open_town", "show_all_services": true}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "open_town", "show_all_services": true }],
+          "choices": []
+        }
       },
       {
         "id": "enter_vendor",
         "text": "Open vendor",
-        "effects": [{"type": "open_vendor"}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "open_vendor" }],
+          "choices": []
+        }
       },
       {
         "id": "mark_rest_safe",
         "text": "Mark rest safe here",
-        "effects": [{"type": "set_rest_state", "allow_rest": true}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "set_rest_state", "allow_rest": true }],
+          "choices": []
+        }
       },
       {
         "id": "move_on",
         "text": "Just move on",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       },
       {
         "id": "combat_test",
         "text": "Start combat (test fight)",
-        "effects": [{"type": "start_combat", "encounter_id": "test_fight"}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "start_combat", "encounter_id": "test_fight" }],
+          "choices": []
+        }
       },
       {
         "id": "combat_ambush",
         "text": "Start combat (bandit ambush)",
-        "effects": [{"type": "start_combat", "encounter_id": "bandit_ambush"}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "start_combat", "encounter_id": "bandit_ambush" }],
+          "choices": []
+        }
       },
       {
         "id": "combat_cultist",
         "text": "Start combat (cultist ritual)",
-        "effects": [{"type": "start_combat", "encounter_id": "cultist_ritual"}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "start_combat", "encounter_id": "cultist_ritual" }],
+          "choices": []
+        }
       },
       {
         "id": "give_gold",
         "text": "Give party 100 gold",
-        "effects": [{"type": "give_gold", "amount": 100}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "give_gold", "amount": 100 }],
+          "choices": []
+        }
       },
       {
         "id": "advance_time",
         "text": "Lose time (advance +3 units)",
-        "effects": [{"type": "advance_time", "amount": 3}],
-        "next_event": null,
-        "weight": 1
+        "then": {
+          "effects": [{ "type": "advance_time", "amount": 3 }],
+          "choices": []
+        }
       }
     ]
   }

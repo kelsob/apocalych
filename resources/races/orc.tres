@@ -12,13 +12,13 @@ script = ExtResource("1_race")
 race_name = "Orc"
 description = "Powerful and hardy, orcs are fierce warriors with great physical strength and endurance."
 base_stats = {
+"agility": 9,
 "charisma": 8,
 "constitution": 12,
-"dexterity": 9,
-"intelligence": 8,
-"perception": 10,
-"strength": 13,
-"wisdom": 9
+"intellect": 8,
+"luck": 10,
+"spirit": 9,
+"strength": 13
 }
 rest_ability = ExtResource("2_rest")
 portrait_1 = ExtResource("1_6lrgi")

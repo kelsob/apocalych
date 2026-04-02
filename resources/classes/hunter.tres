@@ -13,13 +13,13 @@ description = "A skilled tracker and ranged combatant, adept at survival and pre
 weapon_type = "Bow"
 armour_type = "Tunic"
 stat_modifiers = {
+"agility": 3,
 "charisma": 0,
 "constitution": 0,
-"dexterity": 3,
-"intelligence": 0,
-"perception": 2,
-"strength": 0,
-"wisdom": 1
+"intellect": 0,
+"luck": 2,
+"spirit": 1,
+"strength": 0
 }
 abilities = Array[ExtResource("1_rtano")]([])
 rest_abilities = Array[ExtResource("2_bl5bk")]([ExtResource("2"), ExtResource("3")])

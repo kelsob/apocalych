@@ -13,13 +13,13 @@ description = "A practitioner of dark magic, wielding forbidden power through pa
 weapon_type = "Staff"
 armour_type = "Robes"
 stat_modifiers = {
+"agility": 0,
 "charisma": 3,
 "constitution": 0,
-"dexterity": 0,
-"intelligence": 2,
-"perception": 1,
-"strength": 0,
-"wisdom": 0
+"intellect": 2,
+"luck": 1,
+"spirit": 0,
+"strength": 0
 }
 abilities = Array[ExtResource("1_64w31")]([])
 rest_abilities = Array[ExtResource("2_3n7xj")]([ExtResource("2"), ExtResource("3")])

@@ -12,13 +12,13 @@ script = ExtResource("1_race")
 race_name = "Dwarf"
 description = "Sturdy and resilient, dwarves are known for their toughness and craftsmanship."
 base_stats = {
+"agility": 8,
 "charisma": 9,
 "constitution": 13,
-"dexterity": 8,
-"intelligence": 10,
-"perception": 10,
-"strength": 12,
-"wisdom": 11
+"intellect": 10,
+"luck": 10,
+"spirit": 11,
+"strength": 12
 }
 rest_ability = ExtResource("2_rest")
 portrait_1 = ExtResource("1_n2hvm")

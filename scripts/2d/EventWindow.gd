@@ -98,24 +98,25 @@ func _create_choice_button(choice: Dictionary):
 ## choice: Dictionary - The choice data from EventChoiceButton
 func _on_choice_button_pressed(choice: Dictionary):
 	var choice_id = choice.get("id", "")
-	var effects = choice.get("effects", [])
+	var effects: Array = choice.get("effects", [])
+	var norm_effects: Array = EventManager.normalize_effects_array(effects) if EventManager else effects
 	
-	# Emit signal
-	choice_made.emit(choice_id, effects)
+	# Emit signal (canonical effect fields for any listener)
+	choice_made.emit(choice_id, norm_effects)
 	
 	# Apply effects via EventManager
-	if EventManager and effects.size() > 0:
+	if EventManager and norm_effects.size() > 0:
 		# Build node_state with current_node for effect application
 		var node_state = {}
 		if current_node:
 			node_state["current_node"] = current_node
 		# If this choice starts combat, stash the parent event's combat_outcomes so
 		# Main can fire the correct post-combat follow-up after the fight resolves.
-		for effect in effects:
-			if effect.get("type") == "start_combat":
+		for effect in norm_effects:
+			if effect is Dictionary and str(effect.get("type", "")) == "start_combat":
 				EventManager.pending_combat_outcomes = current_event.get("combat_outcomes", {}).duplicate(true)
 				break
-		EventManager.apply_effects(effects, current_party, node_state)
+		EventManager.apply_effects(norm_effects, current_party, node_state)
 	
 	# Close event window
 	close()

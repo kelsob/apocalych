@@ -13,13 +13,13 @@ description = "A deep thinker and scholar, using knowledge and reason to underst
 weapon_type = "Tome"
 armour_type = "Robes"
 stat_modifiers = {
+"agility": 0,
 "charisma": 1,
 "constitution": 0,
-"dexterity": 0,
-"intelligence": 3,
-"perception": 1,
-"strength": -1,
-"wisdom": 2
+"intellect": 3,
+"luck": 1,
+"spirit": 2,
+"strength": -1
 }
 abilities = Array[ExtResource("1_i4t23")]([])
 rest_abilities = Array[ExtResource("2_ekssl")]([ExtResource("2"), ExtResource("3")])

@@ -5,15 +5,15 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "min_gold": 100 },
+    "prereqs": {
+      "min_gold": 100
+    },
     "text": "[DEBUG] PASS: prereqs.min_gold — party has at least 100 gold.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -23,15 +23,15 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "max_gold": 5000 },
+    "prereqs": {
+      "max_gold": 5000
+    },
     "text": "[DEBUG] PASS: prereqs.max_gold — party has at most 5000 gold (adjust if you mod gold higher).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -41,15 +41,20 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "party_resources": [ { "id": "gold", "gte": 100 } ] },
+    "prereqs": {
+      "party_resources": [
+        {
+          "id": "gold",
+          "gte": 100
+        }
+      ]
+    },
     "text": "[DEBUG] PASS: prereqs.party_resources — party gold ≥ 100 (queried at pick time; no gold tags).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -59,15 +64,20 @@
     "biomes": [],
     "weight": 5,
     "one_shot": false,
-    "prereqs": { "party_resources": [ { "id": "gold", "eq": 420 } ] },
+    "prereqs": {
+      "party_resources": [
+        {
+          "id": "gold",
+          "eq": 420
+        }
+      ]
+    },
     "text": "[DEBUG] PASS: prereqs.party_resources — party gold exactly 420.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -77,15 +87,20 @@
     "biomes": [],
     "weight": 25,
     "one_shot": false,
-    "prereqs": { "party_resources": [ { "id": "gold", "lte": 50 } ] },
+    "prereqs": {
+      "party_resources": [
+        {
+          "id": "gold",
+          "lte": 50
+        }
+      ]
+    },
     "text": "[DEBUG] PASS: prereqs.party_resources — party gold ≤ 50.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -95,15 +110,17 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["<human>"] },
+    "prereqs": {
+      "requires_tags": [
+        "<human>"
+      ]
+    },
     "text": "[DEBUG] PASS: At least one Human in the party (`<human>`).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -113,15 +130,17 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["<cleric>"] },
+    "prereqs": {
+      "requires_tags": [
+        "<cleric>"
+      ]
+    },
     "text": "[DEBUG] PASS: At least one Cleric (`<cleric>`).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -131,15 +150,17 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["trait:natural_hunter"] },
+    "prereqs": {
+      "requires_tags": [
+        "trait:natural_hunter"
+      ]
+    },
     "text": "[DEBUG] PASS: Someone has trait `natural_hunter` (`trait:natural_hunter`). Grant via debug rewards / give_trait.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -149,15 +170,20 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "party_resources": [ { "id": "health_potion", "gte": 1 } ] },
+    "prereqs": {
+      "party_resources": [
+        {
+          "id": "health_potion",
+          "gte": 1
+        }
+      ]
+    },
     "text": "[DEBUG] PASS: Party stash has at least one health potion (`party_resources`, not item tags).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -167,15 +193,17 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["lunar:full"] },
+    "prereqs": {
+      "requires_tags": [
+        "lunar:full"
+      ]
+    },
     "text": "[DEBUG] PASS: Lunar phase is `full` (`lunar:full`). Set TimeManager.game_time to ~middle of phase 4 of lunar_cycle_length if this never appears.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -185,33 +213,39 @@
     "biomes": [],
     "weight": 8,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["weather:cloudy"] },
+    "prereqs": {
+      "requires_tags": [
+        "weather:cloudy"
+      ]
+    },
     "text": "[DEBUG] PASS: Current weather is Cloudy (`weather:cloudy`). Move in swamp/hills/forest until it rolls.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
   {
     "id": "debug_cond_biome_forest",
     "title": "DEBUG: biome tag",
-    "biomes": ["forest"],
+    "biomes": [
+      "forest"
+    ],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["biome:forest"] },
+    "prereqs": {
+      "requires_tags": [
+        "biome:forest"
+      ]
+    },
     "text": "[DEBUG] PASS: On a forest node (`biome:forest` + biomes list).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -221,15 +255,19 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "requires_any": ["<wizard>", "<rogue>", "<hunter>"] },
+    "prereqs": {
+      "requires_any": [
+        "<wizard>",
+        "<rogue>",
+        "<hunter>"
+      ]
+    },
     "text": "[DEBUG] PASS: prereqs.requires_any — at least one of Wizard / Rogue / Hunter.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -239,15 +277,17 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "forbids_tags": ["__debug_tag_that_should_never_exist__"] },
+    "prereqs": {
+      "forbids_tags": [
+        "__debug_tag_that_should_never_exist__"
+      ]
+    },
     "text": "[DEBUG] PASS: forbids_tags — party lacks the dummy forbidden tag (should almost always be true).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -257,15 +297,20 @@
     "biomes": [],
     "weight": 35,
     "one_shot": false,
-    "prereqs": { "variables": { "debug_event_var": { "min": -999, "max": 999 } } },
+    "prereqs": {
+      "variables": {
+        "debug_event_var": {
+          "min": -999,
+          "max": 999
+        }
+      }
+    },
     "text": "[DEBUG] PASS: variables — `debug_event_var` defaults to 0, within [-999,999]. Add real party.variables later for stricter tests.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -275,15 +320,17 @@
     "biomes": [],
     "weight": 20,
     "one_shot": false,
-    "prereqs": { "requires_tags": ["<all_human>"] },
+    "prereqs": {
+      "requires_tags": [
+        "<all_human>"
+      ]
+    },
     "text": "[DEBUG] PASS: Entire party is Human (`<all_human>`).",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   },
@@ -294,17 +341,22 @@
     "weight": 30,
     "one_shot": false,
     "prereqs": {
-      "requires_tags": ["<human>"],
-      "party_resources": [ { "id": "gold", "gte": 50 } ]
+      "requires_tags": [
+        "<human>"
+      ],
+      "party_resources": [
+        {
+          "id": "gold",
+          "gte": 50
+        }
+      ]
     },
     "text": "[DEBUG] PASS: `<human>` tag AND party gold ≥ 50 via `party_resources`.",
     "choices": [
       {
         "id": "continue",
         "text": "Continue",
-        "effects": [],
-        "next_event": null,
-        "weight": 1
+        "effects": []
       }
     ]
   }

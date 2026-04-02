@@ -1,43 +1,262 @@
 [
   {
     "id": "forest_rope_bridge",
-    "title": "The Rope Bridge",
+    "title": "debug stat_challenge",
     "biomes": ["forest"],
     "weight": 8,
     "one_shot": false,
-    "text": "A rope bridge over a river gorge—functional, probably, in the sense that it hasn't fallen yet. The planks are uneven. Several are missing. The rope has been mended many times, by many hands, with decreasing care.",
+    "text": "stat_challenge: seven primaries, four tiers each.",
     "choices": [
       {
-        "id": "cross_carefully",
-        "text": "Cross carefully, one at a time",
-        "effects": [
-          { "type": "change_stat", "stat": "hp", "amount": -5 }
-        ],
+        "id": "stat_check_str",
+        "text": "Stat check (STR)",
+        "stat_challenge": {
+          "primary_stat": "strength",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: STR crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_str" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: STR fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_str" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: STR success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_str" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: STR crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_str" }
+              ]
+            }
+          }
+        },
         "next_event": null
       },
       {
-        "id": "reinforce_first",
-        "text": "Spend time reinforcing the worst sections before crossing",
-        "effects": [
-          { "type": "advance_time", "amount": 1 }
-        ],
+        "id": "stat_check_agi",
+        "text": "Stat check (AGI)",
+        "stat_challenge": {
+          "primary_stat": "agility",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: AGI crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_agi" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: AGI fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_agi" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: AGI success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_agi" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: AGI crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_agi" }
+              ]
+            }
+          }
+        },
         "next_event": null
       },
       {
-        "id": "burn_behind_you",
-        "text": "Cross and burn it behind you—eliminate that pursuit route permanently",
-        "effects": [
-          { "type": "add_tag", "tag": "bridge_burned" }
-        ],
+        "id": "stat_check_con",
+        "text": "Stat check (CON)",
+        "stat_challenge": {
+          "primary_stat": "constitution",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: CON crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_con" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: CON fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_con" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: CON success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_con" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: CON crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_con" }
+              ]
+            }
+          }
+        },
         "next_event": null
       },
       {
-        "id": "find_another_way",
-        "text": "Find another crossing entirely",
-        "effects": [
-          { "type": "advance_time", "amount": 2 },
-          { "type": "reveal_secrets" }
-        ],
+        "id": "stat_check_int",
+        "text": "Stat check (INT)",
+        "stat_challenge": {
+          "primary_stat": "intellect",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: INT crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_int" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: INT fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_int" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: INT success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_int" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: INT crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_int" }
+              ]
+            }
+          }
+        },
+        "next_event": null
+      },
+      {
+        "id": "stat_check_spr",
+        "text": "Stat check (SPR)",
+        "stat_challenge": {
+          "primary_stat": "spirit",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: SPR crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_spr" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: SPR fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_spr" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: SPR success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_spr" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: SPR crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_spr" }
+              ]
+            }
+          }
+        },
+        "next_event": null
+      },
+      {
+        "id": "stat_check_cha",
+        "text": "Stat check (CHA)",
+        "stat_challenge": {
+          "primary_stat": "charisma",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: CHA crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_cha" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: CHA fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_cha" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: CHA success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_cha" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: CHA crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_cha" }
+              ]
+            }
+          }
+        },
+        "next_event": null
+      },
+      {
+        "id": "stat_check_luk",
+        "text": "Stat check (LUK)",
+        "stat_challenge": {
+          "primary_stat": "luck",
+          "allow_actor_override": true,
+          "tier_outcomes": {
+            "crit_fail": {
+              "text": "{tier} {actor}: LUK crit_fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -10, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_cf_luk" }
+              ]
+            },
+            "fail": {
+              "text": "{tier} {actor}: LUK fail",
+              "effects": [
+                { "type": "change_stat", "stat": "hp", "amount": -3, "target": "stat_actor" },
+                { "type": "add_tag", "tag": "stat_test_f_luk" }
+              ]
+            },
+            "success": {
+              "text": "{tier} {actor}: LUK success",
+              "effects": [ { "type": "add_tag", "tag": "stat_test_s_luk" } ]
+            },
+            "crit_success": {
+              "text": "{tier} {actor}: LUK crit_success",
+              "effects": [
+                { "type": "give_gold", "amount": 1 },
+                { "type": "add_tag", "tag": "stat_test_cs_luk" }
+              ]
+            }
+          }
+        },
         "next_event": null
       }
     ]

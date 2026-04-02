@@ -10,393 +10,635 @@
       {
         "id": "gold_fixed",
         "text": "Gold, Fixed: Give 50 gold",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Fifty gold coins materialize from thin air and clatter into the party's purse. Exactly fifty. Not one more, not one less. The void is precise.",
-            "effects": [
-              { "type": "give_gold", "amount": 50 }
-            ]
+            "step": {
+              "body": "Fifty gold coins materialize from thin air and clatter into the party's purse. Exactly fifty. Not one more, not one less. The void is precise.",
+              "effects": [
+                {
+                  "type": "give_gold",
+                  "amount": 50
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "gold_random",
         "text": "Gold, Random: Give 15–45 gold",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "A handful of gold rains down from nowhere. The party scrambles to collect it — somewhere between fifteen and forty-five coins, by rough count.",
-            "effects": [
-              { "type": "give_gold", "min_amount": 15, "max_amount": 45 }
-            ]
+            "step": {
+              "body": "A handful of gold rains down from nowhere. The party scrambles to collect it — somewhere between fifteen and forty-five coins, by rough count.",
+              "effects": [
+                {
+                  "type": "give_gold",
+                  "min_amount": 15,
+                  "max_amount": 45
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "item_fixed_count",
         "text": "Item, Fixed count: Give 2 camping_supplies",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Two neatly bundled camping kits drop into existence at the party's feet. Someone in the void is a very organised packer.",
-            "effects": [
-              { "type": "give_item", "item_id": "camping_supplies", "count": 2 }
-            ]
+            "step": {
+              "body": "Two neatly bundled camping kits drop into existence at the party's feet. Someone in the void is a very organised packer.",
+              "effects": [
+                {
+                  "type": "give_item",
+                  "item_id": "camping_supplies",
+                  "count": 2
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "item_random_count",
         "text": "Item, Random count: Give 1–4 health_potion",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Health potions tumble out of the ether in a clinking heap. Between one and four by the look of it — the void isn't great at counting.",
-            "effects": [
-              { "type": "give_item", "item_id": "health_potion", "min_count": 1, "max_count": 4 }
-            ]
+            "step": {
+              "body": "Health potions tumble out of the ether in a clinking heap. Between one and four by the look of it — the void isn't great at counting.",
+              "effects": [
+                {
+                  "type": "give_item",
+                  "item_id": "health_potion",
+                  "min_count": 1,
+                  "max_count": 4
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "item_pool_fixed",
         "text": "Pool, Fixed: Pick 1 item from pool — health_potion, camping_supplies, sharpening_stone, magical_dust",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void reaches into its supply cache and produces one item — chosen at random from a modest selection of useful supplies.",
-            "effects": [
-              { "type": "give_item_from_pool", "pool": ["health_potion", "camping_supplies", "sharpening_stone", "magical_dust"], "count": 1 }
-            ]
+            "step": {
+              "body": "The void reaches into its supply cache and produces one item — chosen at random from a modest selection of useful supplies.",
+              "effects": [
+                {
+                  "type": "give_item_from_pool",
+                  "pool": [
+                    "health_potion",
+                    "camping_supplies",
+                    "sharpening_stone",
+                    "magical_dust"
+                  ],
+                  "count": 1
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "item_pool_random_count",
         "text": "Pool, Random count: Pick 1 item from pool, quantity 1–3",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void shakes its pockets loose. An item tumbles out — and then perhaps another, perhaps two more. It genuinely cannot decide on a quantity.",
-            "effects": [
-              { "type": "give_item_from_pool", "pool": ["health_potion", "camping_supplies", "sharpening_stone", "magical_dust"], "min_count": 1, "max_count": 3 }
-            ]
+            "step": {
+              "body": "The void shakes its pockets loose. An item tumbles out — and then perhaps another, perhaps two more. It genuinely cannot decide on a quantity.",
+              "effects": [
+                {
+                  "type": "give_item_from_pool",
+                  "pool": [
+                    "health_potion",
+                    "camping_supplies",
+                    "sharpening_stone",
+                    "magical_dust"
+                  ],
+                  "min_count": 1,
+                  "max_count": 3
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "xp_all",
         "text": "XP: Give 100 XP to ALL party members",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "A ripple of understanding washes over the entire party. Each member feels sharper, more seasoned. One hundred experience points, distributed without fanfare.",
-            "effects": [
-              { "type": "give_xp", "amount": 100, "target": "all" }
-            ]
+            "step": {
+              "body": "A ripple of understanding washes over the entire party. Each member feels sharper, more seasoned. One hundred experience points, distributed without fanfare.",
+              "effects": [
+                {
+                  "type": "give_xp",
+                  "amount": 100,
+                  "target": "all"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "xp_random",
         "text": "XP: Give 250 XP to a RANDOM party member",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void singles out one party member with a knowing glance and floods them with hard-earned insight. Two hundred and fifty experience points, yours to keep.",
-            "effects": [
-              { "type": "give_xp", "amount": 250, "target": "random" }
-            ]
+            "step": {
+              "body": "The void singles out one party member with a knowing glance and floods them with hard-earned insight. Two hundred and fifty experience points, yours to keep.",
+              "effects": [
+                {
+                  "type": "give_xp",
+                  "amount": 250,
+                  "target": "random"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "xp_force_levelup_random",
         "text": "XP: Force LEVEL UP on a random party member",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void reaches into one party member's potential and yanks. Whether they were ready or not, they are a level stronger now.",
-            "effects": [
-              { "type": "give_xp", "force_level_up": true, "target": "random" }
-            ]
+            "step": {
+              "body": "The void reaches into one party member's potential and yanks. Whether they were ready or not, they are a level stronger now.",
+              "effects": [
+                {
+                  "type": "give_xp",
+                  "force_level_up": true,
+                  "target": "random"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "xp_force_levelup_all",
         "text": "XP: Force LEVEL UP on ALL party members",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "A blinding flash. Every member of the party stumbles, then straightens. Something fundamental has shifted in each of them. The void has seen fit to advance everyone.",
-            "effects": [
-              { "type": "give_xp", "force_level_up": true, "target": "all" }
-            ]
+            "step": {
+              "body": "A blinding flash. Every member of the party stumbles, then straightens. Something fundamental has shifted in each of them. The void has seen fit to advance everyone.",
+              "effects": [
+                {
+                  "type": "give_xp",
+                  "force_level_up": true,
+                  "target": "all"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "heal_flat_all",
         "text": "Heal, Flat: Heal ALL party members for 25 HP",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "A gentle warmth settles over the group. Cuts knit shut, bruises fade. Twenty-five hit points restored to every soul in the party.",
-            "effects": [
-              { "type": "heal_party", "target": "all", "amount": 25 }
-            ]
+            "step": {
+              "body": "A gentle warmth settles over the group. Cuts knit shut, bruises fade. Twenty-five hit points restored to every soul in the party.",
+              "effects": [
+                {
+                  "type": "heal_party",
+                  "target": "all",
+                  "amount": 25
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "heal_full_random",
         "text": "Heal, Full: Restore a RANDOM party member to max HP",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void selects one fortunate party member and mends them completely. Every wound, every ache — gone. They feel as though they just woke from a perfect night's sleep.",
-            "effects": [
-              { "type": "heal_party", "target": "random", "amount": "full" }
-            ]
+            "step": {
+              "body": "The void selects one fortunate party member and mends them completely. Every wound, every ache — gone. They feel as though they just woke from a perfect night's sleep.",
+              "effects": [
+                {
+                  "type": "heal_party",
+                  "target": "random",
+                  "amount": "full"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "heal_full_all",
         "text": "Heal, Full: Restore ALL party members to max HP",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "A wave of restorative energy crashes over the entire party. Every wound seals. Every injury erased. The party stands at full strength, as if the road behind them never happened.",
-            "effects": [
-              { "type": "heal_party", "target": "all", "amount": "full" }
-            ]
+            "step": {
+              "body": "A wave of restorative energy crashes over the entire party. Every wound seals. Every injury erased. The party stands at full strength, as if the road behind them never happened.",
+              "effects": [
+                {
+                  "type": "heal_party",
+                  "target": "all",
+                  "amount": "full"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "heal_percent_all",
         "text": "Heal, Percent: Heal ALL party members for 50 percent of max HP",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Half a restoration — efficient, if unspectacular. Fifty percent of each party member's maximum health trickles back into them, which is nothing to complain about.",
-            "effects": [
-              { "type": "heal_party", "target": "all", "percent": 50 }
-            ]
+            "step": {
+              "body": "Half a restoration — efficient, if unspectacular. Fifty percent of each party member's maximum health trickles back into them, which is nothing to complain about.",
+              "effects": [
+                {
+                  "type": "heal_party",
+                  "target": "all",
+                  "percent": 50
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "heal_percent_random",
         "text": "Heal, Percent: Heal a RANDOM party member for 30 percent of max HP",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void picks one party member at random and parcels out a modest but welcome healing — thirty percent of their maximum health, no more, no less.",
-            "effects": [
-              { "type": "heal_party", "target": "random", "percent": 30 }
-            ]
+            "step": {
+              "body": "The void picks one party member at random and parcels out a modest but welcome healing — thirty percent of their maximum health, no more, no less.",
+              "effects": [
+                {
+                  "type": "heal_party",
+                  "target": "random",
+                  "percent": 30
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "char_item_specific",
         "text": "Char Item, Specific: Give iron_luck_charm — player assigns to a member",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "An Iron Luck Charm materialises in the air before you, spinning slowly. It hums with faint purpose. Someone in the party should carry this.",
-            "effects": [
-              { "type": "give_item", "item_id": "iron_luck_charm", "count": 1 }
-            ]
+            "step": {
+              "body": "An Iron Luck Charm materialises in the air before you, spinning slowly. It hums with faint purpose. Someone in the party should carry this.",
+              "effects": [
+                {
+                  "type": "give_item",
+                  "item_id": "iron_luck_charm",
+                  "count": 1
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "char_item_specific_count",
         "text": "Char Item, Random count: Give 1–2 dwarven_ale — player assigns to a member",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "One or two bottles of Dwarven Ale thud into existence, dark and frothy. Whoever carries these had better not drink them on watch.",
-            "effects": [
-              { "type": "give_item", "item_id": "dwarven_ale", "min_count": 1, "max_count": 2 }
-            ]
+            "step": {
+              "body": "One or two bottles of Dwarven Ale thud into existence, dark and frothy. Whoever carries these had better not drink them on watch.",
+              "effects": [
+                {
+                  "type": "give_item",
+                  "item_id": "dwarven_ale",
+                  "min_count": 1,
+                  "max_count": 2
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "char_item_pool",
         "text": "Char Item Pool: Random item from pool — iron_luck_charm, faerie_tea, warden_signet — player assigns",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Something tumbles out of the void — an item of some worth, drawn at random from a small collection of curious things. Decide who will carry it.",
-            "effects": [
-              { "type": "give_item_from_pool", "pool": ["iron_luck_charm", "faerie_tea", "warden_signet"], "count": 1 }
-            ]
+            "step": {
+              "body": "Something tumbles out of the void — an item of some worth, drawn at random from a small collection of curious things. Decide who will carry it.",
+              "effects": [
+                {
+                  "type": "give_item_from_pool",
+                  "pool": [
+                    "iron_luck_charm",
+                    "faerie_tea",
+                    "warden_signet"
+                  ],
+                  "count": 1
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "choice_specific_grant_one",
         "text": "Item Choice, Specific, Grant ONE: Pick one of iron_luck_charm / faerie_tea / warden_signet",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Three curious objects drift into view. They cannot all be carried. Choose one to keep.",
-            "effects": [
-              {
-                "type": "give_item_choice",
-                "grant": "one",
-                "items": [
-                  { "item_id": "iron_luck_charm" },
-                  { "item_id": "faerie_tea" },
-                  { "item_id": "warden_signet" }
-                ]
-              }
-            ]
+            "step": {
+              "body": "Three curious objects drift into view. They cannot all be carried. Choose one to keep.",
+              "effects": [
+                {
+                  "type": "give_item_choice",
+                  "grant": "one",
+                  "items": [
+                    {
+                      "item_id": "iron_luck_charm"
+                    },
+                    {
+                      "item_id": "faerie_tea"
+                    },
+                    {
+                      "item_id": "warden_signet"
+                    }
+                  ]
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "choice_specific_grant_all",
         "text": "Item Choice, Specific, Grant ALL: Everyone gets iron_luck_charm AND faerie_tea",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "Two items materialise together — both are yours to distribute among the party.",
-            "effects": [
-              {
-                "type": "give_item_choice",
-                "grant": "all",
-                "items": [
-                  { "item_id": "iron_luck_charm" },
-                  { "item_id": "faerie_tea" }
-                ]
-              }
-            ]
+            "step": {
+              "body": "Two items materialise together — both are yours to distribute among the party.",
+              "effects": [
+                {
+                  "type": "give_item_choice",
+                  "grant": "all",
+                  "items": [
+                    {
+                      "item_id": "iron_luck_charm"
+                    },
+                    {
+                      "item_id": "faerie_tea"
+                    }
+                  ]
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "choice_pool_grant_one",
         "text": "Item Choice, Pool draw 3, Grant ONE: Pick one from a pool of 3 random draws",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void draws three items from its cache and fans them out before you. Take one.",
-            "effects": [
-              {
-                "type": "give_item_choice",
-                "grant": "one",
-                "pool": ["iron_luck_charm", "faerie_tea", "warden_signet", "dwarven_ale"],
-                "pool_draw": 3
-              }
-            ]
+            "step": {
+              "body": "The void draws three items from its cache and fans them out before you. Take one.",
+              "effects": [
+                {
+                  "type": "give_item_choice",
+                  "grant": "one",
+                  "pool": [
+                    "iron_luck_charm",
+                    "faerie_tea",
+                    "warden_signet",
+                    "dwarven_ale"
+                  ],
+                  "pool_draw": 3
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "choice_pool_grant_all",
         "text": "Item Choice, Pool draw 2, Grant ALL: Both drawn items are awarded",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void pulls two items at random from its reserves. Both are yours — distribute them as you see fit.",
-            "effects": [
-              {
-                "type": "give_item_choice",
-                "grant": "all",
-                "pool": ["iron_luck_charm", "faerie_tea", "warden_signet", "dwarven_ale"],
-                "pool_draw": 2
-              }
-            ]
+            "step": {
+              "body": "The void pulls two items at random from its reserves. Both are yours — distribute them as you see fit.",
+              "effects": [
+                {
+                  "type": "give_item_choice",
+                  "grant": "all",
+                  "pool": [
+                    "iron_luck_charm",
+                    "faerie_tea",
+                    "warden_signet",
+                    "dwarven_ale"
+                  ],
+                  "pool_draw": 2
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "trait_random",
         "text": "TRAIT: Give a random member the Werewolf's Curse",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The moon hangs heavy. {member} feels something shift beneath their skin.",
-            "effects": [
-              { "type": "give_trait", "trait_id": "werewolf_curse", "target": "random" }
-            ]
+            "step": {
+              "body": "The moon hangs heavy. {member} feels something shift beneath their skin.",
+              "effects": [
+                {
+                  "type": "give_trait",
+                  "trait_id": "werewolf_curse",
+                  "target": "random"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "trait_all",
         "text": "TRAIT: Give the whole party Survivor's Bond",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "What you have endured together has forged something unbreakable between you.",
-            "effects": [
-              { "type": "give_trait", "trait_id": "survivors_bond", "target": "all" }
-            ]
+            "step": {
+              "body": "What you have endured together has forged something unbreakable between you.",
+              "effects": [
+                {
+                  "type": "give_trait",
+                  "trait_id": "survivors_bond",
+                  "target": "all"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "trait_volunteer_slot0",
         "text": "{slot0} volunteers — Natural Hunter (party slot 0)",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
-            "effects": [
-              { "type": "give_trait", "trait_id": "natural_hunter", "target": 0 }
-            ]
+            "step": {
+              "body": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+              "effects": [
+                {
+                  "type": "give_trait",
+                  "trait_id": "natural_hunter",
+                  "target": 0
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "trait_volunteer_slot1",
         "text": "{slot1} volunteers — Natural Hunter (party slot 1)",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
-            "effects": [
-              { "type": "give_trait", "trait_id": "natural_hunter", "target": 1 }
-            ]
+            "step": {
+              "body": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+              "effects": [
+                {
+                  "type": "give_trait",
+                  "trait_id": "natural_hunter",
+                  "target": 1
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "trait_volunteer_slot2",
         "text": "{slot2} volunteers — Natural Hunter (party slot 2)",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
-            "effects": [
-              { "type": "give_trait", "trait_id": "natural_hunter", "target": 2 }
-            ]
+            "step": {
+              "body": "{member} steps forward into the wilderness alone. They return changed — keen-eyed, feral grace.",
+              "effects": [
+                {
+                  "type": "give_trait",
+                  "trait_id": "natural_hunter",
+                  "target": 2
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       },
       {
         "id": "combo_everything",
         "text": "COMBO, Jackpot: All reward types fire at once",
-        "outcomes": [
+        "weighted_branches": [
           {
             "weight": 1,
-            "text": "The void convulses. Gold rains. Supplies appear. The whole party gains experience. Someone gets healed. And something personal — a real item — materialises for one of your companions to claim. The debug gods are generous today.",
-            "effects": [
-              { "type": "give_gold", "min_amount": 20, "max_amount": 60 },
-              { "type": "give_item_from_pool", "pool": ["health_potion", "camping_supplies", "sharpening_stone", "magical_dust"], "min_count": 1, "max_count": 2 },
-              { "type": "give_item_from_pool", "pool": ["iron_luck_charm", "faerie_tea", "warden_signet"], "count": 1 },
-              { "type": "give_xp", "amount": 150, "target": "all" },
-              { "type": "heal_party", "target": "random", "amount": "full" }
-            ]
+            "step": {
+              "body": "The void convulses. Gold rains. Supplies appear. The whole party gains experience. Someone gets healed. And something personal — a real item — materialises for one of your companions to claim. The debug gods are generous today.",
+              "effects": [
+                {
+                  "type": "give_gold",
+                  "min_amount": 20,
+                  "max_amount": 60
+                },
+                {
+                  "type": "give_item_from_pool",
+                  "pool": [
+                    "health_potion",
+                    "camping_supplies",
+                    "sharpening_stone",
+                    "magical_dust"
+                  ],
+                  "min_count": 1,
+                  "max_count": 2
+                },
+                {
+                  "type": "give_item_from_pool",
+                  "pool": [
+                    "iron_luck_charm",
+                    "faerie_tea",
+                    "warden_signet"
+                  ],
+                  "count": 1
+                },
+                {
+                  "type": "give_xp",
+                  "amount": 150,
+                  "target": "all"
+                },
+                {
+                  "type": "heal_party",
+                  "target": "random",
+                  "amount": "full"
+                }
+              ],
+              "choices": []
+            }
           }
         ]
       }

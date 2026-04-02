@@ -12,13 +12,13 @@ script = ExtResource("1_race")
 race_name = "Elf"
 description = "Graceful and long-lived, elves possess keen senses and natural affinity for magic."
 base_stats = {
+"agility": 13,
 "charisma": 11,
 "constitution": 9,
-"dexterity": 13,
-"intelligence": 12,
-"perception": 12,
-"strength": 9,
-"wisdom": 11
+"intellect": 12,
+"luck": 12,
+"spirit": 11,
+"strength": 9
 }
 rest_ability = ExtResource("2_rest")
 portrait_1 = ExtResource("1_83smf")

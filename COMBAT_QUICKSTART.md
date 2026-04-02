@@ -1,5 +1,7 @@
 # Combat System Quick Start
 
+**Stats reminder:** Party characters use **seven primaries** (strength, agility, constitution, intellect, spirit, charisma, luck). In combat, abilities scale with **`stat_scaling` keys** `atk`, `def`, `spd`, `mag`, `mag_def` (see `COMBAT_SETUP_GUIDE.md`). Test enemies set those directly on the `Enemy` resource.
+
 ## 5-Minute Setup (Minimal Test)
 
 Follow these steps to get combat running ASAP. Full details in `COMBAT_SETUP_GUIDE.md`.
@@ -40,15 +42,11 @@ Right-click `enemies/` → New Resource → Enemy
   - enemy_name: "Training Dummy"
   - enemy_id: "test_dummy"
   - max_health: 20
-  - base_stats: (expand dictionary)
-    ```
-    "strength": 10
-    "dexterity": 10
-    "constitution": 10
-    "intelligence": 10
-    "wisdom": 10
-    "charisma": 10
-    ```
+  - atk: 10
+  - def: 0
+  - spd: 5
+  - mag: 10
+  - mag_def: 10
   - abilities: Add element → Drag `test_punch.tres` into slot
   - xp_reward: 10
 - Save
@@ -205,4 +203,4 @@ Victory: True
 - `COMBAT_SETUP_GUIDE.md` - Complete setup for all 3 classes
 - This file - Minimal quick start
 
-Good luck! 🎮
+Good luck!

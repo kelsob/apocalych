@@ -1,0 +1,201 @@
+[
+  {
+    "id": "debug_recursive_model_test",
+    "title": "DEBUG: Recursive model",
+    "biomes": [],
+    "one_shot": false,
+    "debug_hint": "Main: event_debug_force = true, event_debug_id = debug_recursive_model_test (optionally event_debug_keep_forcing to repeat).",
+    "text": "Tests nested `then` chains, weighted branches, and timing. First option is a tree: one entry → a screen with two choices → each choice leads to its own followup with more choices and small gold.",
+    "choices": [
+      {
+        "id": "nested_choice_tree",
+        "text": "Nested tree — one entry, then forks with per-branch followups",
+        "then": {
+          "body": "Level 1 — You enter a junction. One path goes left into moss, one goes right toward torchlight.",
+          "choices": [
+            {
+              "id": "fork_left",
+              "text": "Take the mossy path",
+              "then": {
+                "body": "Level 2 (left) — The air is damp. Choose how to proceed.",
+                "choices": [
+                  {
+                    "id": "left_cautious",
+                    "text": "Search carefully (+2 gold)",
+                    "then": {
+                      "body": "Level 3 (left / cautious) — You find loose coins in a crevice.",
+                      "effects": [
+                        {
+                          "type": "give_gold",
+                          "amount": 2
+                        }
+                      ],
+                      "choices": [
+                        {
+                          "id": "continue",
+                          "text": "Continue",
+                          "effects": []
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "left_bold",
+                    "text": "Push onward fast (+5 gold)",
+                    "then": {
+                      "body": "Level 3 (left / bold) — You slip past a hazard and grab a pouch.",
+                      "effects": [
+                        {
+                          "type": "give_gold",
+                          "amount": 5
+                        }
+                      ],
+                      "choices": [
+                        {
+                          "id": "continue",
+                          "text": "Continue",
+                          "effects": []
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "fork_right",
+              "text": "Follow the torchlight",
+              "then": {
+                "body": "Level 2 (right) — Warm light flickers. Two doors.",
+                "choices": [
+                  {
+                    "id": "right_storage",
+                    "text": "Open the supply door (+3 gold)",
+                    "then": {
+                      "body": "Level 3 (right / supplies) — Crates of old coin.",
+                      "effects": [
+                        {
+                          "type": "give_gold",
+                          "amount": 3
+                        }
+                      ],
+                      "choices": [
+                        {
+                          "id": "continue",
+                          "text": "Continue",
+                          "effects": []
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "right_shrine",
+                    "text": "Inspect the shrine (+1 gold)",
+                    "then": {
+                      "body": "Level 3 (right / shrine) — A donation bowl still holds a few coins.",
+                      "effects": [
+                        {
+                          "type": "give_gold",
+                          "amount": 1
+                        }
+                      ],
+                      "choices": [
+                        {
+                          "id": "continue",
+                          "text": "Continue",
+                          "effects": []
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_then_timing",
+        "text": "Then — nested step (gold 5 before / 10 after body / 25 on close)",
+        "then": {
+          "body": "If timing works: you already gained 5 gold before this line appeared, then 10 gold after the line was ready. Press Continue — when the event window finishes, you should gain 25 more from on_event_close.",
+          "effects": [
+            {
+              "type": "give_gold",
+              "amount": 5,
+              "timing": "before_text"
+            },
+            {
+              "type": "give_gold",
+              "amount": 10,
+              "timing": "after_text"
+            },
+            {
+              "type": "give_gold",
+              "amount": 25,
+              "timing": "on_event_close"
+            }
+          ],
+          "choices": [
+            {
+              "id": "continue",
+              "text": "Continue",
+              "effects": []
+            }
+          ]
+        }
+      },
+      {
+        "id": "test_weighted_two",
+        "text": "Weighted — two branches (50/50)",
+        "weighted_branches": [
+          {
+            "weight": 1,
+            "step": {
+              "body": "Branch A — you rolled the first branch.",
+              "choices": [
+                {
+                  "id": "continue",
+                  "text": "Continue",
+                  "effects": []
+                }
+              ]
+            }
+          },
+          {
+            "weight": 1,
+            "step": {
+              "body": "Branch B — you rolled the second branch.",
+              "choices": [
+                {
+                  "id": "continue",
+                  "text": "Continue",
+                  "effects": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "test_weighted_one",
+        "text": "Weighted — one branch only (no roll)",
+        "weighted_branches": [
+          {
+            "weight": 1,
+            "step": {
+              "body": "Single branch — pick was deterministic (no random roll).",
+              "choices": [
+                {
+                  "id": "continue",
+                  "text": "Continue",
+                  "effects": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

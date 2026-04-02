@@ -38,7 +38,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 event_debug_force = true
-event_debug_id = "placeholder_force_rainy_weather"
+event_debug_id = "debug_rewards_test"
+event_debug_keep_forcing = true
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
 unique_name_in_owner = true

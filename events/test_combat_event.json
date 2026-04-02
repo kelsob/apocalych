@@ -11,32 +11,32 @@
 			{
 				"id": "fight_bandits",
 				"text": "Stand and fight!",
-				"condition": {},
-				"effects": [
-					{ "type": "start_combat", "encounter_id": "test_fight" }
-				],
-				"next_event": null,
-				"weight": 1
+				"then": {
+					"effects": [
+						{ "type": "start_combat", "encounter_id": "test_fight" }
+					],
+					"choices": []
+				}
 			},
 			{
 				"id": "fight_ambush",
 				"text": "Face the ambush!",
-				"condition": {},
-				"effects": [
-					{ "type": "start_combat", "encounter_id": "bandit_ambush" }
-				],
-				"next_event": null,
-				"weight": 1
+				"then": {
+					"effects": [
+						{ "type": "start_combat", "encounter_id": "bandit_ambush" }
+					],
+					"choices": []
+				}
 			},
 			{
 				"id": "fight_cultists",
 				"text": "Interrupt the dark ritual!",
-				"condition": {},
-				"effects": [
-					{ "type": "start_combat", "encounter_id": "cultist_ritual" }
-				],
-				"next_event": null,
-				"weight": 1
+				"then": {
+					"effects": [
+						{ "type": "start_combat", "encounter_id": "cultist_ritual" }
+					],
+					"choices": []
+				}
 			}
 		]
 	}

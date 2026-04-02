@@ -6,19 +6,21 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ## 📊 STAT DISTRIBUTION SUMMARY
 
-### Champion (STR/CON Tank)
-- **Primary:** Strength +3, Constitution +2
-- **Philosophy:** High health, moderate speed (DEX 10), high AP regen (CON 12)
+Characters use **seven primaries** (race + class): strength, agility, constitution, intellect, spirit, charisma, luck. **Combat ability scaling** uses **`atk`, `mag`, `mag_def`** (and sometimes `spd` / `def`) on `CombatantStats` — see `COMBAT_SETUP_GUIDE.md`.
+
+### Champion (physical tank)
+- **Class modifiers:** Strength +3, Constitution +2, Charisma +1
+- **Philosophy:** High HP from constitution, moderate combat speed (`spd` from agility)
 - **Role:** Frontline protector, disruptor
 
-### Wizard (INT Caster)
-- **Primary:** Intelligence +4
-- **Philosophy:** Low health, low speed (DEX 10), low AP regen (CON 10)
+### Wizard (arcane caster)
+- **Class modifiers:** Intellect +4, Spirit +1, Luck +1, Strength −1
+- **Philosophy:** High `mag` from intellect; HP and speed depend on race + gear
 - **Role:** High burst damage, crowd control
 
-### Cleric (WIS Support)
-- **Primary:** Wisdom +3, Charisma +2, Constitution +1
-- **Philosophy:** Moderate health, moderate speed, moderate AP regen (CON 11)
+### Cleric (divine support)
+- **Class modifiers:** Spirit +3, Charisma +2, Constitution +1
+- **Philosophy:** Healing and holy damage scale with **`mag_def`** in combat (derived from **spirit**)
 - **Role:** Healing, buffs, utility
 
 ---
@@ -27,7 +29,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 1. Shield Bash (2 AP, Instant)
 **Type:** Damage + Stun
-**Scaling:** 8 base + 100% STR
+**Scaling:** 8 base + 100% ATK (combat stat; driven by strength)
 **Effect:** Stuns target for 1 turn
 
 **Design:** The "bread and butter" ability. Reliable instant damage with crowd control. Low AP cost means you can use it frequently. The stun is powerful but short - tactical disruption, not lockdown.
@@ -39,9 +41,9 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 2. Defensive Stance (2 AP, Instant)
 **Type:** Self Buff
-**Effect:** +5 Constitution for 2 turns
+**Effect:** +5 `def` (physical defense) for 2 turns
 
-**Design:** Survivability button. The +5 CON increases effective health through damage reduction AND increases AP regeneration while active. Creates interesting "turtle mode" windows where the Champion can weather heavy damage.
+**Design:** Survivability button. Extra **def** reduces incoming physical damage. Creates "turtle mode" windows where the Champion can weather heavy damage. (AP per turn is not tied to constitution in current combat code.)
 
 **Synergy:** Use before Heroic Strike to tank damage during cast
 **Trade-off:** Costs AP that could be used for damage
@@ -50,7 +52,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 3. Heroic Strike (3 AP, 2-Turn Delayed Cast)
 **Type:** Heavy Damage
-**Scaling:** 25 base + 180% STR
+**Scaling:** 25 base + 180% ATK
 **Cast Time:** 2 turns
 
 **Design:** The "big hit" ability. Costs most AP and takes 2 turns to resolve, but deals ~3x more damage than Shield Bash. High risk/high reward - can be interrupted. Demonstrates delayed cast mechanic.
@@ -76,7 +78,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 5. Interrupt Strike (2 AP, Instant)
 **Type:** Damage + Interrupt
-**Scaling:** 5 base + 50% STR
+**Scaling:** 5 base + 50% ATK
 **Effect:** Interrupts enemy casts
 
 **Design:** Pure utility. Low damage but instant interrupt. Creates tactical decisions - do you spend 2 AP to stop that enemy Fireball? Usually yes! Demonstrates interrupt mechanic.
@@ -90,7 +92,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 1. Arcane Blast (2 AP, Instant)
 **Type:** Quick Damage
-**Scaling:** 10 base + 120% INT
+**Scaling:** 10 base + 120% MAG
 **Cast Time:** 0
 
 **Design:** The spam ability. Moderate damage, low cost, instant. This is what Wizards do when they can't afford big spells. Efficient but not flashy.
@@ -102,7 +104,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 2. Fireball (4 AP, 3-Turn Delayed Cast)
 **Type:** AoE Nuke
-**Scaling:** 16 base + 150% INT per target
+**Scaling:** 16 base + 150% MAG per target
 **Targets:** ALL ENEMIES
 **Cast Time:** 3 turns
 
@@ -139,15 +141,15 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 5. Arcane Missiles (3 AP, 3-Turn Channel)
 **Type:** Channeled Damage
-**Scaling:** 7 base + 100% INT per tick
+**Scaling:** 7 base + 100% MAG per tick
 **Cast Time:** 3 turns channeled
-**Total Damage:** ~21 base + 300% INT (if not interrupted)
+**Total Damage:** ~21 base + 300% MAG (if not interrupted)
 
 **Design:** Sustained DPS. Deals damage EACH TURN for 3 turns. Higher total damage than Fireball (single target) but can be interrupted. Risk/reward between burst and sustain.
 
 **Comparison:** 
-- Arcane Blast x3 = ~30 + 360% INT over 3 turns (safe, 6 AP)
-- Arcane Missiles = ~21 + 300% INT over 3 turns (risky, 3 AP)
+- Arcane Blast x3 = ~30 + 360% MAG over 3 turns (safe, 6 AP)
+- Arcane Missiles = ~21 + 300% MAG over 3 turns (risky, 3 AP)
 **Trade-off:** Cheaper but vulnerable. The DPS option.
 
 ---
@@ -156,19 +158,19 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 
 ### 1. Heal (2 AP, Instant)
 **Type:** Single Target Heal
-**Scaling:** 14 base + 130% WIS
+**Scaling:** 14 base + 130% MAG_DEF (combat stat; driven by spirit)
 **Cast Time:** 0
 
-**Design:** The fundamental heal. Instant, targeted, efficient. Good value per AP. This is what keeps the party alive. Scales well with Wisdom.
+**Design:** The fundamental heal. Instant, targeted, efficient. Good value per AP. This is what keeps the party alive. Scales well with **spirit** (via `mag_def` in combat).
 
 **Use Case:** Reactive healing, topping off allies
-**Efficiency:** ~7 healing per AP (at 10 WIS)
+**Efficiency:** ~7 healing per AP (at 10 MAG_DEF baseline)
 
 ---
 
 ### 2. Holy Smite (2 AP, Instant)
 **Type:** Damage
-**Scaling:** 11 base + 130% WIS
+**Scaling:** 11 base + 130% MAG_DEF
 **Cast Time:** 0
 
 **Design:** The "combat medic" ability. Cleric isn't JUST healing - they can fight too. Same cost as Heal, slightly less potency than Wizard damage. Makes Cleric more interesting than "heal bot."
@@ -229,9 +231,8 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 - **Balance:** Very short duration (1 turn only)
 
 ### 2. **Defensive Stance** (2 turns)
-- Effect: +5 Constitution
-- **Survivability** through stat boost
-- **Bonus:** Also increases AP regen
+- Effect: +5 `def` (physical defense)
+- **Survivability** through damage reduction
 
 ### 3. **Shielded** (3 turns, 20 shield)
 - Effect: Absorbs 20 damage before health
@@ -268,21 +269,21 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 ## 🎯 ENEMY VARIETY
 
 ### Bandit Warrior
-- **Stats:** STR 12, CON 11, DEX 10 (25 HP)
+- **Combat stats (Enemy resource):** ATK 12, DEF 0, SPD ~5, MAG 0, MAG_DEF 0 (25 HP)
 - **Abilities:** Basic Attack, Power Attack
 - **Speed:** ~5 (average)
 - **AP/turn:** 3 (average)
 - **Philosophy:** Balanced melee threat with burst potential
 
 ### Bandit Rogue
-- **Stats:** DEX 14, STR 10, CON 9 (18 HP)
+- **Combat stats:** ATK 10, DEF 0, SPD ~9 (HIGH), MAG 0, MAG_DEF 0 (18 HP)
 - **Abilities:** Basic Attack
 - **Speed:** ~9 (FAST!)
-- **AP/turn:** 3 (low for speed)
+- **AP/turn:** 3
 - **Philosophy:** Glass cannon - many turns, low damage per turn, fragile
 
 ### Dark Cultist
-- **Stats:** INT 13, CON 8, DEX 9 (16 HP)
+- **Combat stats:** ATK 8, DEF 0, SPD ~4, MAG 13, MAG_DEF 8 (16 HP)
 - **Abilities:** Dark Bolt
 - **Speed:** ~4.5 (slow)
 - **AP/turn:** 3
@@ -345,7 +346,7 @@ I've created a complete, balanced ability set for all 3 starting classes, showca
 - AP is scarce (3/turn base)
 - Abilities cost 2-4 AP
 - Creates interesting "do I spam or save for big ability?" decisions
-- Constitution makes this decision different per character
+- Max HP (from constitution and level) makes this decision different per character
 
 ---
 
@@ -398,7 +399,7 @@ These abilities are designed to be extended:
 3. **Cleric:** Add Dispel, Resurrect, Divine Shield
 4. **All:** Add ultimate abilities (very high AP cost, game-changing)
 5. **Items:** Modify existing abilities (Staff reduces Fireball cast time by 1)
-6. **Passives:** Permanent status effects (Champion always has +2 CON)
+6. **Passives:** Permanent status effects (e.g. +2 `def` while equipped)
 7. **Combos:** Abilities interact (Haste + Fireball = Instant cast?)
 
 The system is ready for all of this!
@@ -413,4 +414,4 @@ The system is ready for all of this!
 - ✅ 3 Encounters
 - ✅ All assigned and ready to test!
 
-Just build the combat scene UI and you're ready to go! 🎮
+Just build the combat scene UI and you're ready to go!

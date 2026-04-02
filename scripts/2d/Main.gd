@@ -35,9 +35,35 @@ var _blacksmith_opened_from_town: bool = false
 var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns player has been granted entry to
 var _in_potion_target_mode: bool = false  # True when awaiting character click to apply health potion
 
-## Event debug: when true, EventManager forces this event ID on the next eligible pick (e.g. "debug_rewards_test"). Cleared automatically after one successful force unless `event_debug_keep_forcing` is true. Also turns on EventManager [SELECT] lines for that pick (tags + note that pool was skipped).
+## Event debug: when true, EventManager forces this event ID on the next eligible pick. Cleared automatically after one successful force unless `event_debug_keep_forcing` is true. Also turns on EventManager [SELECT] lines for that pick (tags + note that pool was skipped).
+## Dropdown lists known debug / test events (see `events/debug_*.json`, `master_test_event.json`, `test_*.json`, `introductory_event.json`). `__none__` = do not force.
 @export var event_debug_force: bool = false
-@export var event_debug_id: String = ""
+@export_enum(
+	"__none__",
+	"debug_rewards_test",
+	"debug_recursive_model_test",
+	"master_test",
+	"test_combat_event_01",
+	"test_warg_ambush_outcomes",
+	"introductory_event_01",
+	"debug_cond_all_same_race",
+	"debug_cond_biome_forest",
+	"debug_cond_class_cleric",
+	"debug_cond_forbids_tags",
+	"debug_cond_item_health_potion",
+	"debug_cond_lunar_full",
+	"debug_cond_max_gold",
+	"debug_cond_min_gold",
+	"debug_cond_multi_requires_tags",
+	"debug_cond_party_resources_gold_eq",
+	"debug_cond_party_resources_gold_gte",
+	"debug_cond_party_resources_gold_lte",
+	"debug_cond_race_human",
+	"debug_cond_requires_any",
+	"debug_cond_trait_natural_hunter",
+	"debug_cond_variables",
+	"debug_cond_weather_cloudy"
+) var event_debug_id: String = "__none__"
 ## When true, forced event applies every node; when false (default), `event_debug_force` turns off after the first successful forced event so normal selection resumes.
 @export var event_debug_keep_forcing: bool = false
 ## When true, EventManager prints one-line `event selection:` summaries (chosen id, pool size, roll).

@@ -1,8 +1,9 @@
 extends Resource
 class_name PartyMember
 
-## Party Member - represents a single party member with race, class, and name
-## Stats use the simplified ATK / DEF / SPD / MAG / MAG_DEF system.
+## Party Member - represents a single party member with race, class, and name.
+## Primary attributes: strength, agility, constitution, intellect, spirit, charisma, luck.
+## Combat still uses derived atk / def / spd / mag / mag_def (see get_combat_core_stats).
 
 # Character identity
 @export var member_name: String = ""
@@ -101,10 +102,10 @@ func initialize():
 	if armour == null:
 		armour = Armour.create_default()
 
-	# Base HP = 10 + DEF modifier (tougher characters have more HP)
+	# Base HP scales with constitution (10 CON = +0 bonus HP from stat)
 	var stats := get_final_stats()
-	var def_stat: int = stats.get("def", 0)
-	max_health = 10 + def_stat
+	var con: int = int(stats.get("constitution", 10))
+	max_health = 10 + maxi(0, con - 10)
 	current_health = max_health
 
 	print("Initialized %s: Level %d, Max HP: %d" % [member_name, level, max_health])
@@ -119,8 +120,17 @@ func get_armour_type() -> String:
 		return class_resource.armour_type
 	return "Armour"
 
-## Get final stats combining race base stats and class modifiers.
-## Keys: "atk", "def", "spd", "mag", "mag_def"
+const PRIMARY_STAT_KEYS: Array[String] = [
+	"strength",
+	"agility",
+	"constitution",
+	"intellect",
+	"spirit",
+	"charisma",
+	"luck",
+]
+
+## Final primary attributes (race base + class modifiers). Keys: PRIMARY_STAT_KEYS.
 func get_final_stats() -> Dictionary:
 	var stats: Dictionary = {}
 
@@ -129,14 +139,30 @@ func get_final_stats() -> Dictionary:
 
 	if class_resource and class_resource.stat_modifiers:
 		for stat in class_resource.stat_modifiers:
-			stats[stat] = stats.get(stat, 0) + class_resource.stat_modifiers[stat]
+			stats[stat] = stats.get(stat, 10) + class_resource.stat_modifiers[stat]
 
-	# Ensure all stat keys are present
-	for key in ["atk", "def", "spd", "mag", "mag_def"]:
+	for key in PRIMARY_STAT_KEYS:
 		if not stats.has(key):
-			stats[key] = 5 if key == "spd" else 0
+			stats[key] = 10
 
 	return stats
+
+
+## Map primary stats to combat engine stats (atk, def, spd, mag, mag_def).
+func get_combat_core_stats() -> Dictionary:
+	var s := get_final_stats()
+	var str_v: int = int(s.get("strength", 10))
+	var agi: int = int(s.get("agility", 10))
+	var con: int = int(s.get("constitution", 10))
+	var intel: int = int(s.get("intellect", 10))
+	var spr: int = int(s.get("spirit", 10))
+	return {
+		"atk": str_v,
+		"def": maxi(0, con - 10),
+		"spd": maxi(1, agi / 2),
+		"mag": intel,
+		"mag_def": spr,
+	}
 
 func take_damage(amount: int) -> bool:
 	current_health = max(0, current_health - amount)
@@ -190,9 +216,9 @@ func level_up():
 	experience -= experience_to_next_level
 	experience_to_next_level = int(100 * pow(1.5, level - 1))
 
-	# Each level grants HP based on DEF stat (tougher characters grow more)
 	var stats := get_final_stats()
-	var health_gain: int = 5 + int(stats.get("def", 0)) / 2
+	var con: int = int(stats.get("constitution", 10))
+	var health_gain: int = 5 + maxi(0, con - 10) / 2
 	max_health += health_gain
 	current_health = max_health
 

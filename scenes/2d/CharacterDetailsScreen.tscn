@@ -135,7 +135,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "ATK:"
+text = "STR:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer"]
@@ -150,7 +150,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "MAG:"
+text = "AGI"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2"]
@@ -165,7 +165,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "SPD:"
+text = "CON:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3"]
@@ -184,7 +184,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "DEF:"
+text = "SPI:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer"]
@@ -199,7 +199,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "MAG-DEF:"
+text = "INT:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2"]
@@ -214,7 +214,7 @@ layout_mode = 2
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer3"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "LUK:"
+text = "CHA:"
 horizontal_alignment = 2
 
 [node name="Label2" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer3"]

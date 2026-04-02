@@ -14,13 +14,7 @@
 			{
 				"id": "continue",
 				"text": "Continue",
-				"condition": {
-					"requires_tags": [],
-					"forbids_tags": []
-				},
-				"effects": [],
-				"next_event": null,
-				"weight": 1
+				"effects": []
 			}
 		]
 	}

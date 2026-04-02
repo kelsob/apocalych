@@ -16,11 +16,11 @@ const ARMOUR_ICON_PATH: String = "res://assets/items/armor-1.png"
 @onready var _max_hp_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/HBoxContainer3/HBoxContainer/MaxHPLabel
 @onready var _next_lvl_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/NextLvlLabel
 @onready var _xp_to_lvl_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/HPXPContainer/XPToLvlLabel
-@onready var _atk_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer/Label2
-@onready var _mag_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2/Label2
-@onready var _spd_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3/Label2
-@onready var _def_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer/Label2
-@onready var _mag_def_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2/Label2
+@onready var _str_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer/Label2
+@onready var _agi_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer2/Label2
+@onready var _con_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer/HBoxContainer3/Label2
+@onready var _spi_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer/Label2
+@onready var _cha_def_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer2/Label2
 @onready var _luk_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/StatsContainer/VBoxContainer2/HBoxContainer3/Label2
 @onready var _weapon_texture: TextureRect = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer/MarginContainer/WeaponTextureRect
 @onready var _weapon_name_label: Label = $PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer2/MarginContainer/VBoxContainer/WeaponName
@@ -82,22 +82,18 @@ func _populate_hp_xp(member: PartyMember) -> void:
 
 func _populate_stats(member: PartyMember) -> void:
 	var stats: Dictionary = member.get_final_stats()
-	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
-	var armour: Armour = member.armour if member.armour else Armour.create_default()
-	# ATK = strength + weapon bonus, MAG = int, SPD = dex, DEF = armour, MAG-DEF = wis, LUK = cha
-	var atk: int = stats.get("strength", 10) + weapon.get_damage_bonus()
-	if _atk_label:
-		_atk_label.text = str(atk)
-	if _mag_label:
-		_mag_label.text = str(stats.get("intelligence", 10))
-	if _spd_label:
-		_spd_label.text = str(stats.get("dexterity", 10))
-	if _def_label:
-		_def_label.text = str(armour.get_def())
-	if _mag_def_label:
-		_mag_def_label.text = str(stats.get("wisdom", 10))
+	if _str_label:
+		_str_label.text = str(int(stats.get("strength", 10)))
+	if _agi_label:
+		_agi_label.text = str(int(stats.get("agility", 10)))
+	if _con_label:
+		_con_label.text = str(int(stats.get("constitution", 10)))
+	if _spi_label:
+		_spi_label.text = str(int(stats.get("spirit", 10)))
+	if _cha_def_label:
+		_cha_def_label.text = str(int(stats.get("intellect", 10)))
 	if _luk_label:
-		_luk_label.text = str(stats.get("charisma", 10))
+		_luk_label.text = str(int(stats.get("charisma", 10)))
 
 func _populate_equipment(member: PartyMember) -> void:
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()

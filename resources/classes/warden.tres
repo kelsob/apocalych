@@ -13,13 +13,13 @@ description = "A stalwart protector, combining defensive prowess with tactical a
 weapon_type = "Sword"
 armour_type = "Mail"
 stat_modifiers = {
+"agility": 0,
 "charisma": 0,
 "constitution": 3,
-"dexterity": 0,
-"intelligence": 0,
-"perception": 1,
-"strength": 1,
-"wisdom": 2
+"intellect": 0,
+"luck": 1,
+"spirit": 2,
+"strength": 1
 }
 abilities = Array[ExtResource("1_6bk8k")]([])
 rest_abilities = Array[ExtResource("2_r2moi")]([ExtResource("2"), ExtResource("3")])

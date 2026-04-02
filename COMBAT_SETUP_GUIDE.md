@@ -2,6 +2,13 @@
 
 This guide walks you through setting up the combat system resources and scenes.
 
+## Party stats vs combat stats
+
+- **Party / character sheet** uses **seven primary attributes:** `strength`, `agility`, `constitution`, `intellect`, `spirit`, `charisma`, `luck` (race + class on `PartyMember`).
+- **Combat runtime** uses **`CombatantStats.core_stats`:** `atk`, `def`, `spd`, `mag`, `mag_def`. Party members get these from `PartyMember.get_combat_core_stats()` (e.g. `atk` tracks strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit).
+- **Ability `stat_scaling`** must use **core_stats keys** (`atk`, `def`, `spd`, `mag`, `mag_def`) — that is what `AbilityEffect.calculate_final_potency()` reads.
+- **Enemies** only use the combat stats (`atk`, `def`, `spd`, `mag`, `mag_def`) on the `Enemy` resource, not the seven primaries.
+
 ## 1. AUTOLOAD SETUP
 
 First, add the CombatController as an autoload:
@@ -30,7 +37,7 @@ Create the following ability resources in `resources/abilities/`:
   1. **Damage Effect:**
 	 - effect_type: DAMAGE
 	 - potency: 8.0
-	 - stat_scaling: {"strength": 1.0}
+	 - stat_scaling: {"atk": 1.0}
   2. **Stun Effect:**
 	 - effect_type: APPLY_STATUS
 	 - status_to_apply: *(create a StatusEffect "Stunned" - see below)*
@@ -63,7 +70,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: DAMAGE
   - potency: 20.0
-  - stat_scaling: {"strength": 1.5}
+  - stat_scaling: {"atk": 1.5}
 
 ---
 
@@ -82,7 +89,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: DAMAGE
   - potency: 10.0
-  - stat_scaling: {"intelligence": 1.2}
+  - stat_scaling: {"mag": 1.2}
 
 #### Fireball (`resources/abilities/wizard/fireball.tres`)
 - **Script:** Ability
@@ -98,7 +105,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: DAMAGE
   - potency: 15.0
-  - stat_scaling: {"intelligence": 1.5}
+  - stat_scaling: {"mag": 1.5}
   - target_count: 999
 
 #### Mana Shield (`resources/abilities/wizard/mana_shield.tres`)
@@ -132,7 +139,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: HEAL
   - potency: 12.0
-  - stat_scaling: {"wisdom": 1.0}
+  - stat_scaling: {"mag_def": 1.0}
 
 #### Holy Smite (`resources/abilities/cleric/holy_smite.tres`)
 - **Script:** Ability
@@ -147,7 +154,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: DAMAGE
   - potency: 12.0
-  - stat_scaling: {"wisdom": 1.2}
+  - stat_scaling: {"mag_def": 1.2}
 
 #### Prayer (`resources/abilities/cleric/prayer.tres`)
 - **Script:** Ability
@@ -163,7 +170,7 @@ Create the following ability resources in `resources/abilities/`:
 - **effects:** Create 1 AbilityEffect:
   - effect_type: HEAL
   - potency: 6.0
-  - stat_scaling: {"wisdom": 0.8}
+  - stat_scaling: {"mag_def": 0.8}
   - target_count: 999
 
 ---
@@ -193,7 +200,7 @@ Create in `resources/statuses/`:
 - **status_type:** BUFF
 - **base_duration:** 2
 - **stack_behavior:** REFRESH
-- **stat_modifiers:** {"constitution": 5}
+- **stat_modifiers:** {"def": 5}
 - **is_dispellable:** true
 
 ### Mana Shield (`resources/statuses/mana_shield.tres`)
@@ -241,17 +248,12 @@ Create `resources/enemies/test_bandit.tres`:
 - **enemy_id:** "test_bandit"
 - **description:** "A common bandit."
 - **max_health:** 20
-- **base_stats:**
-  ```
-  {
-	"strength": 12,
-	"dexterity": 11,
-	"constitution": 10,
-	"intelligence": 8,
-	"wisdom": 8,
-	"charisma": 9
-  }
-  ```
+- **Combat stats** (see `Enemy.gd` — flat fields, not a `base_stats` dictionary):
+  - **atk:** 12
+  - **def:** 0
+  - **spd:** 6
+  - **mag:** 8
+  - **mag_def:** 8
 - **abilities:** Add a simple attack ability (you can create `resources/abilities/shared/basic_attack.tres` or reuse an existing damage ability)
 - **ai_behavior:** "Aggressive"
 - **xp_reward:** 15
@@ -404,8 +406,8 @@ Once basic combat works, you can expand:
 - Verify effect_type is set correctly
 
 ### "No damage/healing happening"
-- Check stat_scaling dictionary format: `{"stat_name": multiplier}`
-- Verify potency is set (not 0)
+- Check `stat_scaling` uses **combat keys** (`atk`, `def`, `spd`, `mag`, `mag_def`), not primary attribute names
+- Format: `{"atk": 1.0}` etc.; verify potency is set (not 0)
 
 ### "Combat doesn't start"
 - Check that encounter has enemies assigned

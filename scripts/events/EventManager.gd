@@ -15,14 +15,9 @@ var seen_one_shot_events: Array[String] = []
 ## Set by EventLog before apply_effects, read by Main after combat ends, then cleared.
 var pending_combat_outcomes: Dictionary = {}
 
-## Character (non-bulk) item rewards that need player assignment via ItemReward UI.
-## Populated by _apply_give_item, drained by EventLog after apply_effects.
-var pending_item_rewards: Array = []
-
-## Item choice sets from give_item_choice with grant:"one".
-## Each entry: { "items": [{item_id, count, item}, ...] }
-## Drained by EventLog, which shows ItemChoiceReward UI then member assignment.
-var pending_item_choices: Array = []
+## Ordered UI queue for EventLog: gold/XP rows (`EventRewards`) + item pickers + item-choice bundles.
+## Populated by give_gold, give_xp, give_item (non-bulk), give_item_choice (grant one); drained after each apply batch.
+var pending_event_log_visual_queue: Array = []
 
 ## Substitution variables populated during apply_effects for use in outcome text.
 ## EventLog replaces {key} placeholders in outcome text with these values.
@@ -30,9 +25,21 @@ var pending_item_choices: Array = []
 ## "member" → name of the party member most recently selected by a random/single-target effect.
 var text_vars: Dictionary = {}
 
+## Set by EventStatCheck / EventChoiceContainer before `apply_effects` when resolving a stat challenge.
+## Keys: `actor_index` (int), `actor_name` (String), `tier` (String). Cleared after `apply_effects`.
+var stat_check_context: Dictionary = {}
+
 ## XP animation sequences populated before gain_experience/level_up modifies the member.
 ## Keyed by PartyMember reference. Read and cleared by CharacterDetails.refresh_xp().
 var _xp_animation_data: Dictionary = {}
+
+## Effects with `"timing": "on_event_close"` queue here; **`drain_effects_on_event_close`** runs them when the event UI session ends.
+var pending_effects_on_event_close: Array = []
+
+## Per-effect timing for nested steps (`EVENT_DESIGN.md`). Missing `timing` → **after_text** (matches legacy one-shot apply).
+const EFFECT_TIMING_BEFORE_TEXT: String = "before_text"
+const EFFECT_TIMING_AFTER_TEXT: String = "after_text"
+const EFFECT_TIMING_ON_EVENT_CLOSE: String = "on_event_close"
 
 # Seedable RNG for deterministic event selection
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -573,6 +580,9 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 	if main_node and main_wants_force:
 		force_event = true
 		force_id = str(main_node.event_debug_id)
+		# Main.gd uses @export_enum sentinel when no forced id is selected.
+		if force_id == "__none__":
+			force_id = ""
 
 	if force_event and not force_id.is_empty():
 		if events.has(force_id):
@@ -680,53 +690,149 @@ func pick_weighted_outcome(outcomes: Array) -> Dictionary:
 	# Fallback — should only be reached due to float precision edge cases
 	return outcomes[outcomes.size() - 1]
 
-## Apply effects from a choice
+
+func effect_timing(effect: Dictionary) -> String:
+	var t: String = str(effect.get("timing", EFFECT_TIMING_AFTER_TEXT)).strip_edges()
+	if t == EFFECT_TIMING_BEFORE_TEXT or t == EFFECT_TIMING_ON_EVENT_CLOSE:
+		return t
+	return EFFECT_TIMING_AFTER_TEXT
+
+
+## Split effect list by `timing`. `on_event_close` effects are not returned here — queue them with **`ingest_effects_split_for_nested`** or **`apply_effects`**.
+func split_effects_by_timing(effects: Array) -> Dictionary:
+	var before: Array = []
+	var after: Array = []
+	var close: Array = []
+	if effects is Array:
+		for raw in effects:
+			if not raw is Dictionary:
+				continue
+			var e: Dictionary = normalize_effect_for_apply(raw)
+			match effect_timing(e):
+				EFFECT_TIMING_BEFORE_TEXT:
+					before.append(e)
+				EFFECT_TIMING_ON_EVENT_CLOSE:
+					close.append(e)
+				_:
+					after.append(e)
+	return {"before": before, "after": after, "close": close}
+
+
+## Queues `on_event_close` effects and returns **`before`** and **`after`** arrays for phased application (nested steps).
+func ingest_effects_split_for_nested(effects: Array) -> Dictionary:
+	var s: Dictionary = split_effects_by_timing(effects)
+	for e in s.close:
+		pending_effects_on_event_close.append(e)
+	return {"before": s.before, "after": s.after}
+
+
+## Run queued **`on_event_close`** effects (no further splitting — avoids re-queue loops).
+func drain_effects_on_event_close(party: Dictionary, node_state: Dictionary) -> void:
+	if pending_effects_on_event_close.is_empty():
+		return
+	var batch: Array = pending_effects_on_event_close.duplicate()
+	pending_effects_on_event_close.clear()
+	apply_effects_array(batch, party, node_state)
+
+
+## Pick a weighted **`weighted_branches`** entry: `[{ "weight": n, "step": { ... } }, ...]`. One branch → that step only; no roll.
+func pick_weighted_branches(branches: Array) -> Dictionary:
+	if branches.is_empty():
+		return {}
+	if branches.size() == 1:
+		var only: Variant = branches[0]
+		if only is Dictionary:
+			return only.get("step", {}) as Dictionary
+		return {}
+	var total_weight: float = 0.0
+	for br in branches:
+		if br is Dictionary:
+			total_weight += float(br.get("weight", 1))
+	if total_weight <= 0.0:
+		var fb0: Variant = branches[0]
+		if fb0 is Dictionary:
+			return fb0.get("step", {}) as Dictionary
+		return {}
+	var roll: float = rng.randf_range(0.0, total_weight)
+	var acc: float = 0.0
+	for br in branches:
+		if br is Dictionary:
+			acc += float(br.get("weight", 1))
+			if roll <= acc:
+				return br.get("step", {}) as Dictionary
+	var last: Variant = branches[branches.size() - 1]
+	if last is Dictionary:
+		return last.get("step", {}) as Dictionary
+	return {}
+
+
+## Apply effects from a choice (legacy + timing). **`on_event_close`** effects queue; **`before_text`** then **`after_text`** run in order.
 func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {}):
 	text_vars.clear()
+	if stat_check_context.has("actor_name"):
+		text_vars["actor"] = stat_check_context["actor_name"]
+	if stat_check_context.has("tier"):
+		text_vars["tier"] = stat_check_context["tier"]
 	debug_print("SECRET PATH: EventManager apply_effects() called with %d effects" % effects.size())
-	
+
 	if not effects is Array:
 		debug_print("SECRET PATH: Effects is not an array!")
+		stat_check_context.clear()
 		return
-	
-	for effect in effects:
+
+	var s: Dictionary = split_effects_by_timing(effects)
+	for e in s.close:
+		pending_effects_on_event_close.append(e)
+	apply_effects_array(s.before + s.after, party, node_state)
+	stat_check_context.clear()
+
+
+## Apply normalized effect dicts in order (no timing split — used by **`drain_effects_on_event_close`** and direct step runs).
+func apply_effects_array(effects: Array, party: Dictionary, node_state: Dictionary = {}) -> void:
+	if not effects is Array:
+		return
+	for raw in effects:
+		if not raw is Dictionary:
+			push_warning("SECRET PATH: EventManager Effect is not a dictionary, skipping")
+			continue
+		var effect: Dictionary = normalize_effect_for_apply(raw)
 		if not effect.has("type"):
 			push_warning("SECRET PATH: EventManager Effect missing 'type' field, skipping")
 			continue
-		
+
 		debug_print("SECRET PATH: Processing effect type: %s" % effect.type)
-		
+
 		match effect.type:
 			"add_tag":
 				_apply_add_tag(effect, party)
-			
+
 			"remove_tag":
 				_apply_remove_tag(effect, party)
-			
+
 			"give_item":
 				_apply_give_item(effect, party)
-			
+
 			"change_reputation":
 				pass # Legacy JSON — no reputation system; ignored silently
 
 			"change_stat":
 				_apply_change_stat(effect, party)
-			
+
 			"set_variable":
 				_apply_set_variable(effect, party)
-			
+
 			"unlock_event":
 				_apply_unlock_event(effect)
-			
+
 			"start_combat":
 				_apply_start_combat(effect, party, node_state)
-			
+
 			"script_hook":
 				_apply_script_hook(effect, party, node_state)
-			
+
 			"set_rest_state":
 				_apply_set_rest_state(effect, node_state)
-			
+
 			"reveal_secrets":
 				_apply_reveal_secrets(effect, party, node_state)
 
@@ -765,7 +871,7 @@ func apply_effects(effects: Array, party: Dictionary, node_state: Dictionary = {
 
 			"set_weather":
 				_apply_set_weather(effect)
-			
+
 			_:
 				push_warning("EventManager: Unknown effect type: " + str(effect.type))
 
@@ -848,25 +954,81 @@ func _get_nested_value(path: String, state: Dictionary, party: Dictionary) -> St
 
 ## Effect implementations
 
+## Optional JSON keys that map to canonical fields (shallow copy; originals unchanged).
+## Keeps older snippets and copy-paste mistakes working without forking effect types.
+func normalize_effect_for_apply(effect: Dictionary) -> Dictionary:
+	var e: Dictionary = effect.duplicate()
+	var t: String = str(e.get("type", ""))
+	match t:
+		"give_item", "consume_item":
+			if not e.has("item_id") and e.has("item"):
+				e["item_id"] = str(e["item"])
+			if not e.has("count") and not (e.has("min_count") and e.has("max_count")):
+				if e.has("amount"):
+					e["count"] = int(e["amount"])
+		"script_hook":
+			if not e.has("hook_name") and e.has("hook_id"):
+				e["hook_name"] = str(e["hook_id"])
+	return e
+
+
+func normalize_effects_array(effects: Array) -> Array:
+	var out: Array = []
+	for raw in effects:
+		if raw is Dictionary:
+			out.append(normalize_effect_for_apply(raw))
+		else:
+			out.append(raw)
+	return out
+
+
+## Resolves `tag` (string), `tag` (array of strings), or `tags` (array). If `tags` is present, it wins over `tag`.
+func _coerce_effect_tag_list(effect: Dictionary) -> Array[String]:
+	var out: Array[String] = []
+	if effect.has("tags"):
+		var raw: Variant = effect.get("tags")
+		if raw is Array:
+			for it in raw:
+				var s: String = str(it).strip_edges()
+				if not s.is_empty():
+					out.append(s)
+		return out
+	if effect.has("tag"):
+		var tv: Variant = effect.get("tag")
+		if tv is Array:
+			for it in tv:
+				var s2: String = str(it).strip_edges()
+				if not s2.is_empty():
+					out.append(s2)
+		else:
+			var s3: String = str(tv).strip_edges()
+			if not s3.is_empty():
+				out.append(s3)
+	return out
+
+
 func _apply_add_tag(effect: Dictionary, party: Dictionary):
-	if not effect.has("tag"):
-		push_warning("EventManager: add_tag effect missing 'tag' field")
-		return
-	
-	if TagManager:
-		TagManager.add_tag(effect.tag)
-	else:
+	if not TagManager:
 		push_warning("EventManager: TagManager not available for add_tag effect")
+		return
+	var tag_list: Array[String] = _coerce_effect_tag_list(effect)
+	if tag_list.is_empty():
+		push_warning("EventManager: add_tag effect needs non-empty 'tag', 'tag' array, or 'tags' array")
+		return
+	for t in tag_list:
+		TagManager.add_tag(t)
+
 
 func _apply_remove_tag(effect: Dictionary, party: Dictionary):
-	if not effect.has("tag"):
-		push_warning("EventManager: remove_tag effect missing 'tag' field")
-		return
-	
-	if TagManager:
-		TagManager.remove_tag(effect.tag)
-	else:
+	if not TagManager:
 		push_warning("EventManager: TagManager not available for remove_tag effect")
+		return
+	var tag_list: Array[String] = _coerce_effect_tag_list(effect)
+	if tag_list.is_empty():
+		push_warning("EventManager: remove_tag effect needs non-empty 'tag', 'tag' array, or 'tags' array")
+		return
+	for t in tag_list:
+		TagManager.remove_tag(t)
 
 func _apply_give_item(effect: Dictionary, party: Dictionary):
 	if not effect.has("item_id"):
@@ -901,19 +1063,22 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 	if main.current_party_members.is_empty():
 		push_warning("EventManager: give_item requires party members for non-resource items")
 		return
-	pending_item_rewards.append({ "item_id": effect.item_id, "count": count, "item": item })
+	pending_event_log_visual_queue.append({
+		"kind": "item",
+		"reward": { "item_id": effect.item_id, "count": count, "item": item },
+	})
 
-## Returns all queued character item rewards and clears the queue.
-## Called by EventLog after apply_effects so ItemReward UI can be shown.
-func drain_pending_item_rewards() -> Array:
-	var drained := pending_item_rewards.duplicate()
-	pending_item_rewards.clear()
-	return drained
 
-## Returns all queued item choice sets and clears the queue.
-func drain_pending_item_choices() -> Array:
-	var drained := pending_item_choices.duplicate()
-	pending_item_choices.clear()
+func _queue_event_log_visual_reward_row(xp: int, gold: int) -> void:
+	if xp <= 0 and gold <= 0:
+		return
+	pending_event_log_visual_queue.append({ "kind": "rewards", "xp": xp, "gold": gold })
+
+
+## Drains ordered EventLog visuals (EventRewards rows, ItemReward, ItemChoiceReward). Clears the queue.
+func drain_pending_event_log_visual_queue() -> Array:
+	var drained := pending_event_log_visual_queue.duplicate()
+	pending_event_log_visual_queue.clear()
 	return drained
 
 ## give_trait effect handler — traits are never assigned via a member-picker UI (unlike items).
@@ -968,11 +1133,15 @@ func _resolve_give_trait_recipients(effect: Dictionary, alive: Array) -> Array:
 
 	return _resolve_member_targets(target, alive)
 
-## Resolve count from an effect/item entry supporting count, min_count, max_count.
+## Resolve count from an effect/item entry supporting count, min_count, max_count, or amount (alias for count).
 func _resolve_item_count(entry: Dictionary) -> int:
 	if entry.has("min_count") and entry.has("max_count"):
 		return rng.randi_range(int(entry.min_count), int(entry.max_count))
-	return int(entry.get("count", 1))
+	if entry.has("count"):
+		return int(entry["count"])
+	if entry.has("amount"):
+		return int(entry["amount"])
+	return 1
 
 ## Fisher-Yates shuffle using the seeded RNG; returns a new array.
 func _shuffle_array(arr: Array) -> Array:
@@ -985,9 +1154,8 @@ func _shuffle_array(arr: Array) -> Array:
 	return result
 
 ## give_item_choice effect handler.
-## grant:"all"  → every resolved item goes to pending_item_rewards (or party resources if bulk).
-## grant:"one"  → all resolved items are bundled into one pending_item_choices entry;
-##                EventLog shows them simultaneously and the player picks exactly one.
+## grant:"all"  → every resolved item goes through _apply_give_item (or party resources if bulk).
+## grant:"one"  → one pending_event_log_visual_queue entry; EventLog shows ItemChoiceReward.
 ##
 ## Sources:
 ##   pool + pool_draw  — draw pool_draw distinct items from pool (default 1)
@@ -1005,7 +1173,12 @@ func _apply_give_item_choice(effect: Dictionary, party: Dictionary) -> void:
 			candidates.append({ "item_id": str(item_id), "count": _resolve_item_count(effect) })
 	else:
 		for entry in effect.get("items", []):
-			candidates.append({ "item_id": str(entry.get("item_id", "")), "count": _resolve_item_count(entry) })
+			if entry is Dictionary:
+				var row: Dictionary = entry.duplicate()
+				row["type"] = "give_item"
+				row = normalize_effect_for_apply(row)
+				var iid: String = str(row.get("item_id", ""))
+				candidates.append({ "item_id": iid, "count": _resolve_item_count(row) })
 
 	if candidates.is_empty():
 		push_warning("EventManager: give_item_choice has no items or pool")
@@ -1027,7 +1200,7 @@ func _apply_give_item_choice(effect: Dictionary, party: Dictionary) -> void:
 				"item":    ItemDatabase.get_item(c.item_id)
 			})
 		if not valid_items.is_empty():
-			pending_item_choices.append({ "items": valid_items })
+			pending_event_log_visual_queue.append({ "kind": "item_choice", "items": valid_items })
 
 ## Actually grants a character item to the chosen member after the player picks via ItemReward UI.
 func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> void:
@@ -1058,9 +1231,40 @@ func _apply_change_stat(effect: Dictionary, party: Dictionary):
 	if not effect.has("stat") or not effect.has("amount"):
 		push_warning("EventManager: change_stat effect missing 'stat' or 'amount' field")
 		return
-	
-	# TODO: Connect to party stat system
-	print("EventManager: Would change stat %s by %d" % [effect.stat, effect.amount])
+
+	var stat_id: String = str(effect.stat)
+	var amount: int = int(effect.amount)
+	var target: Variant = effect.get("target", "party")
+	var main: Node = _get_main_node()
+	if not main:
+		push_warning("EventManager: change_stat requires Main")
+		return
+
+	if stat_id == "hp":
+		var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+		if alive.is_empty():
+			return
+		var targets: Array = alive
+		if target == "party" or target == "all":
+			targets = alive
+		else:
+			targets = _resolve_member_targets(target, alive)
+		for member in targets:
+			if amount < 0:
+				member.take_damage(-amount)
+			else:
+				member.heal(amount)
+			print("EventManager: change_stat hp %+d → %s (%d/%d)" % [amount, member.member_name, member.current_health, member.max_health])
+		return
+
+	if stat_id == "gold":
+		if "party_gold" in main:
+			main.party_gold = max(0, int(main.party_gold) + amount)
+			if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
+				main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
+		return
+
+	push_warning("EventManager: change_stat unsupported stat '%s'" % stat_id)
 
 func _apply_set_variable(effect: Dictionary, party: Dictionary):
 	if not effect.has("variable") or not effect.has("value"):
@@ -1183,6 +1387,8 @@ func _apply_pay_gold(effect: Dictionary, party: Dictionary, node_state: Dictiona
 		return
 	main.party_gold = max(0, main.party_gold - amount)
 	print("EventManager: Paid %d gold (remaining: %d)" % [amount, main.party_gold])
+	if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
+		main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
 
 func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	var amount: int
@@ -1198,6 +1404,9 @@ func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Diction
 		return
 	main.party_gold = max(0, main.party_gold + amount)
 	print("EventManager: Gave %d gold (total: %d)" % [amount, main.party_gold])
+	if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
+		main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
+	_queue_event_log_visual_reward_row(0, amount)
 
 func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	var current_node = node_state.get("current_node", null)
@@ -1326,6 +1535,9 @@ func _apply_give_xp(effect: Dictionary, party: Dictionary):
 			_xp_animation_data[member] = member.simulate_xp_gain(amount)
 			member.gain_experience(amount)
 			print("EventManager: Gave %d XP to %s" % [amount, member.member_name])
+	# EventRewards row: total XP granted this effect (EventLog); skip force_level_up (no +XP line).
+	if not force_level_up and amount > 0:
+		_queue_event_log_visual_reward_row(amount * targets.size(), 0)
 
 ## Heal party members.
 ## target: "all" | "random" | integer index.
@@ -1364,6 +1576,16 @@ func _resolve_member_targets(target, alive: Array) -> Array:
 		if target == "all":
 			return alive
 		if target == "random":
+			return [alive[rng.randi() % alive.size()]]
+		if target == "stat_actor" or target == "actor":
+			var main_sa: Node = _get_main_node()
+			if main_sa and stat_check_context.has("actor_index"):
+				var ai: int = int(stat_check_context["actor_index"])
+				if ai >= 0 and ai < main_sa.current_party_members.size():
+					var m_sa: PartyMember = main_sa.current_party_members[ai]
+					if m_sa.is_alive():
+						return [m_sa]
+			push_warning("EventManager: stat_actor target but no valid stat_check_context — using random")
 			return [alive[rng.randi() % alive.size()]]
 	var main: Node = _get_main_node()
 	if not main:

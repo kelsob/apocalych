@@ -15,7 +15,7 @@ var _resolved: bool = false
 
 ## Emitted once when any choice in this group is selected.
 ## outcome_text is non-empty when the choice used a probabilistic outcomes array.
-signal choice_resolved(choice_id: String, effects: Array, outcome_text: String)
+signal choice_resolved(choice_id: String, effects: Array, outcome_text: String, next_step: Dictionary)
 signal intro_done
 
 ## Seconds between each choice fading in. Set by EventLog.
@@ -45,7 +45,7 @@ func populate_choices(choices: Array):
 func _create_choice_node(choice: Dictionary):
 	var node = _event_choice_scene.instantiate()
 	node.set_choice_data(choice)
-	node.choice_selected.connect(_on_choice_selected)
+	node.choice_selected.connect(_on_choice_selected.bind(node))
 	_choice_nodes.append(node)
 	vbox.add_child(node)
 
@@ -60,7 +60,7 @@ func _coerce_effects_array(raw: Variant) -> Array:
 	push_warning("EventChoiceContainer: 'effects' must be an array or object, got type %s — using empty" % typeof(raw))
 	return []
 
-func _on_choice_selected(choice: Dictionary):
+func _on_choice_selected(choice: Dictionary, source_node: EventChoice):
 	if _resolved:
 		return
 	_resolved = true
@@ -73,15 +73,35 @@ func _on_choice_selected(choice: Dictionary):
 
 	var effects: Array = []
 	var outcome_text: String = ""
+	var next_step: Dictionary = {}
 
-	if choice.has("outcomes") and choice.outcomes is Array and not choice.outcomes.is_empty():
+	var sc: Variant = choice.get("stat_challenge", {})
+	if sc is Dictionary and not sc.is_empty():
+		var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
+		var members: Array = main.current_party_members if main and "current_party_members" in main else []
+		var actor_slot: int = 0
+		if source_node and source_node.has_method("get_stat_actor_slot_for_resolution"):
+			actor_slot = int(source_node.call("get_stat_actor_slot_for_resolution"))
+		var res: Dictionary = EventStatCheck.resolve_stat_challenge(choice, actor_slot, members, EventManager.rng)
+		effects = _coerce_effects_array(res.get("effects", []))
+		outcome_text = str(res.get("text", ""))
+		EventManager.stat_check_context = {
+			"actor_index": int(res.get("actor_index", 0)),
+			"actor_name": str(res.get("actor_name", "")),
+			"tier": str(res.get("tier", "")),
+		}
+	elif choice.has("outcomes") and choice.outcomes is Array and not choice.outcomes.is_empty():
 		var outcome: Dictionary = EventManager.pick_weighted_outcome(choice.outcomes)
 		effects = _coerce_effects_array(outcome.get("effects", []))
 		outcome_text = outcome.get("text", "")
+	elif choice.get("weighted_branches") is Array and not choice.weighted_branches.is_empty():
+		next_step = EventManager.pick_weighted_branches(choice.weighted_branches)
+	elif choice.has("then") and choice.then is Dictionary and not choice.then.is_empty():
+		next_step = choice.then.duplicate(true)
 	else:
 		effects = _coerce_effects_array(choice.get("effects", []))
 
-	choice_resolved.emit(choice_id, effects, outcome_text)
+	choice_resolved.emit(choice_id, effects, outcome_text, next_step)
 
 ## Enable or disable all unresolved choice buttons (used to gate Continue behind item rewards).
 func set_all_disabled(disabled: bool) -> void:

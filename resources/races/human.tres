@@ -12,13 +12,13 @@ script = ExtResource("1_race")
 race_name = "Human"
 description = "Versatile and adaptable, humans excel in many pursuits through determination and ambition."
 base_stats = {
+"agility": 10,
 "charisma": 10,
 "constitution": 10,
-"dexterity": 10,
-"intelligence": 10,
-"perception": 10,
-"strength": 10,
-"wisdom": 10
+"intellect": 10,
+"luck": 10,
+"spirit": 10,
+"strength": 10
 }
 rest_ability = ExtResource("2_rest")
 portrait_1 = ExtResource("1_ojrk1")

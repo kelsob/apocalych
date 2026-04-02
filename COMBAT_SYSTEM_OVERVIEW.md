@@ -33,23 +33,23 @@ I've created a complete, extensible turn-based combat system for your game. Here
 
 ## How The System Works
 
+### Party stats vs combat stats
+- **Exploration / character sheet:** `PartyMember` uses **seven primary attributes** — strength, agility, constitution, intellect, spirit, charisma, luck — from race and class resources.
+- **Combat:** `CombatantStats.core_stats` uses **`atk`, `def`, `spd`, `mag`, `mag_def`**. Party members populate these via `PartyMember.get_combat_core_stats()` (e.g. `atk` from strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit). **Ability `stat_scaling` in `.tres` files must use these combat keys**, not the seven primary names.
+- **Enemies:** `Enemy` resources define `atk`, `def`, `spd`, `mag`, `mag_def` directly (no primary-attribute layer).
+
 ### Speed-Based Turn System
 Your vision is fully implemented:
 - Characters with higher speed get more turns
 - Turn timing is calculated as `current_time + (1.0 / speed)`
 - Speed 15 character gets ~1.5x more turns than Speed 10 character
 - Ties are broken by higher speed going first
-- Speed is derived from Dexterity but can be modified by statuses/items
+- For party members, combat **speed** comes from the derived **`spd`** core stat (mapped from **agility**); statuses can still modify effective speed
 
 ### Action Point (AP) Economy
 - Max AP: 10 (configurable)
-- Base AP/turn: 3 + (Constitution modifier / 2)
-  - Con 10 = 3 AP/turn
-  - Con 14 = 4 AP/turn
-  - Con 18 = 5 AP/turn
-- Fast characters (high DEX) go often but have low AP regen
-- Slow characters (high CON) go rarely but have high AP regen
-- This creates natural balance and build diversity
+- Base AP per turn: **3** for party members (see `CombatantStats.initialize_from_party_member`)
+- Constitution affects **HP** and growth on the character sheet, not AP regen in the current combat code
 
 ### Cast Time System
 All three ability types you wanted are implemented:
@@ -61,7 +61,7 @@ Cast time counts down **per caster turn**, so faster characters resolve casts fa
 
 ### Ability Effects
 Fully modular system:
-- **DAMAGE** - Scales with stats (e.g., +120% INT damage)
+- **DAMAGE** - Scales with `stat_scaling` on **core_stats** (e.g. `{"mag": 1.2}` for spell damage)
 - **HEAL** - Scales with stats
 - **APPLY_STATUS** - Applies buffs/debuffs
 - **INTERRUPT_CAST** - Stops enemy casts
@@ -76,7 +76,7 @@ Effects scale with caster stats automatically.
 Rich status system:
 - Duration tracking (decrements per turn)
 - Stack behaviors (REFRESH, STACK, REPLACE)
-- Stat modifiers (e.g., +5 speed, -3 strength)
+- Stat modifiers on **core_stats** keys (e.g. +5 `spd`, -3 `atk`)
 - Periodic effects (DoT/HoT ticks)
 - Shields (absorb damage before health)
 - Action prevention (stun, silence, root)
@@ -220,17 +220,15 @@ CombatEncounter can trigger events mid-combat:
 
 ## Key Design Decisions
 
-### Why Speed from Dexterity?
-- DEX represents agility/reflexes
-- Faster characters naturally act more often
-- Creates interesting trade-offs (speed vs. power)
-- Can still be modified directly by statuses/items
+### Why combat speed from agility (as `spd`)?
+- **Agility** on the character sheet maps into combat **`spd`** (turn frequency)
+- Faster characters act more often; trade-offs are tuned via primaries and equipment
+- Statuses and effects can still modify `spd` or effective speed
 
-### Why AP from Constitution?
-- CON represents stamina/endurance
-- Energy economy balances speed advantage
-- High DEX + High CON is possible but rare (stat budget)
-- Creates distinct character archetypes
+### Why fixed AP per turn (currently)?
+- **AP regeneration** per turn is a fixed baseline in code (`base_ap_per_turn = 3` for party members)
+- **Constitution** drives HP and leveling, not AP in the current implementation
+- You can later tie AP to `def` or CON-derived values if you want stamina-based economy
 
 ### Why Separate CombatantData from PartyMember?
 - PartyMember has exploration concerns (level, XP, inventory)

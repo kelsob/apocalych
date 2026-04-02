@@ -10,19 +10,23 @@
       {
         "id": "stand_and_fight",
         "text": "Hold your ground and fight",
-        "effects": [
-          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
-        ],
-        "next_event": null
+        "then": {
+          "effects": [
+            { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+          ],
+          "choices": []
+        }
       },
       {
         "id": "fight_from_cover",
         "text": "Dive for the treeline and fight from cover",
-        "effects": [
-          { "type": "change_stat", "stat": "hp", "amount": -8 },
-          { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
-        ],
-        "next_event": null
+        "then": {
+          "effects": [
+            { "type": "change_stat", "stat": "hp", "amount": -8 },
+            { "type": "start_combat", "encounter_id": "beasts/warg_scouts" }
+          ],
+          "choices": []
+        }
       }
     ],
     "combat_outcomes": {

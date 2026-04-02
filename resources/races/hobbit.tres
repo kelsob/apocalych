@@ -12,13 +12,13 @@ script = ExtResource("1_race")
 race_name = "Hobbit"
 description = "Small but nimble, hobbits are quick-witted and surprisingly resilient despite their size."
 base_stats = {
+"agility": 13,
 "charisma": 10,
 "constitution": 11,
-"dexterity": 13,
-"intelligence": 10,
-"perception": 11,
-"strength": 7,
-"wisdom": 12
+"intellect": 10,
+"luck": 11,
+"spirit": 12,
+"strength": 7
 }
 rest_ability = ExtResource("2_rest")
 portrait_1 = ExtResource("1_wr7k6")
