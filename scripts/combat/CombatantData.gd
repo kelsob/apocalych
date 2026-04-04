@@ -1,7 +1,7 @@
 extends RefCounted
 class_name CombatantData
 
-## CombatantData - Runtime wrapper that connects PartyMember/Enemy to combat systems
+## CombatantData - Runtime wrapper that connects HeroCharacter/Enemy to combat systems
 ## Provides a unified interface for combat logic regardless of combatant source
 
 signal turn_started()
@@ -9,7 +9,7 @@ signal ability_cast(ability: Ability, targets: Array)
 signal took_damage(amount: float, source: CombatantData)
 signal died()
 
-# Source reference (PartyMember or Enemy resource)
+# Source reference (HeroCharacter or Enemy resource)
 var source: Variant = null
 var is_player: bool = false
 
@@ -28,15 +28,15 @@ var current_target: CombatantData = null
 var next_turn_time: float = 0.0
 var turn_count: int = 0
 
-## Initialize from a PartyMember
-func initialize_from_party_member(member: PartyMember):
+## Initialize from a HeroCharacter
+func initialize_from_hero_character(member: HeroCharacter):
 	source = member
 	is_player = true
 	display_name = member.member_name
 	
 	# Create and initialize combat stats
 	combatant_stats = CombatantStats.new()
-	combatant_stats.initialize_from_party_member(member)
+	combatant_stats.initialize_from_hero_character(member)
 	
 	# Connect signals
 	combatant_stats.died.connect(_on_died)
@@ -118,7 +118,7 @@ func take_damage(amount: float, source_combatant: CombatantData = null) -> Dicti
 
 ## Sync combat state back to source (called after combat ends)
 func sync_back_to_source():
-	if source is PartyMember:
+	if source is HeroCharacter:
 		source.current_health = combatant_stats.current_health
 		# Could sync other persistent effects here (e.g., permanent stat changes)
 

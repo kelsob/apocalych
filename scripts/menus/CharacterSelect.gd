@@ -174,12 +174,13 @@ func _on_class_selected(index: int):
 		selected_class = null
 	character_data_changed.emit(self)
 
-## Create a PartyMember resource from this character's data
-func create_party_member() -> PartyMember:
+## Build a runtime HeroCharacter from this slot's race/class/name (legacy picker).
+func create_hero_character() -> HeroCharacter:
 	if not selected_race or not selected_class or character_name.is_empty():
 		return null
 	
-	var member = PartyMember.new()
+	var member = HeroCharacter.new()
+	member.hero_id = ""  # Custom build — no preset id; use tags from race/class only
 	member.member_name = character_name
 	member.race = selected_race
 	member.class_resource = selected_class

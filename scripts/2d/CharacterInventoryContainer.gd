@@ -39,9 +39,9 @@ func _gui_input(event: InputEvent) -> void:
 func set_awaiting_recipient(awaiting: bool) -> void:
 	modulate = Color(1.2, 1.2, 0.9) if awaiting else Color.WHITE
 
-## Populate slots from a PartyMember's inventory. Call when member changes.
+## Populate slots from a HeroCharacter's inventory. Call when member changes.
 ## member_index: when >= 0 (vendor context), slots become draggable with {item_id, member_index}.
-func populate_from_member(member: PartyMember, member_index: int = -1) -> void:
+func populate_from_member(member: HeroCharacter, member_index: int = -1) -> void:
 	if not member:
 		_clear_all_slots()
 		_clear_all_slot_drag_data()

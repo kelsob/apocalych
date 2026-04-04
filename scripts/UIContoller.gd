@@ -13,10 +13,10 @@ extends CanvasLayer
 @onready var blacksmith_screen: Control = $BlacksmithScreen
 @onready var character_details_screen: Control = $CharacterDetailsScreen
 
-var _character_details_displayed_member: PartyMember = null  # Member currently shown in CharacterDetailsScreen
+var _character_details_displayed_member: HeroCharacter = null  # Member currently shown in CharacterDetailsScreen
 var _awaiting_potion_target: bool = false  # True when health potion clicked, waiting for player to choose target
 
-signal potion_target_selected(member: PartyMember)
+signal potion_target_selected(member: HeroCharacter)
 
 # Game state constants (matches Main.gd GameState enum values)
 const MAIN_MENU = 0
@@ -36,7 +36,7 @@ func _connect_character_details_buttons() -> void:
 		if cd and cd.has_signal("character_clicked"):
 			cd.character_clicked.connect(_on_character_clicked)
 
-func _on_character_clicked(member: PartyMember) -> void:
+func _on_character_clicked(member: HeroCharacter) -> void:
 	if not member:
 		return
 	if _awaiting_potion_target:

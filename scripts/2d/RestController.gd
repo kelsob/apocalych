@@ -42,7 +42,7 @@ var rest_ability_button_scene: PackedScene = preload("res://scenes/2d/RestAbilit
 
 var is_resting: bool = false
 var current_duration: int = RestDuration.MEDIUM
-var _party_members: Array[PartyMember] = []
+var _party_members: Array[HeroCharacter] = []
 var _safe_rest: bool = false  # True when resting at Inn (town) - no ambush chance
 
 func _ready():
@@ -130,7 +130,7 @@ func _populate_ability_panels() -> void:
 	_clear_ability_panels()
 	var panels = _get_ability_panels()
 	for i in range(mini(_party_members.size(), panels.size())):
-		var member: PartyMember = _party_members[i]
+		var member: HeroCharacter = _party_members[i]
 		var panel: HBoxContainer = panels[i]
 		if not panel:
 			continue
@@ -267,7 +267,7 @@ func _trigger_nighttime_ambush() -> void:
 	call_deferred("_start_ambush_combat", encounter, main)
 
 func _start_ambush_combat(encounter: Resource, main: Node) -> void:
-	CombatController.start_combat_from_encounter(encounter, main.current_party_members)
+	CombatController.start_combat_from_encounter(encounter, main.run_roster)
 	print("[Rest Ambush DEBUG] Ambush combat started - all checks PASSED")
 
 func cancel_rest() -> void:

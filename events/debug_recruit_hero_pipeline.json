@@ -1,0 +1,33 @@
+[
+	{
+		"id": "debug_recruit_hero_pipeline",
+		"title": "[Debug] Recruit pipeline",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert"],
+		"weight": 0,
+		"one_shot": false,
+		"prereqs": {
+			"forbids_tags": ["hero:starter_human_champion"]
+		},
+		"text": "Debug: recruit Marcus if he is not already in `run_roster`. Outcome text can use `{{recruited_name}}` after a successful recruit (set by effect).",
+		"choices": [
+			{
+				"id": "recruit",
+				"text": "Recruit Marcus (starter human champion).",
+				"then": {
+					"effects": [
+						{ "type": "recruit_hero", "hero_id": "starter_human_champion", "timing": "before_text" }
+					],
+					"body": "Marcus joins the party.",
+					"choices": [
+						{ "id": "continue", "text": "Continue", "effects": [] }
+					]
+				}
+			},
+			{
+				"id": "decline",
+				"text": "Skip.",
+				"effects": []
+			}
+		]
+	}
+]

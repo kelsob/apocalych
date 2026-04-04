@@ -40,8 +40,8 @@ var active_statuses: Array[StatusEffect] = []
 var cached_effective_stats: Dictionary = {}
 var cache_dirty: bool = true
 
-## Initialize stats from a PartyMember
-func initialize_from_party_member(member: PartyMember):
+## Initialize stats from a HeroCharacter
+func initialize_from_hero_character(member: HeroCharacter):
 	max_health = member.max_health
 	current_health = member.current_health
 	core_stats = member.get_combat_core_stats().duplicate()

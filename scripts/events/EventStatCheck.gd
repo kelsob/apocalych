@@ -2,7 +2,7 @@ extends RefCounted
 class_name EventStatCheck
 
 ## Resolves event choices that use `stat_challenge` JSON: pick tier (RNG), actor, effects, outcome text.
-## Primary stat keys match `PartyMember.PRIMARY_STAT_KEYS`.
+## Primary stat keys match `HeroCharacter.PRIMARY_STAT_KEYS`.
 
 const TIER_CRIT_FAIL: String = "crit_fail"
 const TIER_FAIL: String = "fail"
@@ -40,7 +40,7 @@ const STAT_ABBREV: Dictionary = {
 
 
 static func is_valid_primary_stat(stat_key: String) -> bool:
-	return stat_key in PartyMember.PRIMARY_STAT_KEYS
+	return stat_key in HeroCharacter.PRIMARY_STAT_KEYS
 
 
 static func abbrev_for_stat(stat_key: String) -> String:
@@ -54,7 +54,7 @@ static func default_actor_index_for_stat(stat_key: String, members: Array) -> in
 	var best_i: int = 0
 	var best_v: int = -999
 	for i in members.size():
-		var m: PartyMember = members[i]
+		var m: HeroCharacter = members[i]
 		if m == null:
 			continue
 		var v: int = int(m.get_final_stats().get(stat_key, 10))
@@ -64,7 +64,7 @@ static func default_actor_index_for_stat(stat_key: String, members: Array) -> in
 	return best_i
 
 
-static func stat_value_for_member(member: PartyMember, stat_key: String) -> int:
+static func stat_value_for_member(member: HeroCharacter, stat_key: String) -> int:
 	if member == null:
 		return 10
 	return int(member.get_final_stats().get(stat_key, 10))
@@ -224,7 +224,7 @@ static func _tier_probabilities(stat_value: int) -> Dictionary:
 
 
 ## `choice` must include `stat_challenge` with `primary_stat` and `tier_outcomes` (dict of tier → { text, effects }).
-## `actor_slot` is index into `members` (Main.current_party_members order).
+## `actor_slot` is index into `members` (Main.run_roster order).
 static func resolve_stat_challenge(
 	choice: Dictionary,
 	actor_slot: int,
@@ -241,7 +241,7 @@ static func resolve_stat_challenge(
 		stat_key = "strength"
 
 	var idx: int = clampi(actor_slot, 0, maxi(0, members.size() - 1))
-	var actor: PartyMember = members[idx] if idx < members.size() else null
+	var actor: HeroCharacter = members[idx] if idx < members.size() else null
 	var sv: int = stat_value_for_member(actor, stat_key)
 	var actor_name: String = actor.member_name if actor else "Unknown"
 	var choice_id: String = str(choice.get("id", ""))
@@ -276,7 +276,7 @@ static func resolve_stat_challenge(
 
 
 static func _empty_resolve(_slot: int, members: Array) -> Dictionary:
-	var actor: PartyMember = members[0] if members.size() > 0 else null
+	var actor: HeroCharacter = members[0] if members.size() > 0 else null
 	return {
 		"tier": TIER_FAIL,
 		"effects": [],
@@ -299,7 +299,7 @@ static func fail_success_odds_percent(stat_value: int) -> Dictionary:
 ## Build a single-line label: "Action text — Name (STR 14) · 48% fail · 52% success" (odds from current stat value).
 static func build_choice_label(base_text: String, stat_key: String, actor_slot: int, members: Array) -> String:
 	var idx: int = clampi(actor_slot, 0, maxi(0, members.size() - 1))
-	var actor: PartyMember = members[idx] if idx < members.size() else null
+	var actor: HeroCharacter = members[idx] if idx < members.size() else null
 	var nm: String = actor.member_name if actor else "—"
 	var ab: String = abbrev_for_stat(stat_key)
 	var v: int = stat_value_for_member(actor, stat_key)

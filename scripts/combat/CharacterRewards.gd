@@ -23,21 +23,21 @@ static func _simulate_exp_add(exp: int, exp_to_next: int, level: int, amount: in
 		etn = int(100 * pow(1.5, lvl - 1))
 	return {"exp": e, "exp_to_next": etn, "level": lvl}
 
-func set_display(member: PartyMember, xp_gained: int):
+func set_display(member: HeroCharacter, xp_gained: int):
 	if member == null:
 		visible = false
 		return
 	_set_display_internal(member, xp_gained, member.experience, member.experience_to_next_level, member.level)
 
 ## Update display with simulated XP (for count-up animation). displayed_xp is the amount to simulate adding.
-func set_display_simulated(member: PartyMember, displayed_xp: int):
+func set_display_simulated(member: HeroCharacter, displayed_xp: int):
 	if member == null:
 		visible = false
 		return
 	var sim = _simulate_exp_add(member.experience, member.experience_to_next_level, member.level, displayed_xp)
 	_set_display_internal(member, displayed_xp, sim.exp, sim.exp_to_next, sim.level)
 
-func _set_display_internal(member: PartyMember, xp_gained: int, exp: int, exp_to_next: int, level: int):
+func _set_display_internal(member: HeroCharacter, xp_gained: int, exp: int, exp_to_next: int, level: int):
 	if member == null:
 		visible = false
 		return

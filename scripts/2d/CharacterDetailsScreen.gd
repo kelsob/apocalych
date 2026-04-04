@@ -1,7 +1,7 @@
 extends Control
 
 ## CharacterDetailsScreen - Full character sheet opened when clicking a character in the party panel.
-## Populates identity, stats, equipment, and inventory from a PartyMember.
+## Populates identity, stats, equipment, and inventory from a HeroCharacter.
 
 signal closed()
 
@@ -44,8 +44,8 @@ func _input(event: InputEvent) -> void:
 		close()
 		get_viewport().set_input_as_handled()
 
-## Populate the screen from a PartyMember. Call before showing.
-func open_character(member: PartyMember) -> void:
+## Populate the screen from a HeroCharacter. Call before showing.
+func open_character(member: HeroCharacter) -> void:
 	if not member:
 		return
 	_populate_identity(member)
@@ -59,7 +59,7 @@ func close() -> void:
 	visible = false
 	closed.emit()
 
-func _populate_identity(member: PartyMember) -> void:
+func _populate_identity(member: HeroCharacter) -> void:
 	if _name_label:
 		_name_label.text = member.member_name
 	if _level_label:
@@ -69,7 +69,7 @@ func _populate_identity(member: PartyMember) -> void:
 	if _class_label:
 		_class_label.text = member.class_resource.name if member.class_resource else "—"
 
-func _populate_hp_xp(member: PartyMember) -> void:
+func _populate_hp_xp(member: HeroCharacter) -> void:
 	if _current_hp_label:
 		_current_hp_label.text = str(member.current_health)
 	if _max_hp_label:
@@ -80,7 +80,7 @@ func _populate_hp_xp(member: PartyMember) -> void:
 		var xp_needed: int = member.experience_to_next_level - member.experience
 		_xp_to_lvl_label.text = str(max(0, xp_needed))
 
-func _populate_stats(member: PartyMember) -> void:
+func _populate_stats(member: HeroCharacter) -> void:
 	var stats: Dictionary = member.get_final_stats()
 	if _str_label:
 		_str_label.text = str(int(stats.get("strength", 10)))
@@ -95,7 +95,7 @@ func _populate_stats(member: PartyMember) -> void:
 	if _luk_label:
 		_luk_label.text = str(int(stats.get("charisma", 10)))
 
-func _populate_equipment(member: PartyMember) -> void:
+func _populate_equipment(member: HeroCharacter) -> void:
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 	if _weapon_texture:
@@ -113,6 +113,6 @@ func _populate_equipment(member: PartyMember) -> void:
 	if _armour_def_label:
 		_armour_def_label.text = "+%d DEF" % armour.get_def()
 
-func _populate_inventory(member: PartyMember) -> void:
+func _populate_inventory(member: HeroCharacter) -> void:
 	if _inventory_container:
 		_inventory_container.populate_from_member(member)

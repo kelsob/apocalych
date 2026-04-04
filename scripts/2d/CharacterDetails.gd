@@ -1,8 +1,8 @@
 extends Control
 
-signal character_clicked(member: PartyMember)
+signal character_clicked(member: HeroCharacter)
 
-var _member: PartyMember = null
+var _member: HeroCharacter = null
 
 @onready var name_label: Label = $HBoxContainer/VBoxContainer/VBoxContainer/NameLabel
 @onready var class_label: Label = $HBoxContainer/VBoxContainer/VBoxContainer/HBoxContainer/ClassLabel
@@ -33,7 +33,7 @@ func set_highlight(enabled: bool) -> void:
 	else:
 		modulate = Color.WHITE
 
-func set_member(member: PartyMember) -> void:
+func set_member(member: HeroCharacter) -> void:
 	_member = member
 	if not member:
 		name_label.text = ""

@@ -87,9 +87,9 @@ func start_combat_from_encounter(encounter: Resource, party_members: Array):
 	# Initialize player combatants from party members
 	player_combatants.clear()
 	for member in party_members:
-		if member is PartyMember:
+		if member is HeroCharacter:
 			var combatant = CombatantData.new()
-			combatant.initialize_from_party_member(member)
+			combatant.initialize_from_hero_character(member)
 			combatant.died.connect(_on_combatant_died.bind(combatant))
 			player_combatants.append(combatant)
 			combat_timeline.register_combatant(combatant)

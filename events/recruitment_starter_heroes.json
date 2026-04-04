@@ -1,0 +1,134 @@
+[
+	{
+		"id": "recruit_starter_human_champion_01",
+		"title": "The Straggler",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert", "badlands", "ash_plains"],
+		"weight": 4,
+		"one_shot": false,
+		"prereqs": {
+			"requires_any": ["biome:forest", "biome:plains", "biome:hills", "biome:mountain", "biome:coastal", "biome:swamp", "biome:desert", "biome:badlands", "biome:ash_plains"],
+			"forbids_tags": ["hero:starter_human_champion"]
+		},
+		"text": "Marcus lifts a hand from the trail, armoured and alone. He has seen enough of the road to know that company is better than silence.",
+		"choices": [
+			{
+				"id": "recruit_marcus",
+				"text": "Invite him along.",
+				"then": {
+					"effects": [
+						{ "type": "recruit_hero", "hero_id": "starter_human_champion", "timing": "before_text" }
+					],
+					"body": "Marcus joins the party.",
+					"choices": [
+						{
+							"id": "continue",
+							"text": "Continue",
+							"effects": []
+						}
+					]
+				}
+			},
+			{
+				"id": "decline_marcus",
+				"text": "Wish him well and move on.",
+				"effects": []
+			}
+		]
+	},
+	{
+		"id": "recruit_starter_elf_wizard_01",
+		"title": "Arcane Campfire",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert", "badlands", "ash_plains"],
+		"weight": 4,
+		"one_shot": false,
+		"prereqs": {
+			"requires_any": ["biome:forest", "biome:plains", "biome:hills", "biome:mountain", "biome:coastal", "biome:swamp", "biome:desert", "biome:badlands", "biome:ash_plains"],
+			"forbids_tags": ["hero:starter_elf_wizard"]
+		},
+		"text": "Elara closes a tome by a dying fire. She is looking for a ward—and a reason to leave the road.",
+		"choices": [
+			{
+				"id": "recruit_elara",
+				"text": "Invite her along.",
+				"then": {
+					"effects": [
+						{ "type": "recruit_hero", "hero_id": "starter_elf_wizard", "timing": "before_text" }
+					],
+					"body": "Elara joins the party.",
+					"choices": [
+						{ "id": "continue", "text": "Continue", "effects": [] }
+					]
+				}
+			},
+			{
+				"id": "decline_elara",
+				"text": "Nod and pass by.",
+				"effects": []
+			}
+		]
+	},
+	{
+		"id": "recruit_starter_dwarf_cleric_01",
+		"title": "Hammer and Prayer",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert", "badlands", "ash_plains"],
+		"weight": 4,
+		"one_shot": false,
+		"prereqs": {
+			"requires_any": ["biome:forest", "biome:plains", "biome:hills", "biome:mountain", "biome:coastal", "biome:swamp", "biome:desert", "biome:badlands", "biome:ash_plains"],
+			"forbids_tags": ["hero:starter_dwarf_cleric"]
+		},
+		"text": "Durin tends a wounded mule. His god and his axe have kept him alive; perhaps they will serve your cause too.",
+		"choices": [
+			{
+				"id": "recruit_durin",
+				"text": "Offer him a share of the fire.",
+				"then": {
+					"effects": [
+						{ "type": "recruit_hero", "hero_id": "starter_dwarf_cleric", "timing": "before_text" }
+					],
+					"body": "Durin joins the party.",
+					"choices": [
+						{ "id": "continue", "text": "Continue", "effects": [] }
+					]
+				}
+			},
+			{
+				"id": "decline_durin",
+				"text": "Thank him and leave.",
+				"effects": []
+			}
+		]
+	},
+	{
+		"id": "recruit_starter_hobbit_rogue_01",
+		"title": "Footprints",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert", "badlands", "ash_plains"],
+		"weight": 4,
+		"one_shot": false,
+		"prereqs": {
+			"requires_any": ["biome:forest", "biome:plains", "biome:hills", "biome:mountain", "biome:coastal", "biome:swamp", "biome:desert", "biome:badlands", "biome:ash_plains"],
+			"forbids_tags": ["hero:starter_hobbit_rogue"]
+		},
+		"text": "Merry drops from a low branch, grinning. 'Quiet paths ahead,' he says. 'Could use a bigger party.'",
+		"choices": [
+			{
+				"id": "recruit_merry",
+				"text": "Take him on.",
+				"then": {
+					"effects": [
+						{ "type": "recruit_hero", "hero_id": "starter_hobbit_rogue", "timing": "before_text" }
+					],
+					"body": "Merry joins the party.",
+					"choices": [
+						{ "id": "continue", "text": "Continue", "effects": [] }
+					]
+				}
+			},
+			{
+				"id": "decline_merry",
+				"text": "Politely decline.",
+				"effects": []
+			}
+		]
+	}
+]

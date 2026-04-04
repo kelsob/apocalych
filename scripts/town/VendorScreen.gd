@@ -5,7 +5,7 @@ signal party_gold_changed(new_gold: int)
 
 const VENDOR_ITEM_BUTTON_SCENE := preload("res://scenes/2d/VendorItemButton.tscn")
 
-var _party_members: Array[PartyMember] = []
+var _party_members: Array[HeroCharacter] = []
 var _party_gold: int = 0
 ## item_id -> quantity. Default 1 per item; decremented on purchase. Future: items_to_sell can pass {item_id, qty}.
 var _vendor_stock: Dictionary = {}
@@ -254,7 +254,7 @@ func _on_recipient_selected(member_index: int) -> void:
 	if member_index < 0 or member_index >= _party_members.size():
 		_cancel_pending_buy()
 		return
-	var member: PartyMember = _party_members[member_index]
+	var member: HeroCharacter = _party_members[member_index]
 	if not member.add_item(_pending_buy_item_id, 1):
 		_cancel_pending_buy()
 		return
@@ -322,8 +322,8 @@ func _try_transfer_to_ally_inventory(item_id: String, from_member_index: int) ->
 			continue
 		var container = containers[to_index]
 		if container and container.get_global_rect().has_point(mouse):
-			var from_member: PartyMember = _party_members[from_member_index]
-			var to_member: PartyMember = _party_members[to_index]
+			var from_member: HeroCharacter = _party_members[from_member_index]
+			var to_member: HeroCharacter = _party_members[to_index]
 			if to_member.add_item(item_id, 1):
 				from_member.remove_item(item_id, 1)
 				_populate_character_inventories()
@@ -335,7 +335,7 @@ func _on_sell_box_item_dropped(item_id: String, member_index: int) -> void:
 	var item := ItemDatabase.get_item(item_id)
 	if not item:
 		return
-	var member: PartyMember = _party_members[member_index]
+	var member: HeroCharacter = _party_members[member_index]
 	if not member.remove_item(item_id, 1):
 		return
 	var sell_price := item.value / 2

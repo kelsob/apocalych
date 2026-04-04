@@ -4,8 +4,8 @@ This guide walks you through setting up the combat system resources and scenes.
 
 ## Party stats vs combat stats
 
-- **Party / character sheet** uses **seven primary attributes:** `strength`, `agility`, `constitution`, `intellect`, `spirit`, `charisma`, `luck` (race + class on `PartyMember`).
-- **Combat runtime** uses **`CombatantStats.core_stats`:** `atk`, `def`, `spd`, `mag`, `mag_def`. Party members get these from `PartyMember.get_combat_core_stats()` (e.g. `atk` tracks strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit).
+- **Party / character sheet** uses **seven primary attributes:** `strength`, `agility`, `constitution`, `intellect`, `spirit`, `charisma`, `luck` (race + class on `HeroCharacter`).
+- **Combat runtime** uses **`CombatantStats.core_stats`:** `atk`, `def`, `spd`, `mag`, `mag_def`. Party members get these from `HeroCharacter.get_combat_core_stats()` (e.g. `atk` tracks strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit).
 - **Ability `stat_scaling`** must use **core_stats keys** (`atk`, `def`, `spd`, `mag`, `mag_def`) — that is what `AbilityEffect.calculate_final_potency()` reads.
 - **Enemies** only use the combat stats (`atk`, `def`, `spd`, `mag`, `mag_def`) on the `Enemy` resource, not the seven primaries.
 
@@ -327,7 +327,7 @@ func _on_test_combat_button_pressed():
 	var encounter = load("res://resources/encounters/test_encounter.tres")
 	var combat_scene = load("res://scenes/combat/CombatScene.tscn").instantiate()
 	add_child(combat_scene)
-	CombatController.start_combat_from_encounter(encounter, current_party_members)
+	CombatController.start_combat_from_encounter(encounter, run_roster)
 ```
 
 ### Option B: Integrate with EventManager
@@ -373,7 +373,7 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 	get_tree().root.add_child(combat_scene)
 	
 	# Start combat
-	CombatController.start_combat_from_encounter(encounter, main.current_party_members)
+	CombatController.start_combat_from_encounter(encounter, main.run_roster)
 ```
 
 ---

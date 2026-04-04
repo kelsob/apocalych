@@ -15,7 +15,7 @@ class_name ItemReward
 ##           ├── Button2
 ##           └── Button3
 
-signal member_chosen(member: PartyMember)
+signal member_chosen(member: HeroCharacter)
 
 @onready var reward_label: RichTextLabel = $HBoxContainer/HBoxContainer/RewardLabel
 @onready var item_icon: TextureRect = $HBoxContainer/HBoxContainer/ItemIcon
@@ -61,7 +61,7 @@ func _set_icon(icon_path: String) -> void:
 		item_icon.texture = null
 		item_icon.visible = false
 
-func _on_member_button_pressed(member: PartyMember) -> void:
+func _on_member_button_pressed(member: HeroCharacter) -> void:
 	if _resolved:
 		return
 	_resolved = true

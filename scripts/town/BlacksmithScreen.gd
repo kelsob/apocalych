@@ -35,7 +35,7 @@ const ARMOUR_TIER_ICON_PATHS: Array[String] = [
 	"res://assets/items/armor-1.png",
 ]
 
-var _party_members: Array[PartyMember] = []
+var _party_members: Array[HeroCharacter] = []
 var _party_gold: int = 0
 var _selected_character_index: int = -1
 
@@ -107,7 +107,7 @@ func _update_character_buttons() -> void:
 			btn.visible = false
 			continue
 		btn.visible = true
-		var member: PartyMember = _party_members[i]
+		var member: HeroCharacter = _party_members[i]
 		btn.text = member.member_name if member else ("Character %d" % (i + 1))
 		btn.button_pressed = (i == _selected_character_index)
 
@@ -125,7 +125,7 @@ func _refresh_equipment_panels() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		_clear_equipment_panels()
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 
@@ -204,7 +204,7 @@ func _get_main_node() -> Node:
 func _on_weapon_upgrade_hover_started() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
 	var w_target: int = weapon.tier + 1
 	if w_target > Weapon.Tier.MITHRIL:
@@ -219,7 +219,7 @@ func _on_weapon_upgrade_hover_ended() -> void:
 func _on_armour_upgrade_hover_started() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 	var a_target: int = armour.tier + 1
 	if a_target > Armour.Tier.MITHRIL:
@@ -234,7 +234,7 @@ func _on_armour_upgrade_hover_ended() -> void:
 func _on_weapon_gold_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
 	var target_tier: int = weapon.tier + 1
 	if target_tier > Weapon.Tier.MITHRIL:
@@ -251,7 +251,7 @@ func _on_weapon_gold_upgrade() -> void:
 func _on_weapon_stone_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
 	var target_tier: int = weapon.tier + 1
 	if target_tier > Weapon.Tier.MITHRIL:
@@ -267,7 +267,7 @@ func _on_weapon_stone_upgrade() -> void:
 func _on_armour_gold_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 	var target_tier: int = armour.tier + 1
 	if target_tier > Armour.Tier.MITHRIL:
@@ -284,7 +284,7 @@ func _on_armour_gold_upgrade() -> void:
 func _on_armour_stone_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
-	var member: PartyMember = _party_members[_selected_character_index]
+	var member: HeroCharacter = _party_members[_selected_character_index]
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 	var target_tier: int = armour.tier + 1
 	if target_tier > Armour.Tier.MITHRIL:

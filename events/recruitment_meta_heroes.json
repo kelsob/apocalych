@@ -1,0 +1,39 @@
+[
+	{
+		"id": "recruit_unlockable_sellsword_01",
+		"title": "The Stray Blade",
+		"biomes": ["forest", "plains", "hills", "mountain", "coastal", "swamp", "desert", "badlands", "ash_plains"],
+		"weight": 4,
+		"one_shot": false,
+		"prereqs": {
+			"requires_any": ["biome:forest", "biome:plains", "biome:hills", "biome:mountain", "biome:coastal", "biome:swamp", "biome:desert", "biome:badlands", "biome:ash_plains"],
+			"forbids_tags": ["hero:unlockable_sellsword"]
+		},
+		"text": "A woman with a notched longknife watches the road. She does not look lost—only waiting for the right company.",
+		"choices": [
+			{
+				"id": "recruit_kira",
+				"text": "Offer her a place.",
+				"then": {
+					"effects": [
+						{
+							"type": "recruit_hero",
+							"hero_id": "unlockable_sellsword",
+							"meta_unlock": true,
+							"timing": "before_text"
+						}
+					],
+					"body": "Kira slides into step beside you. Another run, another contract—but this time the road is yours.",
+					"choices": [
+						{ "id": "continue", "text": "Continue", "effects": [] }
+					]
+				}
+			},
+			{
+				"id": "decline_kira",
+				"text": "Move on.",
+				"effects": []
+			}
+		]
+	}
+]

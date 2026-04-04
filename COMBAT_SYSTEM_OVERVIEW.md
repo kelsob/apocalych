@@ -15,7 +15,7 @@ I've created a complete, extensible turn-based combat system for your game. Here
 
 2. **Combat Runtime** (`scripts/combat/`)
    - `CombatantStats.gd` - Runtime stats container (health, AP, speed, statuses)
-   - `CombatantData.gd` - Wrapper connecting PartyMember/Enemy to combat
+   - `CombatantData.gd` - Wrapper connecting HeroCharacter/Enemy to combat
    - `TurnEvent.gd` - Represents a single turn in the queue
    - `ActiveCast.gd` - Tracks multi-turn ability casts
    - `CombatTimeline.gd` - **The brain** - manages turn order based on speed
@@ -27,15 +27,15 @@ I've created a complete, extensible turn-based combat system for your game. Here
 4. **Integration**
    - Updated `EventManager.gd` to start combat from events
    - Updated `Class.gd` to include abilities array
-   - Updated `PartyMember.gd` integration
+   - Updated `HeroCharacter` integration
 
 ---
 
 ## How The System Works
 
 ### Party stats vs combat stats
-- **Exploration / character sheet:** `PartyMember` uses **seven primary attributes** — strength, agility, constitution, intellect, spirit, charisma, luck — from race and class resources.
-- **Combat:** `CombatantStats.core_stats` uses **`atk`, `def`, `spd`, `mag`, `mag_def`**. Party members populate these via `PartyMember.get_combat_core_stats()` (e.g. `atk` from strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit). **Ability `stat_scaling` in `.tres` files must use these combat keys**, not the seven primary names.
+- **Exploration / character sheet:** `HeroCharacter` uses **seven primary attributes** — strength, agility, constitution, intellect, spirit, charisma, luck — from race and class resources.
+- **Combat:** `CombatantStats.core_stats` uses **`atk`, `def`, `spd`, `mag`, `mag_def`**. Party members populate these via `HeroCharacter.get_combat_core_stats()` (e.g. `atk` from strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit). **Ability `stat_scaling` in `.tres` files must use these combat keys**, not the seven primary names.
 - **Enemies:** `Enemy` resources define `atk`, `def`, `spd`, `mag`, `mag_def` directly (no primary-attribute layer).
 
 ### Speed-Based Turn System
@@ -48,7 +48,7 @@ Your vision is fully implemented:
 
 ### Action Point (AP) Economy
 - Max AP: 10 (configurable)
-- Base AP per turn: **3** for party members (see `CombatantStats.initialize_from_party_member`)
+- Base AP per turn: **3** for party members (see `CombatantStats.initialize_from_hero_character`)
 - Constitution affects **HP** and growth on the character sheet, not AP regen in the current combat code
 
 ### Cast Time System
@@ -230,8 +230,8 @@ CombatEncounter can trigger events mid-combat:
 - **Constitution** drives HP and leveling, not AP in the current implementation
 - You can later tie AP to `def` or CON-derived values if you want stamina-based economy
 
-### Why Separate CombatantData from PartyMember?
-- PartyMember has exploration concerns (level, XP, inventory)
+### Why Separate CombatantData from HeroCharacter?
+- HeroCharacter has exploration concerns (level, XP, inventory)
 - CombatantData is pure combat state
 - Clean separation of concerns
 - After combat, sync back minimal state (health)

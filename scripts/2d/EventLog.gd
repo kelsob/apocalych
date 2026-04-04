@@ -320,12 +320,12 @@ func _flatten_choice_effects_for_preview(choice: Dictionary) -> Array:
 							out.append(e)
 	return out
 
-## Replace {slot0}, {slot1}, … with live party member names (Main.current_party_members order).
+## Replace {slot0}, {slot1}, … with live party member names (Main.run_roster order).
 func _substitute_slot_placeholders_in_string(text: String) -> String:
 	var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
 	if not main:
 		return text
-	var members: Array = main.current_party_members
+	var members: Array = main.run_roster
 	for i in members.size():
 		text = text.replace("{slot%d}" % i, members[i].member_name)
 	return text
@@ -355,8 +355,8 @@ func _preview_member_name_from_give_trait_effect(effect: Dictionary) -> String:
 		var s: String = str(target)
 		if s.is_valid_int():
 			idx = int(s)
-	if idx >= 0 and idx < main.current_party_members.size():
-		return main.current_party_members[idx].member_name
+	if idx >= 0 and idx < main.run_roster.size():
+		return main.run_roster[idx].member_name
 	return ""
 
 ## First single-recipient give_trait in this choice (effects + outcomes) drives {member} in the choice button text.
@@ -404,7 +404,7 @@ func _spawn_item_reward_node(reward: Dictionary) -> ItemReward:
 		push_warning("EventLog: _item_reward_scene is null — ItemReward.tscn not loaded")
 		return null
 	var main = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var members: Array = main.current_party_members if main else []
+	var members: Array = main.run_roster if main else []
 	if members.is_empty():
 		push_warning("EventLog: no party members, cannot present item reward")
 		return null
@@ -424,7 +424,7 @@ func _spawn_item_choice_node(items: Array) -> ItemChoiceReward:
 	if items.is_empty():
 		return null
 	var main = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var members: Array = main.current_party_members if main else []
+	var members: Array = main.run_roster if main else []
 	if members.is_empty():
 		push_warning("EventLog: no party members, cannot present item choice")
 		return null
@@ -503,7 +503,7 @@ func _present_item_reward(reward: Dictionary) -> void:
 		return
 	await get_tree().process_frame
 	scroll_container.ensure_control_visible(visibility_spacer)
-	var chosen: PartyMember = await rn.member_chosen
+	var chosen: HeroCharacter = await rn.member_chosen
 	EventManager.fulfill_item_reward(reward.item_id, reward.count, chosen)
 
 func _apply_effects_collect_items(norm_effects: Array) -> Array:
@@ -831,7 +831,7 @@ func _present_item_reward_entry(entry: Dictionary) -> void:
 		var count: int = entry.node.chosen_item_data.get("count", 1)
 		EventManager.fulfill_item_reward(item_id, count, entry.node.chosen_member)
 	else:
-		var chosen: PartyMember = await entry.node.member_chosen
+		var chosen: HeroCharacter = await entry.node.member_chosen
 		EventManager.fulfill_item_reward(entry.reward.item_id, entry.reward.count, chosen)
 
 ## Replace {key} placeholders in text with values from EventManager.text_vars.

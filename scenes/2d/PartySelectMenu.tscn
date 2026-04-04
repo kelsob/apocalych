@@ -1,7 +1,6 @@
-[gd_scene load_steps=9 format=3 uid="uid://bjjpm0xn570qo"]
+[gd_scene load_steps=8 format=3 uid="uid://bjjpm0xn570qo"]
 
 [ext_resource type="Script" uid="uid://bc411cojl27fc" path="res://scripts/menus/PartySelectMenu.gd" id="1_t1rdc"]
-[ext_resource type="PackedScene" uid="uid://blih3sad2222n" path="res://scenes/2d/CharacterSelect.tscn" id="2_0a6me"]
 [ext_resource type="Shader" uid="uid://dkew03s863s4u" path="res://assets/shaders/liquid_gold.gdshader" id="2_rxc2q"]
 [ext_resource type="Material" uid="uid://cuhm7qfu8hcby" path="res://materials/ArtEdgeMaterial.tres" id="3_g7ewm"]
 [ext_resource type="Material" uid="uid://dv0fapbow2kbx" path="res://materials/EmberMaterial.tres" id="3_l5uoc"]
@@ -95,29 +94,24 @@ grow_vertical = 0
 theme = ExtResource("4_ysvma")
 text = "Back"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
+anchors_preset = 4
 anchor_top = 0.5
-anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -268.0
-offset_top = -159.0
-offset_right = 268.0
-offset_bottom = 63.0
-grow_horizontal = 2
+offset_left = 56.0
+offset_top = -34.0
+offset_right = 96.0
+offset_bottom = 34.0
 grow_vertical = 2
-theme_override_constants/separation = 64
-alignment = 1
 
-[node name="CharacterSelect1" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+[node name="OptionButton" type="OptionButton" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="CharacterSelect2" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+[node name="OptionButton2" type="OptionButton" parent="VBoxContainer"]
 layout_mode = 2
 
-[node name="CharacterSelect3" parent="HBoxContainer" instance=ExtResource("2_0a6me")]
+[node name="OptionButton3" type="OptionButton" parent="VBoxContainer"]
 layout_mode = 2
 
 [node name="HBoxContainer2" type="HBoxContainer" parent="."]

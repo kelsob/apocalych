@@ -37,7 +37,7 @@ This document is the plan for the town system: town-specific arrival events, ent
 | Event selection | `EventManager.pick_event_for_node(biome, party, node_state)` | When at a town we pass something like `biome = "town"` so only town events are eligible. |
 | Event display / choices | `EventWindow`, `EventChoiceButton` | Town entry is a normal event with choices; no change. |
 | Effect application | `EventManager.apply_effects()` | We add new effect types: `pay_gold`, `open_town`. |
-| Party / gold | `Main.current_party_members`, `Main.party_gold` | Entry cost and town services (Inn, Warmaster, etc.) use these. |
+| Party / gold | `Main.run_roster`, `Main.party_gold` | Entry cost and town services (Inn, Warmaster, etc.) use these. |
 | Rest | `RestController`, `Main.start_rest()` / `_on_rest_complete()` | Inn can trigger the same rest flow (pay gold then call existing rest). |
 
 No inventory or equipment system exists yet; Blacksmith/Merchant/Warmaster will be stubbed or minimal until those exist.

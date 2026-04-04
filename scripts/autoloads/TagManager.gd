@@ -60,7 +60,7 @@ func refresh_tags(main: Node, party_members: Variant, _party_gold: int, biome: S
 	var race_counts: Dictionary = {}
 	var class_counts: Dictionary = {}
 	for m in members:
-		if not m is PartyMember:
+		if not m is HeroCharacter:
 			continue
 		if m.race:
 			var race_key: String = m.race.race_name.to_lower()
@@ -80,8 +80,10 @@ func refresh_tags(main: Node, party_members: Variant, _party_gold: int, biome: S
 			_append_unique_computed("<all_%s>" % class_key)
 
 	for m in members:
-		if not m is PartyMember:
+		if not m is HeroCharacter:
 			continue
+		if m.hero_id and not m.hero_id.is_empty():
+			_append_unique_computed("hero:%s" % m.hero_id)
 		for tid in m.get_trait_ids():
 			_append_unique_computed("trait:%s" % tid)
 		for item_id in m.get_inventory_ids():
@@ -89,7 +91,7 @@ func refresh_tags(main: Node, party_members: Variant, _party_gold: int, biome: S
 			_append_unique_computed("char_item:%s" % iid)
 			_append_unique_computed("item:%s" % iid)
 
-	# Party-wide bulk resources on Main (health_potion, camping_supplies, …) — not on PartyMember inventory
+	# Party-wide bulk resources on Main (health_potion, camping_supplies, …) — not on HeroCharacter inventory
 	if main != null and "party_resources" in main:
 		var pr: Variant = main.party_resources
 		if pr is Dictionary:
@@ -112,7 +114,7 @@ func refresh_tags(main: Node, party_members: Variant, _party_gold: int, biome: S
 	tags_changed.emit()
 
 ## Back-compat: refresh from party only (no biome); pulls gold from Main when available.
-func update_tags_from_party(party_members: Array[PartyMember]) -> void:
+func update_tags_from_party(party_members: Array[HeroCharacter]) -> void:
 	var main: Node = _find_main_node()
 	var gold: int = int(main.party_gold) if main and "party_gold" in main else 0
 	refresh_tags(main, party_members, gold, "")

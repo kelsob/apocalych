@@ -10,10 +10,11 @@
 
 | Prefix | Example | Source |
 |--------|---------|--------|
-| Race (any in party) | `<human>`, `<halfling>` | `PartyMember.race.race_name` (lower case) |
+| Hero (preset id) | `hero:starter_elf_wizard` | `HeroCharacter.hero_id` when non-empty |
+| Race (any in party) | `<human>`, `<halfling>` | `HeroCharacter.race.race_name` (lower case) |
 | Race (whole party) | `<all_halfling>` | Same race count == party size |
-| Class | `<cleric>`, `<all_wizard>` | `PartyMember.class_resource.name` |
-| Trait | `trait:natural_hunter` | `PartyMember.get_trait_ids()` |
+| Class | `<cleric>`, `<all_wizard>` | `HeroCharacter.class_resource.name` |
+| Trait | `trait:natural_hunter` | `HeroCharacter.get_trait_ids()` |
 | Item on character | `char_item:iron_luck_charm` | Member `inventory` count > 0 |
 | Party bulk stash | `resource:health_potion`, `resource:camping_supplies`, … | `Main.party_resources` count > 0 |
 | Union (compat) | `item:health_potion` | Present in **either** stash or any member inventory |

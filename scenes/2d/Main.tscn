@@ -38,8 +38,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 event_debug_force = true
-event_debug_id_1 = "debug_rewards_test"
-event_debug_id_2 = "debug_cond_trait_natural_hunter"
+event_debug_id_1 = "recruit_starter_elf_wizard_01"
+event_debug_id_2 = "recruit_starter_dwarf_cleric_01"
 event_debug_keep_forcing = true
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]

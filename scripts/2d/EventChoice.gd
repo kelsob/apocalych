@@ -11,7 +11,7 @@ class_name EventChoice
 var choice_data: Dictionary = {}
 var _pending_choice: Dictionary = {}
 
-## For `stat_challenge` choices: -1 = auto (best stat), else `Main.current_party_members` index.
+## For `stat_challenge` choices: -1 = auto (best stat), else `Main.run_roster` index.
 var _stat_actor_slot_override: int = -1
 ## True while cursor is over this choice's button (used for stat actor cycling input).
 var _mouse_over_button: bool = false
@@ -72,7 +72,7 @@ func _choice_has_stat_challenge() -> bool:
 
 func _cycle_stat_actor(delta: int) -> void:
 	var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var members: Array = main.current_party_members if main and "current_party_members" in main else []
+	var members: Array = main.run_roster if main and "run_roster" in main else []
 	var n: int = members.size()
 	if n <= 0:
 		return
@@ -172,21 +172,21 @@ func _stop_bob() -> void:
 func _build_stat_challenge_label(base_text: String, sc: Dictionary) -> String:
 	var stat_key: String = str(sc.get("primary_stat", "strength"))
 	var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var members: Array = main.current_party_members if main and "current_party_members" in main else []
+	var members: Array = main.run_roster if main and "run_roster" in main else []
 	var slot: int = _stat_actor_slot_override
 	if slot < 0:
 		slot = EventStatCheck.default_actor_index_for_stat(stat_key, members)
 	return EventStatCheck.build_choice_label(base_text, stat_key, slot, members)
 
 
-## Slot into `Main.current_party_members` used when this choice resolves. Override -1 = best primary stat.
+## Slot into `Main.run_roster` used when this choice resolves. Override -1 = best primary stat.
 func get_stat_actor_slot_for_resolution() -> int:
 	var sc: Variant = choice_data.get("stat_challenge", {})
 	if not sc is Dictionary or sc.is_empty():
 		return 0
 	var stat_key: String = str(sc.get("primary_stat", "strength"))
 	var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var members: Array = main.current_party_members if main and "current_party_members" in main else []
+	var members: Array = main.run_roster if main and "run_roster" in main else []
 	if _stat_actor_slot_override >= 0 and _stat_actor_slot_override < members.size():
 		return _stat_actor_slot_override
 	return EventStatCheck.default_actor_index_for_stat(stat_key, members)
@@ -195,7 +195,7 @@ func get_stat_actor_slot_for_resolution() -> int:
 ## Call from your override UI (cycle / dropdown). Clamped to party size.
 func set_stat_actor_slot_override(slot: int) -> void:
 	var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
-	var n: int = main.current_party_members.size() if main and "current_party_members" in main else 0
+	var n: int = main.run_roster.size() if main and "run_roster" in main else 0
 	if n <= 0:
 		return
 	_stat_actor_slot_override = clampi(slot, 0, n - 1)

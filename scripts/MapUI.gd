@@ -74,7 +74,7 @@ func _refresh_party_tags_display() -> void:
 	else:
 		party_tag_display_label.text = "(TagManager unavailable)"
 
-func initialize_party_ui(members: Array[PartyMember]) -> void:
+func initialize_party_ui(members: Array[HeroCharacter]) -> void:
 	party_details.initialize_party(members)
 
 func refresh_party_xp() -> void:

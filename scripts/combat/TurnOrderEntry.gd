@@ -70,6 +70,6 @@ func set_cast_countdown(countdown: int):
 
 func _update_portrait() -> void:
 	if combatant.is_player:
-		portrait_texture.texture = (combatant.source as PartyMember).get_combat_portrait()
+		portrait_texture.texture = (combatant.source as HeroCharacter).get_combat_portrait()
 	else:
 		portrait_texture.texture = (combatant.source as Enemy).combat_portrait

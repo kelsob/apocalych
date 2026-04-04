@@ -23,7 +23,7 @@ var current_state: GameState = GameState.MAIN_MENU
 var _fading_to_game: bool = false  # True while map is generating and we're waiting to fade in
 var game_started: bool = false
 var current_world_name: String = ""
-var current_party_members: Array[PartyMember] = []
+var run_roster: Array[HeroCharacter] = []
 var party_gold: int = 150  # Starting gold (for debugging)
 ## Party-wide resources (item_id -> count). Bulk items: health_potion, camping_supplies, sharpening_stone, magical_dust.
 ## Not tied to any character; don't occupy item slots.
@@ -36,7 +36,7 @@ var _town_node_indices_granted_entry: Array[int] = []  # Node indices of towns p
 var _in_potion_target_mode: bool = false  # True when awaiting character click to apply health potion
 
 ## Event debug: when true, EventManager forces this event ID on the next eligible pick. Cleared automatically after one successful force unless `event_debug_keep_forcing` is true. Also turns on EventManager [SELECT] lines for that pick (tags + note that pool was skipped).
-## Dropdown lists known debug / test events (see `events/debug_*.json`, `master_test_event.json`, `test_*.json`, `introductory_event.json`). `__none__` = do not force.
+## Dropdown lists known debug / test events (see `events/debug_*.json`, `master_test_event.json`, `test_*.json`, `introductory_event.json`, `recruitment_starter_heroes.json`). `__none__` = do not force.
 @export var event_debug_force: bool = false
 @export_enum(
 	"__none__",
@@ -62,7 +62,12 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 	"debug_cond_requires_any",
 	"debug_cond_trait_natural_hunter",
 	"debug_cond_variables",
-	"debug_cond_weather_cloudy"
+	"debug_cond_weather_cloudy",
+	"recruit_starter_human_champion_01",
+	"recruit_starter_elf_wizard_01",
+	"recruit_starter_dwarf_cleric_01",
+	"recruit_starter_hobbit_rogue_01",
+	"recruit_unlockable_sellsword_01"
 ) var event_debug_id: String = "__none__"
 ## Optional ordered queue: 1st map event → 2nd → 3rd. `__none__` skips that slot (same pick keeps advancing until a real id or sequence ends). After the three slots are consumed, falls back to **`event_debug_id`** if not `__none__`.
 @export_enum(
@@ -89,7 +94,12 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 	"debug_cond_requires_any",
 	"debug_cond_trait_natural_hunter",
 	"debug_cond_variables",
-	"debug_cond_weather_cloudy"
+	"debug_cond_weather_cloudy",
+	"recruit_starter_human_champion_01",
+	"recruit_starter_elf_wizard_01",
+	"recruit_starter_dwarf_cleric_01",
+	"recruit_starter_hobbit_rogue_01",
+	"recruit_unlockable_sellsword_01"
 ) var event_debug_id_1: String = "__none__"
 @export_enum(
 	"__none__",
@@ -115,7 +125,12 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 	"debug_cond_requires_any",
 	"debug_cond_trait_natural_hunter",
 	"debug_cond_variables",
-	"debug_cond_weather_cloudy"
+	"debug_cond_weather_cloudy",
+	"recruit_starter_human_champion_01",
+	"recruit_starter_elf_wizard_01",
+	"recruit_starter_dwarf_cleric_01",
+	"recruit_starter_hobbit_rogue_01",
+	"recruit_unlockable_sellsword_01"
 ) var event_debug_id_2: String = "__none__"
 @export_enum(
 	"__none__",
@@ -141,9 +156,14 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 	"debug_cond_requires_any",
 	"debug_cond_trait_natural_hunter",
 	"debug_cond_variables",
-	"debug_cond_weather_cloudy"
+	"debug_cond_weather_cloudy",
+	"recruit_starter_human_champion_01",
+	"recruit_starter_elf_wizard_01",
+	"recruit_starter_dwarf_cleric_01",
+	"recruit_starter_hobbit_rogue_01",
+	"recruit_unlockable_sellsword_01"
 ) var event_debug_id_3: String = "__none__"
-## When true, forced event applies every node; when false (default), `event_debug_force` turns off after the first successful forced event so normal selection resumes.
+## When true, forced event applies every node. When false, force still stays on until the ordered queue (`event_debug_id_1`…`_3`) has no remaining non-`__none__` slots after the current pick — so 2nd/3rd map events can force `_2`/`_3` without this flag.
 @export var event_debug_keep_forcing: bool = false
 ## When debug forcing: if **true**, the forced event’s own **`prereqs`** must pass (`condition_passes`: tags, gold, resources, forbids, variables — not biome/weight/town; those only affect random pool eligibility).
 @export var event_debug_respect_prereqs: bool = true
@@ -154,6 +174,7 @@ var _in_potion_target_mode: bool = false  # True when awaiting character click t
 
 func _ready():
 	add_to_group("main")
+	MetaProgression.ensure_loaded()
 	# Connect menu signals automatically
 	_connect_menu_signals()
 	
@@ -197,7 +218,11 @@ func _ready():
 func _connect_menu_signals():
 	ui_controller.main_menu.start_game_pressed.connect(_on_main_menu_start_pressed)
 	ui_controller.main_menu.quit_pressed.connect(_on_main_menu_quit_pressed)
-	
+	ui_controller.main_menu.options_pressed.connect(_on_main_menu_options_pressed)
+	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
+	if options_menu and options_menu.has_signal("closed"):
+		options_menu.closed.connect(_on_options_menu_closed)
+
 	ui_controller.party_select_menu.start_game_pressed.connect(_on_party_select_start_pressed)
 	ui_controller.party_select_menu.back_to_main_menu_pressed.connect(_on_party_select_back_pressed)
 
@@ -210,7 +235,9 @@ func show_menu(state: GameState):
 	ui_controller.party_select_menu.visible = false
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
-	
+	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
+	if options_menu:
+		options_menu.visible = false
 	# Show the appropriate menu
 	match state:
 		GameState.MAIN_MENU:
@@ -227,17 +254,32 @@ func _on_main_menu_start_pressed():
 	show_menu(GameState.PARTY_SELECT)
 	await fade_overlay.fade_from_black()
 
+func _on_main_menu_options_pressed():
+	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
+	if options_menu == null:
+		push_warning("Main: add a child named OptionsMenu under UIController (see scripts/menus/OptionsMenu.gd).")
+		return
+	if options_menu.has_method("open_options"):
+		options_menu.call("open_options")
+	else:
+		options_menu.visible = true
+
+func _on_options_menu_closed():
+	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
+	if options_menu and options_menu.visible:
+		options_menu.visible = false
+
 func _on_main_menu_quit_pressed():
 	get_tree().quit()
 
 ## Signal handlers for PartySelectMenu
-func _on_party_select_start_pressed(party_members: Array[PartyMember], world_name: String):
+func _on_party_select_start_pressed(party_members: Array[HeroCharacter], world_name: String):
 	# TagManager: party + gold (biome filled on map after spawn; party_resources refresh when bulk items change)
 	if TagManager:
 		TagManager.update_tags_from_party(party_members)
 	
 	# Store party data and world name
-	current_party_members = party_members
+	run_roster = party_members
 	current_world_name = world_name
 	print("World Name: ", world_name)
 	
@@ -263,7 +305,7 @@ func _on_map_generation_complete():
 	# Give party starting supplies (party-wide resources)
 	add_party_resource("camping_supplies", 10)
 	add_party_resource("health_potion", 1)
-	ui_controller.map_ui.initialize_party_ui(current_party_members)
+	ui_controller.map_ui.initialize_party_ui(run_roster)
 	_refresh_map_resource_labels()
 	start_game()
 	# Fade in to reveal the fully-generated map, then show the intro event
@@ -329,11 +371,11 @@ func apply_combat_rewards(victory: bool, rewards: Dictionary):
 	var gold: int = rewards.get("gold", 0)
 	var fled: bool = rewards.get("fled", false)
 	if victory:
-		for member in current_party_members:
+		for member in run_roster:
 			member.gain_experience(xp)
 		party_gold += gold
 	elif fled:
-		for member in current_party_members:
+		for member in run_roster:
 			member.gain_experience(xp)
 	_refresh_map_resource_labels()
 	if xp > 0:
@@ -449,7 +491,7 @@ func _build_party_dict() -> Dictionary:
 	
 	# Add party members array (for EventManager internal use)
 	party_dict.members = []
-	for member in current_party_members:
+	for member in run_roster:
 		var member_dict = {
 			"name": member.member_name,
 			"level": member.level,
@@ -462,22 +504,22 @@ func _build_party_dict() -> Dictionary:
 	
 	# Add individual member names for easy interpolation
 	# Accessible as {{party.member1_name}}, {{party.member2_name}}, {{party.member3_name}}
-	if current_party_members.size() > 0:
-		party_dict.member1_name = current_party_members[0].member_name
-		party_dict.member1_level = current_party_members[0].level
-		party_dict.member1_health = current_party_members[0].current_health
-	if current_party_members.size() > 1:
-		party_dict.member2_name = current_party_members[1].member_name
-		party_dict.member2_level = current_party_members[1].level
-		party_dict.member2_health = current_party_members[1].current_health
-	if current_party_members.size() > 2:
-		party_dict.member3_name = current_party_members[2].member_name
-		party_dict.member3_level = current_party_members[2].level
-		party_dict.member3_health = current_party_members[2].current_health
+	if run_roster.size() > 0:
+		party_dict.member1_name = run_roster[0].member_name
+		party_dict.member1_level = run_roster[0].level
+		party_dict.member1_health = run_roster[0].current_health
+	if run_roster.size() > 1:
+		party_dict.member2_name = run_roster[1].member_name
+		party_dict.member2_level = run_roster[1].level
+		party_dict.member2_health = run_roster[1].current_health
+	if run_roster.size() > 2:
+		party_dict.member3_name = run_roster[2].member_name
+		party_dict.member3_level = run_roster[2].level
+		party_dict.member3_health = run_roster[2].current_health
 	
 	# Add party-wide stats
 	party_dict.party_level = _calculate_average_party_level()
-	party_dict.leader_name = current_party_members[0].member_name if current_party_members.size() > 0 else ""
+	party_dict.leader_name = run_roster[0].member_name if run_roster.size() > 0 else ""
 	
 	# Add variables (empty for now, can be populated later if needed)
 	party_dict.variables = {}
@@ -492,14 +534,14 @@ func _build_party_dict() -> Dictionary:
 
 ## Calculate average party level
 func _calculate_average_party_level() -> int:
-	if current_party_members.is_empty():
+	if run_roster.is_empty():
 		return 1
 	
 	var total_level = 0
-	for member in current_party_members:
+	for member in run_roster:
 		total_level += member.level
 	
-	return int(total_level / current_party_members.size())
+	return int(total_level / run_roster.size())
 
 # ============================================================================
 # REST SYSTEM
@@ -514,13 +556,13 @@ func _on_party_moved_to_node(node: MapNode2D):
 		print("WEATHER Main party_moved → sync_biome_from_node (weather not rolled) | node=%s biome=%s party_size=%d frame=%s" % [
 			node.name if node != null else "null",
 			bname,
-			current_party_members.size(),
+			run_roster.size(),
 			str(Engine.get_process_frames())
 		])
 	if WeatherManager and WeatherManager.has_method("sync_biome_from_node"):
 		WeatherManager.sync_biome_from_node(node)
 	# Include `weather:*` in derived tags whenever the party exists (initial spawn fires before `game_started`).
-	if current_party_members.size() > 0:
+	if run_roster.size() > 0:
 		_refresh_tag_manager_tags()
 
 ## Called when event window closes - update rest and town button visibility
@@ -543,7 +585,30 @@ func _refresh_tag_manager_tags() -> void:
 		var pn = map_generator.current_party_node
 		if pn.biome:
 			biome_name = pn.biome.biome_name
-	TagManager.refresh_tags(self, current_party_members, party_gold, biome_name)
+	TagManager.refresh_tags(self, run_roster, party_gold, biome_name)
+
+
+## Append a hero from a `HeroCharacter` template (`HeroDatabase`). Skips if `hero_id` already on `run_roster`.
+## Map party strip still shows first three members only until UI is extended for larger rosters.
+func recruit_hero_from_template(template_path: String) -> bool:
+	if template_path.is_empty():
+		return false
+	var tpl: HeroCharacter = HeroDatabase.load_template(template_path)
+	if tpl == null:
+		return false
+	var hid: String = tpl.hero_id
+	if not hid.is_empty():
+		for m in run_roster:
+			if m.hero_id == hid:
+				return false
+	var hero: HeroCharacter = HeroDatabase.instantiate_for_run(template_path)
+	if hero == null:
+		return false
+	run_roster.append(hero)
+	_refresh_tag_manager_tags()
+	if ui_controller and ui_controller.map_ui and ui_controller.map_ui.has_method("update_resource_labels"):
+		ui_controller.map_ui.update_resource_labels(run_roster, party_gold, party_resources)
+	return true
 
 
 ## Add to party-wide resources (bulk items only). Returns true if added.
@@ -603,7 +668,7 @@ func _on_health_potion_use_requested():
 	ui_controller.request_potion_target_selection()
 
 ## Called when player selects a character to heal with health potion
-func _on_potion_target_selected(member: PartyMember):
+func _on_potion_target_selected(member: HeroCharacter):
 	if not member or member.current_health >= member.max_health:
 		return
 	if not _spend_party_health_potion():
@@ -614,7 +679,7 @@ func _on_potion_target_selected(member: PartyMember):
 	member.heal(heal_amount)
 	_refresh_map_resource_labels()
 	if ui_controller.map_ui and ui_controller.map_ui.has_method("update_resource_labels"):
-		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold, party_resources)
+		ui_controller.map_ui.update_resource_labels(run_roster, party_gold, party_resources)
 
 ## Update rest button visibility from current node's rest state (safe to rest and not already rested here).
 ## Wilderness rest requires at least 1 camping supply - hide Rest button when party has none.
@@ -665,7 +730,7 @@ func start_rest():
 	ui_controller.map_ui.visible = false
 	
 	# Show rest screen with party for rest abilities and healing
-	ui_controller.rest_controller.start_rest(current_party_members)
+	ui_controller.rest_controller.start_rest(run_roster)
 
 ## Called when rest is interrupted by nighttime ambush (before combat starts)
 func _on_rest_ambush_triggered():
@@ -701,7 +766,7 @@ func open_town_screen(town_node: MapNode2D, force_all_services: bool = false):
 	town_node.can_rest_here = true
 	if _town_node_indices_granted_entry.find(town_node.node_index) < 0:
 		_town_node_indices_granted_entry.append(town_node.node_index)
-	ui_controller.town_screen.open_town(town_node, current_party_members, party_gold, force_all_services)
+	ui_controller.town_screen.open_town(town_node, run_roster, party_gold, force_all_services)
 	ui_controller.town_screen.visible = true
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
@@ -740,17 +805,17 @@ func _on_rest_from_town_requested(town_node: MapNode2D, gold_cost: int):
 	party_gold -= gold_cost
 	_town_node_for_rest = town_node
 	ui_controller.town_screen.visible = false
-	ui_controller.rest_controller.start_rest(current_party_members, true)  # Inn = safe rest, no ambush
+	ui_controller.rest_controller.start_rest(run_roster, true)  # Inn = safe rest, no ambush
 	ui_controller.rest_controller.visible = true
 
 ## Called when player buys XP from Warmaster in town
 func _on_warmaster_training_requested(member_index: int, gold_cost: int, xp_amount: int):
-	if member_index < 0 or member_index >= current_party_members.size():
+	if member_index < 0 or member_index >= run_roster.size():
 		return
 	if party_gold < gold_cost:
 		return
 	party_gold -= gold_cost
-	current_party_members[member_index].gain_experience(xp_amount)
+	run_roster[member_index].gain_experience(xp_amount)
 	ui_controller.town_screen.update_party_gold(party_gold)
 
 ## Called when player requests vendor from town
@@ -761,7 +826,7 @@ func _on_vendor_requested():
 ## Called by EventManager (script_hook open_merchant_ui, open_vendor effect) or from town.
 func open_vendor_screen(_context_node: MapNode2D = null, vendor_item_ids: Array = []):
 	_vendor_opened_from_town = _context_node == null and ui_controller.town_screen.visible
-	ui_controller.vendor_screen.open_vendor(current_party_members, party_gold, vendor_item_ids)
+	ui_controller.vendor_screen.open_vendor(run_roster, party_gold, vendor_item_ids)
 	ui_controller.vendor_screen.visible = true
 	map_generator.visible = false
 	ui_controller.map_ui.visible = false
@@ -789,7 +854,7 @@ func _on_vendor_gold_changed(new_gold: int):
 func _on_blacksmith_requested():
 	_blacksmith_opened_from_town = true
 	ui_controller.town_screen.visible = false
-	ui_controller.blacksmith_screen.open_blacksmith(current_party_members, party_gold)
+	ui_controller.blacksmith_screen.open_blacksmith(run_roster, party_gold)
 	ui_controller.blacksmith_screen.visible = true
 
 ## Called when player closes blacksmith
@@ -809,4 +874,4 @@ func _on_blacksmith_gold_changed(new_gold: int):
 ## Refresh the MapUI resource count labels (gold + 4 bulk items)
 func _refresh_map_resource_labels():
 	if ui_controller.map_ui.has_method("update_resource_labels"):
-		ui_controller.map_ui.update_resource_labels(current_party_members, party_gold, party_resources)
+		ui_controller.map_ui.update_resource_labels(run_roster, party_gold, party_resources)

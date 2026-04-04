@@ -109,7 +109,7 @@ Open `scenes/2d/Main.tscn`
 ```gdscript
 func _on_test_combat_button_pressed():
 	var encounter = load("res://resources/encounters/test_fight.tres")
-	CombatController.start_combat_from_encounter(encounter, current_party_members)
+	CombatController.start_combat_from_encounter(encounter, run_roster)
 ```
 
 ### 8. Test!

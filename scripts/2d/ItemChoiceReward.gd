@@ -22,7 +22,7 @@ var _reward_nodes: Array = []
 
 ## Populated when resolved — read by EventLog to fulfill the grant.
 var chosen_item_data: Dictionary = {}
-var chosen_member: PartyMember = null
+var chosen_member: HeroCharacter = null
 
 ## items: array of {item_id, count, item}. members: current party members array.
 func setup(items: Array, members: Array) -> void:
@@ -33,7 +33,7 @@ func setup(items: Array, members: Array) -> void:
 		node.member_chosen.connect(_on_member_chosen.bind(item_data, node))
 		_reward_nodes.append(node)
 
-func _on_member_chosen(member: PartyMember, item_data: Dictionary, source_node: ItemReward) -> void:
+func _on_member_chosen(member: HeroCharacter, item_data: Dictionary, source_node: ItemReward) -> void:
 	if _resolved:
 		return
 	_resolved = true

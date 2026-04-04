@@ -295,7 +295,7 @@ All types are dispatched in `scripts/events/EventManager.gd`. Unknown `type` str
 | **`consume_item`** | `item_id`, `count` | Removes from stash and/or inventories until count is met. |
 | **`give_item_from_pool`** | `pool` (array of `item_id`), same count fields as `give_item` | Picks **one** random `item_id` from `pool`, then behaves like `give_item`. |
 | **`give_item_choice`** | `grant`: `"all"` \| `"one"`; plus `pool`+`pool_draw` **or** `items`: `[{ item_id, count?… }]` | `"all"` grants each resolved entry; `"one"` queues a **pick-one** UI set. |
-| **`give_trait`** | `trait_id`, and **`target`** (`"all"` / `"random"` / slot / **`member_name`**) | Grants via `TraitDatabase` + `PartyMember.add_trait`. No **`remove_trait`** effect yet (see **Gaps**). |
+| **`give_trait`** | `trait_id`, and **`target`** (`"all"` / `"random"` / slot / **`member_name`**) | Grants via `TraitDatabase` + `HeroCharacter.add_trait`. No **`remove_trait`** effect yet (see **Gaps**). |
 | **`give_xp`** | `amount` (unless `force_level_up`), `target` | Party XP / level-up animation hooks. |
 | **`heal_party`** | `target`, and `amount` **or** `amount`: `"full"` **or** `percent` | Heals alive members; does not replace combat healing. |
 | **`change_stat`** | `stat`, `amount`, optional `target` | **`hp`**: damage/heal on `target` members (including **`stat_actor`**). **`gold`**: adjusts party gold (signed). **Primary attributes** (strength, etc.) are **not** handled here — see **Gaps**. |
@@ -310,10 +310,40 @@ All types are dispatched in `scripts/events/EventManager.gd`. Unknown `type` str
 | **`set_variable`** | `variable`, `value` | **Stub:** prints only; **no persistent storage** yet. |
 | **`script_hook`** | **`hook_name`** (not `hook_id`) | Built-in: `open_merchant_ui`, `restart_game`, `go_to_main_menu`, `quit_game`. |
 | **`change_reputation`** | *any* | **No reputation system** — **ignored silently** (keeps old JSON loadable). |
+| **`recruit_hero`** | **`template_path`** **or** **`hero_id`**; optional **`join_party`** (default `true`); optional **`meta_unlock`** (default `false`); optional **`timing`** | Resolves template; optionally **`meta_unlock`** (ids in **`HeroDatabase.meta_unlockable_template_paths()`** only). If **`join_party`** is true, `Main.recruit_hero_from_template` appends to `run_roster` when not already present; sets `text_vars["recruited_name"]`. **`join_party`: false** = no party add (use with **`meta_unlock`**: true for story-only unlock). |
+| **`unlock_hero_meta`** | **`hero_id`** | Cross-run unlock only (`MetaProgression`); no roster add. Prefer **`recruit_hero`** + **`meta_unlock`** when they should also join this run. |
+
+### Hero recruitment (starters, meta-unlock, nested `then`)
+
+**Tags:** `TagManager` emits **`hero:<hero_id>`** for every hero in **`Main.run_roster`** (see `docs/EVENT_TAGS.md`). Meta unlock does **not** add tags.
+
+**Gating (when the event stops rolling):** **`prereqs.forbids_tags`: [`hero:<hero_id>`]**. The event stays eligible until that hero is **in the active run roster** (chosen at party select **or** recruited this run). **Meta-unlocked** but **not** picked at run start → **`hero:<id>`** still absent → the recruitment event **can still appear** until they join the party in play.
+
+**Starter quartet:** `starter_human_champion`, `starter_elf_wizard`, `starter_dwarf_cleric`, `starter_hobbit_rogue`. Player picks **three** of four; exactly **one** recruitment event is eligible (missing starter).
+
+**Meta-unlock heroes:** Templates such as **`unlockable_sellsword`** are hidden from party select until **`MetaProgression`** unlocks them. Register paths in **`HeroDatabase.meta_unlockable_template_paths()`**. Typical: **`recruit_hero`** with **`"meta_unlock": true`** (join + future unlock). **Story-only:** **`"join_party": false`**, **`"meta_unlock": true`**, or effect **`unlock_hero_meta`**.
+
+**Nested execution:** Put **`recruit_hero`** on the **`then`** step that should run; effects run only when that branch executes. Root choice **`effects`** do not run when a **`then`** chain is entered first (see pipeline notes in this doc). **`"timing": "before_text"`** on **`recruit_hero`** adds them before nested **`body`**.
+
+**Persistence:** **`user://meta_progression.json`** via **`MetaProgression`**. **`MetaProgression.reset_all_meta()`** clears all meta (Options-menu hook for testing). **`Main`** calls **`MetaProgression.ensure_loaded()`** on startup.
+
+**Structured prereqs pool:** Events that only use **`forbids_tags`** (plus optional **`requires_any`** with `biome:*`) use the structured pool branch — no non-biome **`requires_tags`** required.
+
+**Files:** `events/recruitment_starter_heroes.json`, `events/recruitment_meta_heroes.json`.
+
+**Example:**
+
+```json
+"effects": [
+  { "type": "recruit_hero", "hero_id": "unlockable_sellsword", "meta_unlock": true, "timing": "before_text" }
+]
+```
+
+**UI:** Extra recruits stay on `run_roster` for tags/combat; map strip may still show three detail rows.
 
 ### What authoring uses today (from `events/*.json`)
 
-High-frequency: **`add_tag`**, **`change_stat`** (`hp`), **`give_gold`** / **`pay_gold`**, **`give_item`**, **`advance_time`**, **`reveal_secrets`**, **`start_combat`**, **`set_rest_state`**, **`change_reputation`** (flavor-only). Less common in world JSON, exercised in **`debug_rewards_test.json`**: **`give_item_from_pool`**, **`give_item_choice`**, **`give_xp`**, **`heal_party`**, **`give_trait`**, **`set_weather`**. **`stat_challenge`** tiers in **`forest_environmental_events.json`** combine **`change_stat`** + **`add_tag`** + **`give_gold`**.
+High-frequency: **`add_tag`**, **`change_stat`** (`hp`), **`give_gold`** / **`pay_gold`**, **`give_item`**, **`advance_time`**, **`reveal_secrets`**, **`start_combat`**, **`set_rest_state`**, **`change_reputation`** (flavor-only). Less common in world JSON, exercised in **`debug_rewards_test.json`**: **`give_item_from_pool`**, **`give_item_choice`**, **`give_xp`**, **`heal_party`**, **`give_trait`**, **`set_weather`**, **`recruit_hero`**. **`stat_challenge`** tiers in **`forest_environmental_events.json`** combine **`change_stat`** + **`add_tag`** + **`give_gold`**.
 
 ### Gaps and unification ideas
 
@@ -750,6 +780,8 @@ Use this as the live task list until the migration is finished.
 | Primary stats in tier resolution | ✅ `EventStatCheck` + `get_final_stats()` |
 | `remove_trait` / primary-stat `change_stat` / real `set_variable` | ❌ See **Gaps and unification ideas** |
 | `change_reputation` | ⚠️ Parsed, **no gameplay** |
+| **`recruit_hero`** (`template_path` / `hero_id`) → `Main.run_roster` | ✅ Implemented (`EventManager`, `HeroDatabase`, `TagManager` `hero:*` tags) |
+| Map UI / combat: **4+ heroes** on `run_roster` (active vs bench) | ⚠️ Roster grows; **party strip** still 3 slots until UI/combat swap |
 | Combat **objectives** (survive N turns, protect target, etc.) as first-class event/encounter JSON | ❌ **Design goal** — implement in encounter/combat layer; not event schema alone |
 | **Mid-combat** narrative choices / triggers (HP, turn count) | ❌ **Design goal** — not wired to `EventLog`; future combat ↔ event integration |
 | **`enemies_fled`** post-combat key | ⚠️ Schema exists; **Main** may not map combat end-state yet — see **Post-Combat Outcomes** |

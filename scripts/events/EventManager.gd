@@ -30,7 +30,7 @@ var text_vars: Dictionary = {}
 var stat_check_context: Dictionary = {}
 
 ## XP animation sequences populated before gain_experience/level_up modifies the member.
-## Keyed by PartyMember reference. Read and cleared by CharacterDetails.refresh_xp().
+## Keyed by HeroCharacter reference. Read and cleared by CharacterDetails.refresh_xp().
 var _xp_animation_data: Dictionary = {}
 
 ## Effects with `"timing": "on_event_close"` queue here; **`drain_effects_on_event_close`** runs them when the event UI session ends.
@@ -83,9 +83,29 @@ func _event_pick_log(main: Node, msg: String) -> void:
 		print("%s%s" % [EVENT_SELECTION_LOG_PREFIX, msg])
 
 
+## True if `event_debug_id_1`…`_3` still have a non-`__none__` id at or after the current sequence cursor (`_debug_sequence_slot` is next index to read on the next pick).
+func _has_pending_non_none_sequence_slots(main_node: Node) -> bool:
+	if main_node == null:
+		return false
+	var seq_slots: Array = [
+		_main_debug_seq_export(main_node, "event_debug_id_1"),
+		_main_debug_seq_export(main_node, "event_debug_id_2"),
+		_main_debug_seq_export(main_node, "event_debug_id_3"),
+	]
+	for i in range(_debug_sequence_slot, 3):
+		var cand: String = seq_slots[i]
+		if cand != "__none__" and not cand.is_empty():
+			return true
+	return false
+
+
 func _clear_debug_event_force_after_pick(main_node: Node, main_had_force: bool) -> void:
 	var keep: bool = main_node != null and "event_debug_keep_forcing" in main_node and main_node.event_debug_keep_forcing
 	if keep:
+		return
+	# Ordered queue: after a successful force, `_debug_sequence_slot` points at the next slot. Do not turn off
+	# `event_debug_force` until those remaining slots are exhausted — otherwise the 2nd/3rd map event never forces.
+	if main_node != null and _has_pending_non_none_sequence_slots(main_node):
 		return
 	debug_force_event = false
 	debug_event_id = ""
@@ -268,11 +288,11 @@ func _quantity_party_resource_id(item_id: String, party_state: Dictionary) -> in
 ## Sum of item_id across character inventories only (ignores party_resources).
 func _quantity_character_inventory_only(item_id: String) -> int:
 	var main: Node = _get_main_node()
-	if main == null or not ("current_party_members" in main):
+	if main == null or not ("run_roster" in main):
 		return 0
 	var total: int = 0
-	for m in main.current_party_members:
-		if m is PartyMember:
+	for m in main.run_roster:
+		if m is HeroCharacter:
 			total += m.get_item_count(item_id)
 	return total
 
@@ -590,14 +610,13 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 	var main_node: Node = _get_main_node()
 	if TagManager:
 		if main_node:
-			TagManager.refresh_tags(main_node, main_node.current_party_members, int(party.get("party_gold", 0)), biome)
+			TagManager.refresh_tags(main_node, main_node.run_roster, int(party.get("party_gold", 0)), biome)
 		else:
 			TagManager.refresh_tags(null, [], int(party.get("party_gold", 0)), biome)
 
 	var party_state_dict: Dictionary = _build_party_state(party)
 	var is_town_node: bool = node_state.get("is_town", false)
 
-	var seq_restore: int = _debug_sequence_slot
 	var force_event: bool = debug_force_event
 	var force_id: String = debug_event_id
 	var main_wants_force: bool = main_node != null and "event_debug_force" in main_node and main_node.event_debug_force
@@ -634,7 +653,8 @@ func pick_event_for_node(biome: String, party: Dictionary, node_state: Dictionar
 			if respect_prereqs and not _forced_debug_event_respects_prereqs(ev_force, party_state_dict):
 				push_warning("%sdebug force skipped '%s' — event `prereqs` not met (tags / gold / resources / forbids); set Main.event_debug_respect_prereqs = false to force anyway" % [EVENT_SELECTION_LOG_PREFIX, force_id])
 				_event_pick_log(main_node, "forced skip id=%s (prereqs)" % force_id)
-				_debug_sequence_slot = seq_restore
+				# Do not rewind `_debug_sequence_slot`: the while-loop already advanced past this id. Rewinding
+				# would retry id_1 forever and never reach `event_debug_id_2` / `_3` on later map picks.
 				force_event = false
 			else:
 				print("%sforced debug event '%s' (clear after pick unless event_debug_keep_forcing)" % [EVENT_SELECTION_LOG_PREFIX, force_id])
@@ -921,6 +941,12 @@ func apply_effects_array(effects: Array, party: Dictionary, node_state: Dictiona
 			"heal_party":
 				_apply_heal_party(effect, party)
 
+			"recruit_hero":
+				_apply_recruit_hero(effect, party)
+
+			"unlock_hero_meta":
+				_apply_unlock_hero_meta(effect, party)
+
 			"set_weather":
 				_apply_set_weather(effect)
 
@@ -1112,7 +1138,7 @@ func _apply_give_item(effect: Dictionary, party: Dictionary):
 		return
 
 	# Non-bulk items are queued for player assignment via ItemReward UI
-	if main.current_party_members.is_empty():
+	if main.run_roster.is_empty():
 		push_warning("EventManager: give_item requires party members for non-resource items")
 		return
 	pending_event_log_visual_queue.append({
@@ -1138,14 +1164,14 @@ func drain_pending_event_log_visual_queue() -> Array:
 ##
 ##   member_name  — grant to the first alive party member whose member_name matches (case-insensitive).
 ##                  Use when each narrative choice names a specific character.
-##   target       — "all" | "random" | party slot index (0 = first member in Main.current_party_members).
+##   target       — "all" | "random" | party slot index (0 = first member in Main.run_roster).
 ##                  JSON numbers may arrive as float; whole-number floats are accepted.
 ##
 ## Outcome text can use {member} after a single-recipient grant (random, slot, or member_name).
 ## Deprecated: target "acted" (old member-picker) — logs a warning and behaves like "random".
 func _apply_give_trait(effect: Dictionary, party: Dictionary) -> void:
 	var trait_id: String = str(effect.get("trait_id", ""))
-	# Main._build_party_dict() does NOT set party["alive"] — must resolve PartyMember refs from Main
+	# Main._build_party_dict() does NOT set party["alive"] — must resolve HeroCharacter refs from Main
 	# (same as give_xp / heal_party). Using party.get("alive", []) alone always failed silently.
 	var alive: Array = _get_alive_party_members()
 	if alive.is_empty():
@@ -1255,7 +1281,7 @@ func _apply_give_item_choice(effect: Dictionary, party: Dictionary) -> void:
 			pending_event_log_visual_queue.append({ "kind": "item_choice", "items": valid_items })
 
 ## Actually grants a character item to the chosen member after the player picks via ItemReward UI.
-func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> void:
+func fulfill_item_reward(item_id: String, count: int, member: HeroCharacter) -> void:
 	if not ItemDatabase.has_item(item_id):
 		push_warning("EventManager: fulfill_item_reward unknown item_id '%s'" % item_id)
 		return
@@ -1263,7 +1289,7 @@ func fulfill_item_reward(item_id: String, count: int, member: PartyMember) -> vo
 	var main: Node = _get_main_node()
 	var party_total: int = 0
 	if main:
-		for m in main.current_party_members:
+		for m in main.run_roster:
 			party_total += m.get_item_count(item_id)
 	var capacity_headroom: int = 999
 	if item.capacity > 0:
@@ -1293,7 +1319,7 @@ func _apply_change_stat(effect: Dictionary, party: Dictionary):
 		return
 
 	if stat_id == "hp":
-		var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+		var alive: Array = main.run_roster.filter(func(m): return m.is_alive())
 		if alive.is_empty():
 			return
 		var targets: Array = alive
@@ -1313,7 +1339,7 @@ func _apply_change_stat(effect: Dictionary, party: Dictionary):
 		if "party_gold" in main:
 			main.party_gold = max(0, int(main.party_gold) + amount)
 			if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
-				main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
+				main.ui_controller.map_ui.update_resource_labels(main.run_roster, main.party_gold, main.party_resources)
 		return
 
 	push_warning("EventManager: change_stat unsupported stat '%s'" % stat_id)
@@ -1385,10 +1411,10 @@ func _apply_start_combat(effect: Dictionary, party: Dictionary, node_state: Dict
 	# Wait one frame to ensure scene is fully in tree
 	await get_tree().process_frame
 	
-	print("EventManager: Starting combat with %d party members" % main.current_party_members.size())
+	print("EventManager: Starting combat with %d party members" % main.run_roster.size())
 	
 	# Start combat via CombatController
-	CombatController.start_combat_from_encounter(encounter, main.current_party_members)
+	CombatController.start_combat_from_encounter(encounter, main.run_roster)
 
 func _apply_script_hook(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	if not effect.has("hook_name"):
@@ -1440,7 +1466,7 @@ func _apply_pay_gold(effect: Dictionary, party: Dictionary, node_state: Dictiona
 	main.party_gold = max(0, main.party_gold - amount)
 	print("EventManager: Paid %d gold (remaining: %d)" % [amount, main.party_gold])
 	if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
-		main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
+		main.ui_controller.map_ui.update_resource_labels(main.run_roster, main.party_gold, main.party_resources)
 
 func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	var amount: int
@@ -1457,7 +1483,7 @@ func _apply_give_gold(effect: Dictionary, party: Dictionary, node_state: Diction
 	main.party_gold = max(0, main.party_gold + amount)
 	print("EventManager: Gave %d gold (total: %d)" % [amount, main.party_gold])
 	if main.ui_controller and main.ui_controller.map_ui and main.ui_controller.map_ui.has_method("update_resource_labels"):
-		main.ui_controller.map_ui.update_resource_labels(main.current_party_members, main.party_gold, main.party_resources)
+		main.ui_controller.map_ui.update_resource_labels(main.run_roster, main.party_gold, main.party_resources)
 	_queue_event_log_visual_reward_row(0, amount)
 
 func _apply_open_town(effect: Dictionary, party: Dictionary, node_state: Dictionary):
@@ -1508,7 +1534,7 @@ func _party_has_item(item_id: String, count: int) -> bool:
 		return main.get_party_resource_count(item_id) >= count
 	# Non-bulk: sum across all party members
 	var total := 0
-	for m in main.current_party_members:
+	for m in main.run_roster:
 		total += m.get_item_count(item_id)
 	return total >= count
 
@@ -1532,7 +1558,7 @@ func _apply_consume_item(effect: Dictionary, party: Dictionary):
 	else:
 		# Remove from whichever party members hold the item
 		var remaining := count
-		for m in main.current_party_members:
+		for m in main.run_roster:
 			if remaining <= 0:
 				break
 			var has: int = m.get_item_count(item_id)
@@ -1565,7 +1591,7 @@ func _apply_give_xp(effect: Dictionary, party: Dictionary):
 	if not main:
 		push_warning("EventManager: give_xp could not find Main")
 		return
-	var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+	var alive: Array = main.run_roster.filter(func(m): return m.is_alive())
 	if alive.is_empty():
 		return
 	var force_level_up: bool = effect.get("force_level_up", false)
@@ -1602,7 +1628,7 @@ func _apply_heal_party(effect: Dictionary, party: Dictionary):
 	if not main:
 		push_warning("EventManager: heal_party could not find Main")
 		return
-	var alive: Array = main.current_party_members.filter(func(m): return m.is_alive())
+	var alive: Array = main.run_roster.filter(func(m): return m.is_alive())
 	if alive.is_empty():
 		return
 	var target = effect.get("target", "all")
@@ -1620,8 +1646,8 @@ func _apply_heal_party(effect: Dictionary, party: Dictionary):
 			member.heal(healed)
 		print("EventManager: Healed %s for %d HP (%d/%d)" % [member.member_name, healed, member.current_health, member.max_health])
 
-## Resolve a target field into an Array of PartyMember references from the alive pool.
-## target: "all" → all alive members | "random" → one random alive member | int/float → slot in Main.current_party_members
+## Resolve a target field into an Array of HeroCharacter references from the alive pool.
+## target: "all" → all alive members | "random" → one random alive member | int/float → slot in Main.run_roster
 func _resolve_member_targets(target, alive: Array) -> Array:
 	# JSON numbers are often float; never compare float to String (runtime error in GDScript 4).
 	if typeof(target) == TYPE_STRING:
@@ -1633,8 +1659,8 @@ func _resolve_member_targets(target, alive: Array) -> Array:
 			var main_sa: Node = _get_main_node()
 			if main_sa and stat_check_context.has("actor_index"):
 				var ai: int = int(stat_check_context["actor_index"])
-				if ai >= 0 and ai < main_sa.current_party_members.size():
-					var m_sa: PartyMember = main_sa.current_party_members[ai]
+				if ai >= 0 and ai < main_sa.run_roster.size():
+					var m_sa: HeroCharacter = main_sa.run_roster[ai]
 					if m_sa.is_alive():
 						return [m_sa]
 			push_warning("EventManager: stat_actor target but no valid stat_check_context — using random")
@@ -1656,8 +1682,8 @@ func _resolve_member_targets(target, alive: Array) -> Array:
 		if s.is_valid_int():
 			idx = int(s)
 
-	if idx >= 0 and idx < main.current_party_members.size():
-		var m = main.current_party_members[idx]
+	if idx >= 0 and idx < main.run_roster.size():
+		var m = main.run_roster[idx]
 		if m.is_alive():
 			return [m]
 
@@ -1684,9 +1710,62 @@ func _sync_tag_manager_after_weather_change() -> void:
 		var mg: Variant = main.map_generator
 		if mg.current_party_node and mg.current_party_node.biome:
 			biome_name = str(mg.current_party_node.biome.biome_name)
-	var members: Array = main.current_party_members if "current_party_members" in main else []
+	var members: Array = main.run_roster if "run_roster" in main else []
 	var gold: int = int(main.party_gold) if "party_gold" in main else 0
 	TagManager.refresh_tags(main, members, gold, biome_name)
+
+
+## JSON: `{ "type": "recruit_hero", "template_path": "..." }` or `"hero_id": "starter_elf_wizard"`.
+## Optional: `"join_party": false` — skip adding to `run_roster` (story-only path). Optional: `"meta_unlock": true` — persist unlock for party select on **future** runs (only for ids in `HeroDatabase.meta_unlockable_template_paths()`).
+func _apply_recruit_hero(effect: Dictionary, party: Dictionary) -> void:
+	var join_party: bool = bool(effect.get("join_party", true))
+	var meta_unlock: bool = bool(effect.get("meta_unlock", false))
+	var path: String = str(effect.get("template_path", "")).strip_edges()
+	var hid_eff: String = str(effect.get("hero_id", "")).strip_edges()
+	if path.is_empty() and not hid_eff.is_empty():
+		path = HeroDatabase.template_path_for_hero_id(hid_eff)
+	var resolved_id: String = hid_eff
+	if resolved_id.is_empty() and not path.is_empty():
+		var tpl_resolve: HeroCharacter = HeroDatabase.load_template(path)
+		if tpl_resolve:
+			resolved_id = tpl_resolve.hero_id
+	if meta_unlock and not resolved_id.is_empty():
+		if HeroDatabase.is_meta_unlockable_hero_id(resolved_id):
+			MetaProgression.unlock_hero(resolved_id)
+		else:
+			push_warning("EventManager: recruit_hero meta_unlock ignored — '%s' is not a registered meta-unlock hero_id" % resolved_id)
+	if not join_party:
+		if not meta_unlock:
+			push_warning("EventManager: recruit_hero join_party false but meta_unlock false — no effect")
+		return
+	if path.is_empty():
+		push_warning("EventManager: recruit_hero needs non-empty template_path or hero_id")
+		return
+	var main: Node = _get_main_node()
+	if main == null or not main.has_method("recruit_hero_from_template"):
+		push_warning("EventManager: recruit_hero requires Main")
+		return
+	var ok: bool = bool(main.call("recruit_hero_from_template", path))
+	if ok and "run_roster" in main:
+		var rr: Array = main.run_roster
+		if rr.size() > 0:
+			var last: Variant = rr[rr.size() - 1]
+			if last is HeroCharacter:
+				var h: HeroCharacter = last as HeroCharacter
+				text_vars["recruited_name"] = h.member_name if not h.member_name.is_empty() else h.hero_id
+	print("EventManager: recruit_hero → %s (ok=%s)" % [path, ok])
+
+
+## JSON: `{ "type": "unlock_hero_meta", "hero_id": "unlockable_sellsword" }` — cross-run unlock only (no party add). Prefer `recruit_hero` with `meta_unlock` when you also want them in the roster.
+func _apply_unlock_hero_meta(effect: Dictionary, party: Dictionary) -> void:
+	var hid: String = str(effect.get("hero_id", "")).strip_edges()
+	if hid.is_empty():
+		push_warning("EventManager: unlock_hero_meta needs hero_id")
+		return
+	if not HeroDatabase.is_meta_unlockable_hero_id(hid):
+		push_warning("EventManager: unlock_hero_meta — unknown meta-unlock hero_id '%s'" % hid)
+		return
+	MetaProgression.unlock_hero(hid)
 
 
 ## JSON: `{ "type": "set_weather", "weather_id": "rainy" }` — must match an id in `data/weather/weather_types.json`.
@@ -1703,13 +1782,13 @@ func _apply_set_weather(effect: Dictionary) -> void:
 	wm.call("set_weather", wid)
 	_sync_tag_manager_after_weather_change()
 
-## Alive PartyMember instances for effects that target party members by index / random / name.
+## Alive HeroCharacter instances for effects that target party members by index / random / name.
 ## Do not use party_dict["members"] — those are plain dictionaries for text interpolation.
 func _get_alive_party_members() -> Array:
 	var main: Node = _get_main_node()
 	if not main:
 		return []
-	return main.current_party_members.filter(func(m): return m.is_alive())
+	return main.run_roster.filter(func(m): return m.is_alive())
 
 func _apply_reveal_secrets(effect: Dictionary, party: Dictionary, node_state: Dictionary):
 	debug_print("SECRET PATH: === EventManager _apply_reveal_secrets() called ===")

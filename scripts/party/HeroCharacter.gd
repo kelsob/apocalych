@@ -1,11 +1,14 @@
 extends Resource
-class_name PartyMember
+class_name HeroCharacter
 
-## Party Member - represents a single party member with race, class, and name.
+## Runtime hero for a run: display name, race, class, progression, gear, and traits.
+## Party selection and recruitment build **instances** (often from shared templates later).
 ## Primary attributes: strength, agility, constitution, intellect, spirit, charisma, luck.
-## Combat still uses derived atk / def / spd / mag / mag_def (see get_combat_core_stats).
+## Combat uses derived atk / def / spd / mag / mag_def (see get_combat_core_stats).
 
 # Character identity
+## Stable id for meta unlocks, saves, recruitment, and tags (`hero:<id>` in TagManager when set).
+@export var hero_id: String = ""
 @export var member_name: String = ""
 @export var race: Race = null
 @export var class_resource: Class = null
@@ -37,7 +40,7 @@ func add_item(item_id: String, count: int = 1) -> bool:
 	if count <= 0:
 		return false
 	if not ItemDatabase.has_item(item_id):
-		push_warning("PartyMember.add_item: Unknown item_id '%s'" % item_id)
+		push_warning("HeroCharacter.add_item: Unknown item_id '%s'" % item_id)
 		return false
 	var item := ItemDatabase.get_item(item_id)
 	var current: int = int(inventory.get(item_id, 0))
@@ -71,7 +74,7 @@ func add_trait(trait_id: String) -> bool:
 	if trait_id.is_empty():
 		return false
 	if not TraitDatabase.has_trait(trait_id):
-		push_warning("PartyMember.add_trait: Unknown trait_id '%s'" % trait_id)
+		push_warning("HeroCharacter.add_trait: Unknown trait_id '%s'" % trait_id)
 		return false
 	if trait_id in traits:
 		return false
@@ -91,7 +94,7 @@ func get_inventory_ids() -> Array[String]:
 			ids.append(str(k))
 	return ids
 
-## Initialize a new party member after setting race and class.
+## Initialize after identity (race/class/name) is set — fresh run state for this instance.
 func initialize():
 	portrait_model = randi() % 2 + 1  # 1 or 2 — fixed for this character's lifetime
 	level = 1

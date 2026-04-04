@@ -1,235 +1,221 @@
 extends Control
 class_name PartySelectMenu
 
-## Party Select Menu - handles party selection UI and signals
+## Party select: three `OptionButton`s → `HeroDatabase.populate_starter_option_button` (default starters + meta-unlocked heroes) → `HeroDatabase.instantiate_for_run`.
+## Wire `hero_option_slot_*` in the Inspector, or leave unset to use fallbacks `VBoxContainer/OptionButton*`.
+## Adjust `$StartGameButton`, `$RaceDetailsContainer/...`, etc. if your node paths differ.
 
-signal start_game_pressed(party_members: Array[PartyMember], world_name: String)
+signal start_game_pressed(party_members: Array[HeroCharacter], world_name: String)
 signal back_to_main_menu_pressed
 
-# Character select references (you'll assign these in the scene)
-@onready var character_select_1: CharacterSelect = $HBoxContainer/CharacterSelect1
-@onready var character_select_2: CharacterSelect = $HBoxContainer/CharacterSelect2
-@onready var character_select_3: CharacterSelect = $HBoxContainer/CharacterSelect3
+@onready var hero_option_slot_1: OptionButton = $VBoxContainer/OptionButton
+@onready var hero_option_slot_2: OptionButton = $VBoxContainer/OptionButton2
+@onready var hero_option_slot_3: OptionButton = $VBoxContainer/OptionButton3
 
-# UI references (you'll connect these in the scene)
 @onready var start_game_button: Button = $StartGameButton
 @onready var back_button: Button = $BackButton
 @onready var world_name_input: LineEdit = $HBoxContainer2/WorldNameInput
 @onready var randomize_world_name_button: Button = $HBoxContainer2/RandomizeWorldNameButton
 
-@onready var race_name_label : Label = $RaceDetailsContainer/RaceNameLabel
-@onready var race_description_label : Label = $RaceDetailsContainer/RaceDescriptionLabel
-@onready var class_name_label : Label = $ClassDetailsContainer/ClassNameLabel
-@onready var class_description_label : Label = $ClassDetailsContainer/ClassDescriptionLabel
+@onready var race_name_label: Label = $RaceDetailsContainer/RaceNameLabel
+@onready var race_description_label: Label = $RaceDetailsContainer/RaceDescriptionLabel
+@onready var class_name_label: Label = $ClassDetailsContainer/ClassNameLabel
+@onready var class_description_label: Label = $ClassDetailsContainer/ClassDescriptionLabel
 
-# World name generator
 var world_name_generator: WorldNameGenerator = WorldNameGenerator.new()
 var world_name: String = ""
 
-# Track most recently changed character select (for description updates)
-var most_recently_changed_select: CharacterSelect = null
+var _last_hero_option_changed: OptionButton = null
 
-func _ready():
-	# Connect character select signals
-	_connect_character_selects()
-	
-	# Connect UI buttons
+
+func _ready() -> void:
+	_resolve_hero_slots()
+	if not _hero_slots_ok():
+		push_error("PartySelectMenu: set hero_option_slot_1..3 in Inspector (three OptionButtons).")
+		return
+
 	if start_game_button:
 		start_game_button.pressed.connect(_on_start_game_pressed)
 	if back_button:
 		back_button.pressed.connect(_on_back_pressed)
 	if randomize_world_name_button:
 		randomize_world_name_button.pressed.connect(_on_randomize_world_name_pressed)
-	
-	# Connect world name input
 	if world_name_input:
 		world_name_input.text_changed.connect(_on_world_name_changed)
-	
-	# Auto-generate random characters and world name on load
-	randomize_all_characters()
+
+	for ob in _hero_slots_array():
+		HeroDatabase.populate_starter_option_button(ob)
+		ob.item_selected.connect(_on_hero_option_changed.bind(ob))
+		var popup: PopupMenu = ob.get_popup()
+		if popup:
+			popup.about_to_popup.connect(_sync_unique_hero_filters)
+
+	hero_option_slot_1.selected = 0
+	hero_option_slot_2.selected = 1
+	hero_option_slot_3.selected = 2
+	_last_hero_option_changed = hero_option_slot_1
+	_sync_unique_hero_filters()
+
 	randomize_world_name()
-	
-	# Set first character as default for initial description display
-	most_recently_changed_select = character_select_1
-	
-	# Update description labels after initial randomization
 	call_deferred("_update_description_labels")
 
-## Connect all character select instances
-func _connect_character_selects():
-	var character_selects = [character_select_1, character_select_2, character_select_3]
-	for char_select in character_selects:
-		if char_select:
-			# Connect signal (signal now passes the CharacterSelect instance)
-			char_select.character_data_changed.connect(_on_character_data_changed)
 
-## Called when any character data changes - update start button state and descriptions
-func _on_character_data_changed(changed_select: CharacterSelect):
-	# Track which character select was most recently changed
-	most_recently_changed_select = changed_select
-	
-	_update_start_button_state()
+func _resolve_hero_slots() -> void:
+	if hero_option_slot_1 == null:
+		hero_option_slot_1 = get_node_or_null("VBoxContainer/OptionButton") as OptionButton
+	if hero_option_slot_2 == null:
+		hero_option_slot_2 = get_node_or_null("VBoxContainer/OptionButton2") as OptionButton
+	if hero_option_slot_3 == null:
+		hero_option_slot_3 = get_node_or_null("VBoxContainer/OptionButton3") as OptionButton
+
+
+func _hero_slots_ok() -> bool:
+	return hero_option_slot_1 != null and hero_option_slot_2 != null and hero_option_slot_3 != null
+
+
+func _hero_slots_array() -> Array[OptionButton]:
+	return [hero_option_slot_1, hero_option_slot_2, hero_option_slot_3]
+
+
+## Disables each menu item whose template path is already chosen in another slot (same path stays enabled on that slot).
+func _sync_unique_hero_filters() -> void:
+	if not _hero_slots_ok():
+		return
+	var slots: Array[OptionButton] = _hero_slots_array()
+	var paths: Array[String] = []
+	for ob in slots:
+		paths.append(str(ob.get_item_metadata(ob.selected)))
+
+	for slot_idx in range(slots.size()):
+		var ob: OptionButton = slots[slot_idx]
+		var my_path: String = paths[slot_idx]
+		for i in range(ob.item_count):
+			var p: String = str(ob.get_item_metadata(i))
+			if p.is_empty():
+				continue
+			var taken_elsewhere := false
+			for j in range(slots.size()):
+				if j == slot_idx:
+					continue
+				if paths[j] == p:
+					taken_elsewhere = true
+					break
+			if p == my_path:
+				ob.set_item_disabled(i, false)
+			else:
+				ob.set_item_disabled(i, taken_elsewhere)
+
+
+func _on_hero_option_changed(ob: OptionButton, _index: int) -> void:
+	_last_hero_option_changed = ob
+	_sync_unique_hero_filters()
+	_fix_duplicate_selections_if_any()
+	_sync_unique_hero_filters()
 	_update_description_labels()
 
-## Update start button enabled state based on party completeness
-func _update_start_button_state():
-	if not start_game_button:
-		return
-	
-	var all_complete = true
-	var character_selects = [character_select_1, character_select_2, character_select_3]
-	
-	for char_select in character_selects:
-		if char_select and not char_select.is_complete():
-			all_complete = false
-			break
-	
-	start_game_button.disabled = not all_complete
 
-## Get all party members from character selects
-func get_party_members() -> Array[PartyMember]:
-	var members: Array[PartyMember] = []
-	var character_selects = [character_select_1, character_select_2, character_select_3]
-	
-	for char_select in character_selects:
-		if char_select:
-			var member = char_select.create_party_member()
-			if member:
-				members.append(member)
-	
+## Belt-and-suspenders if state ever desyncs: bump a conflicting slot to the first free template path.
+func _fix_duplicate_selections_if_any() -> void:
+	if not _hero_slots_ok():
+		return
+	for _i in range(3):
+		var slots: Array[OptionButton] = _hero_slots_array()
+		var paths: Array[String] = []
+		for ob in slots:
+			paths.append(str(ob.get_item_metadata(ob.selected)))
+		var seen: Dictionary = {}
+		var fixed := false
+		for slot_idx in range(slots.size()):
+			var p: String = paths[slot_idx]
+			if p.is_empty():
+				continue
+			if seen.has(p):
+				var ob: OptionButton = slots[slot_idx]
+				var picked := _first_free_item_index(ob, paths, slot_idx)
+				if picked >= 0:
+					ob.set_block_signals(true)
+					ob.select(picked)
+					ob.set_block_signals(false)
+					fixed = true
+					break
+			else:
+				seen[p] = slot_idx
+		if not fixed:
+			break
+
+
+func _first_free_item_index(ob: OptionButton, paths: Array[String], slot_idx: int) -> int:
+	for i in range(ob.item_count):
+		var p: String = str(ob.get_item_metadata(i))
+		if p.is_empty():
+			continue
+		var used_elsewhere := false
+		for j in range(paths.size()):
+			if j == slot_idx:
+				continue
+			if paths[j] == p:
+				used_elsewhere = true
+				break
+		if not used_elsewhere:
+			return i
+	return -1
+
+
+func get_party_members() -> Array[HeroCharacter]:
+	var members: Array[HeroCharacter] = []
+	if not _hero_slots_ok():
+		return members
+	for ob in [hero_option_slot_1, hero_option_slot_2, hero_option_slot_3]:
+		var path: String = str(ob.get_item_metadata(ob.selected))
+		if path.is_empty():
+			return []
+		var hero: HeroCharacter = HeroDatabase.instantiate_for_run(path)
+		if hero:
+			members.append(hero)
 	return members
 
-## Button handlers
-func _on_start_game_pressed():
-	var party = get_party_members()
-	if party.size() == 3:  # Ensure we have exactly 3 party members
-		# Get current world name from input or use stored value
-		var current_world_name = world_name
-		if world_name_input and not world_name_input.text.is_empty():
-			current_world_name = world_name_input.text
-		start_game_pressed.emit(party, current_world_name)
 
-func _on_back_pressed():
+func _on_start_game_pressed() -> void:
+	var party: Array[HeroCharacter] = get_party_members()
+	if party.size() != 3:
+		return
+	var current_world_name: String = world_name
+	if world_name_input and not world_name_input.text.is_empty():
+		current_world_name = world_name_input.text
+	start_game_pressed.emit(party, current_world_name)
+
+
+func _on_back_pressed() -> void:
 	back_to_main_menu_pressed.emit()
 
-func _on_randomize_world_name_pressed():
+
+func _on_randomize_world_name_pressed() -> void:
 	randomize_world_name()
 
-func _on_world_name_changed(new_text: String):
+
+func _on_world_name_changed(new_text: String) -> void:
 	world_name = new_text
 
-## Randomize all three characters (FOR TESTING: defaults to Champion/Wizard/Cleric)
-func randomize_all_characters():
-	# FOR TESTING: Set default party composition
-	# Character 1: Champion
-	if character_select_1 and character_select_1.available_classes.size() > 0:
-		var champion_class = _find_class_by_name("Champion")
-		if champion_class:
-			character_select_1.selected_class = champion_class
-			if character_select_1.class_option_button:
-				character_select_1.class_option_button.selected = character_select_1.available_classes.find(champion_class)
-		
-		# Randomize race and name
-		if character_select_1.available_races.size() > 0:
-			character_select_1.selected_race = character_select_1.available_races[randi() % character_select_1.available_races.size()]
-			if character_select_1.race_option_button:
-				character_select_1.race_option_button.selected = character_select_1.available_races.find(character_select_1.selected_race)
-			character_select_1._update_portrait()
-			
-			# Random name
-			if character_select_1.selected_race:
-				var race_key = character_select_1.selected_race.race_name.to_lower()
-				if character_select_1.race_names.has(race_key):
-					character_select_1.character_name = character_select_1.race_names[race_key][randi() % character_select_1.race_names[race_key].size()]
-					if character_select_1.name_input:
-						character_select_1.name_input.text = character_select_1.character_name
-		
-		character_select_1.character_data_changed.emit(character_select_1)
-	
-	# Character 2: Wizard
-	if character_select_2 and character_select_2.available_classes.size() > 0:
-		var wizard_class = _find_class_by_name("Wizard")
-		if wizard_class:
-			character_select_2.selected_class = wizard_class
-			if character_select_2.class_option_button:
-				character_select_2.class_option_button.selected = character_select_2.available_classes.find(wizard_class)
-		
-		# Randomize race and name
-		if character_select_2.available_races.size() > 0:
-			character_select_2.selected_race = character_select_2.available_races[randi() % character_select_2.available_races.size()]
-			if character_select_2.race_option_button:
-				character_select_2.race_option_button.selected = character_select_2.available_races.find(character_select_2.selected_race)
-			character_select_2._update_portrait()
-			
-			# Random name
-			if character_select_2.selected_race:
-				var race_key = character_select_2.selected_race.race_name.to_lower()
-				if character_select_2.race_names.has(race_key):
-					character_select_2.character_name = character_select_2.race_names[race_key][randi() % character_select_2.race_names[race_key].size()]
-					if character_select_2.name_input:
-						character_select_2.name_input.text = character_select_2.character_name
-		
-		character_select_2.character_data_changed.emit(character_select_2)
-	
-	# Character 3: Cleric
-	if character_select_3 and character_select_3.available_classes.size() > 0:
-		var cleric_class = _find_class_by_name("Cleric")
-		if cleric_class:
-			character_select_3.selected_class = cleric_class
-			if character_select_3.class_option_button:
-				character_select_3.class_option_button.selected = character_select_3.available_classes.find(cleric_class)
-		
-		# Randomize race and name
-		if character_select_3.available_races.size() > 0:
-			character_select_3.selected_race = character_select_3.available_races[randi() % character_select_3.available_races.size()]
-			if character_select_3.race_option_button:
-				character_select_3.race_option_button.selected = character_select_3.available_races.find(character_select_3.selected_race)
-			character_select_3._update_portrait()
-			
-			# Random name
-			if character_select_3.selected_race:
-				var race_key = character_select_3.selected_race.race_name.to_lower()
-				if character_select_3.race_names.has(race_key):
-					character_select_3.character_name = character_select_3.race_names[race_key][randi() % character_select_3.race_names[race_key].size()]
-					if character_select_3.name_input:
-						character_select_3.name_input.text = character_select_3.character_name
-		
-		character_select_3.character_data_changed.emit(character_select_3)
 
-## Find a class by name
-func _find_class_by_name(target_class_name: String) -> Class:
-	# Check first character select's available classes
-	if character_select_1 and character_select_1.available_classes:
-		for cls in character_select_1.available_classes:
-			if cls.name == target_class_name:
-				return cls
-	return null
-
-## Randomize world name
-func randomize_world_name():
+func randomize_world_name() -> void:
 	world_name = world_name_generator.generate_name()
 	if world_name_input:
 		world_name_input.text = world_name
 
-## Update description labels with current race/class from most recently changed character
-## Falls back to first character on initial configuration
-func _update_description_labels():
-	# Use most recently changed select, or default to first character on initial load
-	var target_select = most_recently_changed_select if most_recently_changed_select else character_select_1
-	
-	if not target_select:
+
+func _update_description_labels() -> void:
+	if not _hero_slots_ok():
 		return
-	
-	# Update race description
-	if target_select.selected_race:
-		race_description_label.text = target_select.selected_race.description
-		race_name_label.text = target_select.selected_race.race_name
+	var ob: OptionButton = _last_hero_option_changed if _last_hero_option_changed else hero_option_slot_1
+	var path: String = str(ob.get_item_metadata(ob.selected))
+	var t: HeroCharacter = HeroDatabase.load_template(path)
+	if t and t.race:
+		race_description_label.text = t.race.description
+		race_name_label.text = t.race.race_name
 	else:
 		race_description_label.text = ""
-	
-	# Update class description
-	if target_select.selected_class:
-		class_description_label.text = target_select.selected_class.description
-		class_name_label.text = target_select.selected_class.name
+	if t and t.class_resource:
+		class_description_label.text = t.class_resource.description
+		class_name_label.text = t.class_resource.name
 	else:
 		class_description_label.text = ""

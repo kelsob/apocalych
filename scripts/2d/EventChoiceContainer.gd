@@ -78,7 +78,7 @@ func _on_choice_selected(choice: Dictionary, source_node: EventChoice):
 	var sc: Variant = choice.get("stat_challenge", {})
 	if sc is Dictionary and not sc.is_empty():
 		var main: Node = get_tree().get_first_node_in_group("main") if get_tree() else null
-		var members: Array = main.current_party_members if main and "current_party_members" in main else []
+		var members: Array = main.run_roster if main and "run_roster" in main else []
 		var actor_slot: int = 0
 		if source_node and source_node.has_method("get_stat_actor_slot_for_resolution"):
 			actor_slot = int(source_node.call("get_stat_actor_slot_for_resolution"))
