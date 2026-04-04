@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://1tpqh8qb7k42"]
+[gd_scene load_steps=30 format=3 uid="uid://1tpqh8qb7k42"]
 
 [ext_resource type="PackedScene" uid="uid://ckkwsspou0y1c" path="res://scenes/2d/MapGenerator.tscn" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://csvba4justjcj" path="res://scripts/2d/Main.gd" id="1_main"]
@@ -28,6 +28,7 @@
 [ext_resource type="PackedScene" uid="uid://dq8wpxtyg0atk" path="res://scenes/2d/EventLog.tscn" id="26_ia0w3"]
 [ext_resource type="PackedScene" uid="uid://dm8ukp1vhijtc" path="res://scenes/2d/BlacksmithScreen.tscn" id="27_35772"]
 [ext_resource type="Script" uid="uid://di2o18ds8gctx" path="res://scripts/2d/FadeOverlay.gd" id="27_y4ryl"]
+[ext_resource type="PackedScene" uid="uid://dpstb8m5528ns" path="res://scenes/2d/OptionsMenu.tscn" id="28_mnjbk"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -38,8 +39,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
 event_debug_force = true
-event_debug_id_1 = "recruit_starter_elf_wizard_01"
-event_debug_id_2 = "recruit_starter_dwarf_cleric_01"
+event_debug_id_1 = "recruit_unlockable_sellsword_01"
 event_debug_keep_forcing = true
 
 [node name="MapGenerator" parent="." instance=ExtResource("1_glv2v")]
@@ -372,6 +372,8 @@ visible = false
 visible = false
 
 [node name="EventLog" parent="UIController" instance=ExtResource("26_ia0w3")]
+
+[node name="OptionsMenu" parent="UIController" instance=ExtResource("28_mnjbk")]
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]
 layer = 128

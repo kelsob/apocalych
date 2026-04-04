@@ -60,6 +60,35 @@ func _ready() -> void:
 	call_deferred("_update_description_labels")
 
 
+## Rebuild hero dropdowns from HeroDatabase (e.g. after MetaProgression.reset_all_meta). Preserves selection by template path when still available.
+func refresh_starter_hero_options() -> void:
+	if not _hero_slots_ok():
+		return
+	var slots: Array[OptionButton] = _hero_slots_array()
+	var prev_paths: Array[String] = []
+	for ob in slots:
+		prev_paths.append(str(ob.get_item_metadata(ob.selected)))
+	for ob in slots:
+		HeroDatabase.populate_starter_option_button(ob)
+	for slot_idx in range(slots.size()):
+		var ob: OptionButton = slots[slot_idx]
+		var want: String = prev_paths[slot_idx]
+		var idx := -1
+		for j in range(ob.item_count):
+			if str(ob.get_item_metadata(j)) == want:
+				idx = j
+				break
+		ob.set_block_signals(true)
+		if idx >= 0:
+			ob.select(idx)
+		else:
+			ob.select(0)
+		ob.set_block_signals(false)
+	_fix_duplicate_selections_if_any()
+	_sync_unique_hero_filters()
+	_update_description_labels()
+
+
 func _resolve_hero_slots() -> void:
 	if hero_option_slot_1 == null:
 		hero_option_slot_1 = get_node_or_null("VBoxContainer/OptionButton") as OptionButton

@@ -222,6 +222,8 @@ func _connect_menu_signals():
 	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
 	if options_menu and options_menu.has_signal("closed"):
 		options_menu.closed.connect(_on_options_menu_closed)
+	if options_menu and options_menu.has_signal("meta_progression_reset"):
+		options_menu.meta_progression_reset.connect(_on_meta_progression_reset)
 
 	ui_controller.party_select_menu.start_game_pressed.connect(_on_party_select_start_pressed)
 	ui_controller.party_select_menu.back_to_main_menu_pressed.connect(_on_party_select_back_pressed)
@@ -268,6 +270,12 @@ func _on_options_menu_closed():
 	var options_menu: Node = ui_controller.get_node_or_null("OptionsMenu")
 	if options_menu and options_menu.visible:
 		options_menu.visible = false
+
+
+func _on_meta_progression_reset() -> void:
+	var psm: Node = ui_controller.party_select_menu
+	if psm and psm.has_method("refresh_starter_hero_options"):
+		psm.call("refresh_starter_hero_options")
 
 func _on_main_menu_quit_pressed():
 	get_tree().quit()
