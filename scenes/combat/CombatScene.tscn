@@ -99,15 +99,67 @@ layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="PlayerPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
+[node name="PlayerPanel" type="Control" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-alignment = 1
 
-[node name="EnemyPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
+[node name="BackRowMarkers3" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(88, 256)
+
+[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(200, 228)
+
+[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(312, 200)
+
+[node name="BackRowMarkers2" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
+position = Vector2(192, 252)
+
+[node name="BackMarker2D2" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
+position = Vector2(320, 204)
+
+[node name="BackRowMarker1" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1"]
+position = Vector2(200, 228)
+
+[node name="FrontRowMarkers3" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(318, 256)
+
+[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(430, 228)
+
+[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(542, 200)
+
+[node name="FrontRowMarkers2" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
+position = Vector2(348, 252)
+
+[node name="FrontMarker2D2" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
+position = Vector2(462, 204)
+
+[node name="FrontRowMarker1" type="Node2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1"]
+position = Vector2(454, 228)
+
+[node name="EnemyPanel" type="Control" parent="MarginContainer/VBoxContainer/CombatAreaPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-alignment = 1
 
 [node name="CombatPanel" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -205,6 +257,7 @@ bbcode_enabled = true
 scroll_following = true
 
 [node name="TurnAnnouncerLabel" type="RichTextLabel" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 14
 anchor_top = 0.5

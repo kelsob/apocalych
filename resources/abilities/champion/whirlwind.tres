@@ -15,6 +15,7 @@ dispel_count = 1
 enemy_to_spawn_id = ""
 spawn_count = 1
 lifesteal_ratio = 0.5
+damage_kind = 0
 is_magical = false
 
 [resource]
@@ -27,6 +28,7 @@ base_cast_time = 3
 ability_type = 2
 targeting_type = 4
 requires_target = false
+attack_range = 1
 effects = Array[ExtResource("2")]([SubResource("1")])
 can_be_interrupted = true
 channeled_tick_on_cast = true

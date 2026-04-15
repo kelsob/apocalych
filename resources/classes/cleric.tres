@@ -17,6 +17,7 @@ name = "Cleric"
 description = "A divine healer and support, channeling holy power to aid allies."
 weapon_type = "Mace"
 armour_type = "Robes"
+default_combat_formation_row = 1
 stat_modifiers = {
 "agility": 0,
 "charisma": 2,

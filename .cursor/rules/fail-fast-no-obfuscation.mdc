@@ -1,0 +1,26 @@
+---
+description: Prefer fail-fast and visible errors over defensive code that hides bugs
+alwaysApply: true
+---
+
+# Fail fast; avoid “protective” code that obscures bugs
+
+## Intent
+
+When structure, nodes, or data are wrong, **the game should error clearly** (null access, failed load, invalid cast) so the real fix is obvious—usually the scene tree, path, or resource—not a silent fallback.
+
+## Do
+
+- Use **direct node paths** (`$Path`, `@onready`), typed references, and **let missing nodes fail** at runtime in dev.
+- Use **`load()` / `ResourceLoader.load()`** and handle failures only where the design says the resource is **optional** (e.g. mods); otherwise a missing asset should **push_error / assert** or fail the call site.
+- Prefer **one explicit branch** for truly optional behavior, with a **short comment** explaining why it is optional.
+
+## Avoid
+
+- Sprinkling **`get_node_or_null`**, **`if node:`** guards, or empty **`else`** branches that swallow mistakes on every line.
+- **Default values** that mask bad data (e.g. “if missing, use 0”) unless the spec says that default is correct.
+- **Try/catch** or broad checks that hide the stack trace without re-raising or logging context.
+
+## Godot / scene-heavy work
+
+Scene and hierarchy mistakes should **surface immediately** when testing—not be papered over so the UI “kind of works.” If the user must add a node to the scene, **say so in a comment or doc** and reference it in code; do not instantiate hidden fallbacks unless they asked for that pattern.

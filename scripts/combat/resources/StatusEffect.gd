@@ -52,6 +52,9 @@ enum StackBehavior {
 ## BLEED: if true, tick_damage ignores the target's def
 @export var bypass_defense: bool = false
 
+## Classification for periodic damage (DoT). Uses the same pipeline as ability damage.
+@export var tick_damage_kind: CombatDamageKind.Kind = CombatDamageKind.Kind.PHYSICAL
+
 ## BLIND: miss chance added on top of normal accuracy (0.0–1.0, e.g. 0.5 = 50% miss)
 @export var blind_miss_chance: float = 0.0
 

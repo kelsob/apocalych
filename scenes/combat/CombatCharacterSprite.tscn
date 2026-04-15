@@ -4,17 +4,13 @@
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_qmbjl"]
 [ext_resource type="PackedScene" uid="uid://dea1l50emdl0" path="res://scenes/2d/HPBar.tscn" id="3_wxo40"]
 
-[node name="CombatCharacterSprite" type="MarginContainer"]
-custom_minimum_size = Vector2(128, 160)
+[node name="CombatCharacterSprite" type="Control"]
+layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -64.0
-offset_top = -80.0
-offset_right = 64.0
-offset_bottom = 163.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 4
@@ -23,7 +19,18 @@ theme = ExtResource("2_qmbjl")
 script = ExtResource("1_6jn31")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -56.0
+offset_top = -225.5
+offset_right = 56.0
+offset_bottom = 1.5
+grow_horizontal = 2
+grow_vertical = 2
 alignment = 1
 
 [node name="CharacterSprite" type="TextureRect" parent="VBoxContainer"]

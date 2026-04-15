@@ -21,6 +21,12 @@ enum TargetingType {
 	RANDOM_ALLY
 }
 
+## Used with formation + flying: melee respects front-line blocking and cannot hit airborne targets; ranged ignores rows and can hit flyers.
+enum AttackRangeProfile {
+	MELEE,
+	RANGED
+}
+
 @export var ability_name: String = ""
 @export var ability_id: String = ""
 @export var description: String = ""
@@ -33,6 +39,8 @@ enum TargetingType {
 # Targeting
 @export var targeting_type: TargetingType = TargetingType.SINGLE_ENEMY
 @export var requires_target: bool = true
+## Default RANGED so existing abilities stay valid vs flyers until you mark true melee skills in data.
+@export var attack_range: AttackRangeProfile = AttackRangeProfile.RANGED
 
 # Effects
 @export var effects: Array[AbilityEffect] = []

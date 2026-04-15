@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=5 format=3 uid="uid://4tf2hbycpxvc"]
+
+[ext_resource type="Script" uid="uid://xar48iccwymj" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" uid="uid://cdbjgamc1l6o3" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+[ext_resource type="Resource" uid="uid://dfgt0hvo8qopk" path="res://resources/statuses/stealth.tres" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 2
+potency = 0.0
+stat_scaling = {}
+target_count = 1
+status_to_apply = ExtResource("3")
+dispel_count = 1
+enemy_to_spawn_id = ""
+spawn_count = 1
+lifesteal_ratio = 0.5
+damage_kind = 0
+is_magical = false
+
+[resource]
+script = ExtResource("1")
+ability_name = "Stealth"
+ability_id = "rogue_stealth"
+description = "Slip into the shadows. Your next few turns can include melee strikes past the enemy front line."
+ap_cost = 2
+base_cast_time = 0
+ability_type = 0
+targeting_type = 0
+requires_target = false
+attack_range = 1
+effects = Array[ExtResource("2")]([SubResource("1")])
+can_be_interrupted = true
+channeled_tick_on_cast = false

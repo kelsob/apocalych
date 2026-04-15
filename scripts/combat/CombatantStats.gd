@@ -40,6 +40,9 @@ var active_statuses: Array[StatusEffect] = []
 var cached_effective_stats: Dictionary = {}
 var cache_dirty: bool = true
 
+## Owner for status-effect damage ticks — must match the CombatantData that holds this stats object.
+var combatant_owner: CombatantData = null
+
 ## Initialize stats from a HeroCharacter
 func initialize_from_hero_character(member: HeroCharacter):
 	max_health = member.max_health
@@ -86,11 +89,10 @@ func spend_ap(amount: int) -> bool:
 		return true
 	return false
 
-## Take damage. bypass_def skips flat defense reduction (e.g. bleed).
-func take_damage(amount: float, bypass_def: bool = false) -> Dictionary:
+## Apply damage that has already passed mitigation and creature-tag rules (shields, then HP).
+func apply_resolved_hit(amount: float) -> Dictionary:
 	var remaining := amount
 
-	# Absorb shields first
 	var damage_absorbed := 0.0
 	for status in active_statuses:
 		if status.status_type == StatusEffect.StatusType.SHIELD and status.current_shield_amount > 0:
@@ -103,11 +105,6 @@ func take_damage(amount: float, bypass_def: bool = false) -> Dictionary:
 				damage_absorbed += status.current_shield_amount
 				remaining -= status.current_shield_amount
 				status.current_shield_amount = 0.0
-
-	# Flat defense reduction (skip if bypass_def is set, e.g. bleed)
-	if not bypass_def:
-		var effective_def := get_effective_stat("def")
-		remaining = max(0.0, remaining - float(effective_def))
 
 	var actual_health_damage := 0
 	if remaining > 0.0:
@@ -154,6 +151,14 @@ func apply_status(status: StatusEffect):
 		status_applied.emit(inst)
 	cache_dirty = true
 	stats_changed.emit()
+	_sync_grounded_formation_if_applied(status.status_id)
+
+
+func _sync_grounded_formation_if_applied(applied_template_id: String) -> void:
+	if applied_template_id != CombatantData.STATUS_ID_GROUNDED:
+		return
+	if combatant_owner and combatant_owner.innately_flying():
+		combatant_owner.apply_grounding_formation()
 
 ## Remove a status effect by ID
 func remove_status(status_id: String):
@@ -198,12 +203,26 @@ func process_status_effects() -> Dictionary:
 		var tick := status.process_tick()
 
 		if tick.damage > 0:
-			var dmg_result := take_damage(tick.damage, tick.get("bypass_defense", false))
-			result.total_damage += dmg_result.damage_dealt
+			var dmg_result: Dictionary
+			if combatant_owner:
+				var pkt := DamagePacket.make(
+					tick.damage,
+					status.tick_damage_kind,
+					tick.get("bypass_defense", false)
+				)
+				dmg_result = combatant_owner.apply_incoming_damage(pkt, null)
+			else:
+				## No owner (should not happen in combat) — physical only, old def-only mitigation.
+				var bypass: bool = tick.get("bypass_defense", false)
+				var raw: float = float(tick.damage)
+				if not bypass:
+					raw = max(0.0, raw - float(get_effective_stat("def")))
+				dmg_result = apply_resolved_hit(raw)
+			result.total_damage += dmg_result.get("damage_dealt", 0)
 			result.effects_triggered.append({
 				"status": status.status_name,
 				"type": "damage",
-				"amount": dmg_result.damage_dealt
+				"amount": dmg_result.get("damage_dealt", 0)
 			})
 
 		if tick.heal > 0:
@@ -279,6 +298,10 @@ func _find_status_by_id(status_id: String) -> StatusEffect:
 		if status.status_id == status_id:
 			return status
 	return null
+
+
+func has_status_id(status_id: String) -> bool:
+	return _find_status_by_id(status_id) != null
 
 func _rebuild_stat_cache():
 	cached_effective_stats = core_stats.duplicate()

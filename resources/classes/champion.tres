@@ -18,6 +18,7 @@ name = "Champion"
 description = "A master of melee combat, excelling in strength and martial prowess."
 weapon_type = "Sword"
 armour_type = "Plate"
+default_combat_formation_row = 0
 stat_modifiers = {
 "agility": 0,
 "charisma": 1,

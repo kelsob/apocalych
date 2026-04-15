@@ -12,6 +12,7 @@ name = "Warden"
 description = "A stalwart protector, combining defensive prowess with tactical awareness."
 weapon_type = "Sword"
 armour_type = "Mail"
+default_combat_formation_row = 0
 stat_modifiers = {
 "agility": 0,
 "charisma": 0,

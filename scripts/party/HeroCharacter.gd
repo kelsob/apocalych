@@ -35,6 +35,27 @@ var traits: Array[String] = []
 var weapon: Weapon = null
 var armour: Armour = null
 
+## Combat formation: front line blocks melee reach to the back row on the same side (unless stealthed / ranged).
+## Used when [member use_class_default_formation] is false (player override).
+@export_enum("Front", "Back") var combat_formation_row: int = 0
+## If true, combat uses [member Class.default_combat_formation_row] from [member class_resource]. If false, uses [member combat_formation_row].
+@export var use_class_default_formation: bool = true
+
+
+func resolve_initial_formation_row() -> int:
+	var who: String = member_name if not member_name.is_empty() else "<unnamed_hero>"
+	if use_class_default_formation:
+		assert(class_resource != null, "combat positioning: hero '%s' has use_class_default_formation=true but class_resource is null" % who)
+		var class_row: int = class_resource.default_combat_formation_row
+		var class_label: String = class_resource.name if not class_resource.name.is_empty() else str(class_resource.resource_path)
+		assert(class_row == 0 or class_row == 1, "combat positioning: hero '%s' class '%s' default_combat_formation_row must be 0 (Front) or 1 (Back), got %d" % [who, class_label, class_row])
+		print("combat positioning: resolve row hero='%s' mode=class_default class='%s' default_combat_formation_row=%d (%s)" % [who, class_label, class_row, "Front" if class_row == 0 else "Back"])
+		return class_row
+	var hero_row: int = combat_formation_row
+	assert(hero_row == 0 or hero_row == 1, "combat positioning: hero '%s' combat_formation_row must be 0 or 1, got %d" % [who, hero_row])
+	print("combat positioning: resolve row hero='%s' mode=hero_override combat_formation_row=%d (%s)" % [who, hero_row, "Front" if hero_row == 0 else "Back"])
+	return hero_row
+
 ## Add items to this character's inventory. Returns true if added.
 func add_item(item_id: String, count: int = 1) -> bool:
 	if count <= 0:

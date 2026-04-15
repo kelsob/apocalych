@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="Ability" load_steps=4 format=3 uid="uid://b8moveability01"]
+
+[ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/combat/resources/AbilityEffect.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+effect_type = 11
+
+[resource]
+script = ExtResource("1")
+ability_name = "Move"
+ability_id = "move"
+description = "Move to the opposite row (front or back). Uses your full action budget for this turn."
+ap_cost = 3
+base_cast_time = 0
+ability_type = 0
+targeting_type = 0
+requires_target = false
+attack_range = 1
+effects = Array[ExtResource("2")]([SubResource("1")])
+can_be_interrupted = true

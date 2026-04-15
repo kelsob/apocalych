@@ -18,9 +18,13 @@ signal combatant_healed(combatant: CombatantData, amount: float, source: Combata
 signal combatant_died(combatant: CombatantData)
 signal status_applied(combatant: CombatantData, status: StatusEffect)
 signal status_removed(combatant: CombatantData, status: StatusEffect)
+## Emitted when combat was started with test_lab=true (after combat_ended). For CombatTestLab / tools only.
+signal combat_test_session_ended(victory: bool, rewards: Dictionary)
 
 # Combat state
 var combat_active: bool = false
+## True for the duration of a test-lab fight; skips world time and Main handoff when cleared.
+var is_combat_test_session: bool = false
 var combat_timeline: CombatTimeline = null
 
 ## Delay before the first turn begins. Customizable (default 3 seconds).
@@ -55,6 +59,15 @@ func _safe_display_name(c) -> String:
 	return str(c)
 
 
+func _find_ability_by_id(combatant: CombatantData, ability_id: String) -> Ability:
+	if combatant == null or combatant.abilities.is_empty():
+		return null
+	for a in combatant.abilities:
+		if a is Ability and (a as Ability).ability_id == ability_id:
+			return a as Ability
+	return null
+
+
 func _pull_weather_combat_modifiers() -> Array:
 	var root: Window = get_tree().root if get_tree() else null
 	if root == null:
@@ -65,14 +78,17 @@ func _pull_weather_combat_modifiers() -> Array:
 	return []
 
 
-## Start combat from an encounter and party members
-func start_combat_from_encounter(encounter: Resource, party_members: Array):
+## Start combat from an encounter and party members.
+## If [param test_lab] is true, world time does not advance and [signal combat_test_session_ended] fires;
+## rewards include [code]_test_lab = true[/code] for UI routing.
+func start_combat_from_encounter(encounter: Resource, party_members: Array, test_lab: bool = false):
 	if combat_active:
 		push_warning("CombatController: Combat already active")
 		return
 	
 	print("=== COMBAT STARTING ===")
 	combat_active = true
+	is_combat_test_session = test_lab
 	current_encounter = encounter
 
 	# Weather → combat (stub): read modifiers when WeatherManager implements non-empty returns.
@@ -301,10 +317,12 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 		match effect.effect_type:
 			AbilityEffect.EffectType.DAMAGE:
 				var potency = effect.calculate_final_potency(caster_stats)
+				var dmg_kind: CombatDamageKind.Kind = effect.get_effective_damage_kind()
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
-						var damage_result = target.take_damage(potency, caster)
-						var actual_damage = damage_result.damage_dealt
+						var packet := DamagePacket.make(potency, dmg_kind, false)
+						var damage_result = target.apply_incoming_damage(packet, caster)
+						var actual_damage = damage_result.get("damage_dealt", 0)
 						effects_applied.append({"type": "damage", "target": target, "amount": actual_damage})
 						combatant_damaged.emit(target, actual_damage, caster)
 						print("  -> %s takes %d damage" % [_safe_display_name(target), actual_damage])
@@ -326,6 +344,46 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 							effects_applied.append({"type": "status", "target": target, "status": effect.status_to_apply})
 							status_applied.emit(target, effect.status_to_apply)
 							print("  -> %s gains %s" % [_safe_display_name(target), effect.status_to_apply.status_name])
+			
+			AbilityEffect.EffectType.APPLY_GROUNDING:
+				if effect.status_to_apply:
+					for target in targets:
+						if target is CombatantData and target.can_be_targeted() and target.innately_flying():
+							target.combatant_stats.apply_status(effect.status_to_apply)
+							effects_applied.append({"type": "grounding", "target": target, "status": effect.status_to_apply})
+							status_applied.emit(target, effect.status_to_apply)
+							print("  -> %s grounded (%s)" % [_safe_display_name(target), effect.status_to_apply.status_name])
+			
+			AbilityEffect.EffectType.MOVE_FORMATION:
+				for target in targets:
+					if target is CombatantData and target == caster:
+						var cd: CombatantData = target as CombatantData
+						if not cd.can_use_formation_move():
+							continue
+						cd.swap_formation_row()
+						var row_name := "front" if cd.formation_row == CombatRow.Kind.FRONT else "back"
+						effects_applied.append({"type": "move_zone", "target": cd})
+						print("  -> %s moves to %s row" % [_safe_display_name(cd), row_name])
+			
+			AbilityEffect.EffectType.PUSH_TO_BACK:
+				for target in targets:
+					if target is CombatantData and target.can_be_targeted() and target != caster:
+						var cd: CombatantData = target as CombatantData
+						var was_front := cd.formation_row == CombatRow.Kind.FRONT
+						cd.force_to_back_row()
+						if was_front:
+							effects_applied.append({"type": "push_back", "target": cd})
+							print("  -> %s pushed to back row" % _safe_display_name(cd))
+			
+			AbilityEffect.EffectType.PULL_TO_FRONT:
+				for target in targets:
+					if target is CombatantData and target.can_be_targeted() and target != caster:
+						var cd: CombatantData = target as CombatantData
+						var was_back := cd.formation_row == CombatRow.Kind.BACK
+						cd.force_to_front_row()
+						if was_back:
+							effects_applied.append({"type": "pull_front", "target": cd})
+							print("  -> %s pulled to front row" % _safe_display_name(cd))
 			
 			AbilityEffect.EffectType.INTERRUPT_CAST:
 				for target in targets:
@@ -358,7 +416,11 @@ func _validate_targets(caster: CombatantData, ability: Ability, targets: Array) 
 	if not target is CombatantData:
 		return false
 	
-	return ability.can_target(caster.is_player, target.is_player)
+	if not ability.can_target(caster.is_player, target.is_player):
+		return false
+	if CombatTargetRules.ability_uses_opponent_formation_rules(ability):
+		return CombatTargetRules.can_select_opponent(caster, ability, target, player_combatants, enemy_combatants)
+	return true
 
 ## Get valid targets for an ability
 func get_valid_targets(caster: CombatantData, ability: Ability) -> Array:
@@ -402,8 +464,28 @@ func get_valid_targets(caster: CombatantData, ability: Ability) -> Array:
 		
 		Ability.TargetingType.ALL_COMBATANTS:
 			valid_targets = player_combatants.duplicate() + enemy_combatants.duplicate()
+		
+		Ability.TargetingType.RANDOM_ENEMY:
+			if caster.is_player:
+				for combatant in enemy_combatants:
+					if combatant.can_be_targeted():
+						valid_targets.append(combatant)
+			else:
+				for combatant in player_combatants:
+					if combatant.can_be_targeted():
+						valid_targets.append(combatant)
+		
+		Ability.TargetingType.RANDOM_ALLY:
+			if caster.is_player:
+				for combatant in player_combatants:
+					if combatant.can_be_targeted():
+						valid_targets.append(combatant)
+			else:
+				for combatant in enemy_combatants:
+					if combatant.can_be_targeted():
+						valid_targets.append(combatant)
 	
-	return valid_targets
+	return CombatTargetRules.filter_by_attack_profile(caster, ability, valid_targets, player_combatants, enemy_combatants)
 
 ## Execute AI turn
 func _execute_ai_turn():
@@ -414,11 +496,26 @@ func _execute_ai_turn():
 	
 	# Note: can_act check is now done in _advance_to_next_turn after status processing
 	
-	# Get available abilities
-	var available_abilities = []
+	# Prefer Move when not in preferred row (enemies with Front/Back bias only)
+	if current_turn_combatant.wants_ai_to_reposition():
+		var move_ab := _find_ability_by_id(current_turn_combatant, CombatantData.ABILITY_ID_MOVE)
+		if move_ab != null:
+			var move_cost := move_ab.get_modified_ap_cost()
+			if current_turn_combatant.combatant_stats.current_ap >= move_cost and current_turn_combatant.can_use_formation_move():
+				print("  -> AI repositions toward preferred zone")
+				if _execute_ability_cast(current_turn_combatant, move_ab, [current_turn_combatant]):
+					await get_tree().create_timer(1.0).timeout
+					_end_current_turn()
+					return
+				print("  -> Move failed, falling through to other actions")
+	
+	# Get available abilities (Move is never random-picked when Indifferent / already in preferred row)
+	var available_abilities: Array = []
 	if current_turn_combatant.abilities:
 		for ability in current_turn_combatant.abilities:
-			# Check if enemy has enough AP to cast this ability
+			if ability.ability_id == CombatantData.ABILITY_ID_MOVE:
+				if not current_turn_combatant.wants_ai_to_reposition():
+					continue
 			var ap_cost = ability.get_modified_ap_cost()
 			if current_turn_combatant.combatant_stats.current_ap >= ap_cost:
 				available_abilities.append(ability)
@@ -431,7 +528,7 @@ func _execute_ai_turn():
 		return
 	
 	# Pick random available ability (refine algorithm later)
-	var chosen_ability = available_abilities[randi() % available_abilities.size()]
+	var chosen_ability: Ability = available_abilities[randi() % available_abilities.size()]
 	
 	# Get valid targets
 	var valid_targets = get_valid_targets(current_turn_combatant, chosen_ability)
@@ -448,7 +545,7 @@ func _execute_ai_turn():
 		Ability.TargetingType.SELF:
 			selected_targets = [current_turn_combatant]
 		
-		Ability.TargetingType.SINGLE_ENEMY, Ability.TargetingType.SINGLE_ALLY:
+		Ability.TargetingType.SINGLE_ENEMY, Ability.TargetingType.SINGLE_ALLY, Ability.TargetingType.RANDOM_ENEMY, Ability.TargetingType.RANDOM_ALLY:
 			# Pick random valid target
 			selected_targets = [valid_targets[randi() % valid_targets.size()]]
 		
@@ -557,14 +654,21 @@ func _end_combat(victory: bool):
 		var gold_mult: float = randf_range(0.75, 1.25)
 		rewards.gold = max(0, int(rewards.gold * gold_mult))
 	
-	# Advance world time based on combat duration (combat clock reflects turns × speed)
-	if combat_timeline and TimeManager:
+	var was_test: bool = is_combat_test_session
+	if was_test:
+		rewards["_test_lab"] = true
+	
+	# Advance world time based on combat duration (skip in test lab)
+	if not was_test and combat_timeline and TimeManager:
 		var combat_duration: float = combat_timeline.global_time
 		var turn_count: int = combat_timeline.global_turn_counter
 		if combat_duration > 0.0:
 			TimeManager.advance_time_from_combat(combat_duration, turn_count)
 	
 	combat_ended.emit(victory, rewards)
+	if was_test:
+		combat_test_session_ended.emit(victory, rewards)
+	is_combat_test_session = false
 	
 	combat_timeline = null
 	player_combatants.clear()
@@ -592,14 +696,21 @@ func _end_combat_fled():
 			if combatant.is_dead and combatant.source is Enemy:
 				rewards.xp += combatant.source.xp_reward
 	
-	# Advance world time based on combat duration (combat clock reflects turns × speed)
-	if combat_timeline and TimeManager:
+	var was_test_flee: bool = is_combat_test_session
+	if was_test_flee:
+		rewards["_test_lab"] = true
+	
+	# Advance world time (skip in test lab)
+	if not was_test_flee and combat_timeline and TimeManager:
 		var combat_duration: float = combat_timeline.global_time
 		var turn_count: int = combat_timeline.global_turn_counter
 		if combat_duration > 0.0:
 			TimeManager.advance_time_from_combat(combat_duration, turn_count)
 
 	combat_ended.emit(false, rewards)
+	if was_test_flee:
+		combat_test_session_ended.emit(false, rewards)
+	is_combat_test_session = false
 
 	combat_timeline = null
 	player_combatants.clear()

@@ -12,6 +12,7 @@ name = "Warlock"
 description = "A practitioner of dark magic, wielding forbidden power through pacts and curses."
 weapon_type = "Staff"
 armour_type = "Robes"
+default_combat_formation_row = 1
 stat_modifiers = {
 "agility": 0,
 "charisma": 3,

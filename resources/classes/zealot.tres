@@ -12,6 +12,7 @@ name = "Zealot"
 description = "A fanatical warrior driven by fervor, combining raw power with unshakeable conviction."
 weapon_type = "Flail"
 armour_type = "Mail"
+default_combat_formation_row = 0
 stat_modifiers = {
 "agility": 0,
 "charisma": 3,

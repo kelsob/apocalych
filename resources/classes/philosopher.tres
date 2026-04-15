@@ -12,6 +12,7 @@ name = "Philosopher"
 description = "A deep thinker and scholar, using knowledge and reason to understand the world."
 weapon_type = "Tome"
 armour_type = "Robes"
+default_combat_formation_row = 1
 stat_modifiers = {
 "agility": 0,
 "charisma": 1,

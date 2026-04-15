@@ -27,13 +27,20 @@ extends Control
 # Node references
 @onready var current_turn_label: Label = $MarginContainer/VBoxContainer/MarginContainer/CurrentTurnLabel
 @onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
-@onready var combat_area_player_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel
-@onready var combat_area_enemy_panel: HBoxContainer = $MarginContainer/VBoxContainer/CombatAreaPanel/EnemyPanel
+@onready var combat_area_player_panel: Control = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel
+@onready var combat_area_enemy_panel: Control = $MarginContainer/VBoxContainer/CombatAreaPanel/EnemyPanel
 @onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
 @onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer/VBoxContainer
 @onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer/CombatLogContainer/CombatLogLabel
 @onready var turn_announcer_label: RichTextLabel = $TurnAnnouncerLabel
 
+@onready var backrow_markers_3: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3
+@onready var backrow_markers_2: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2
+@onready var backrow_markers_1: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1
+
+@onready var frontrow_markers_3: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3
+@onready var frontrow_markers_2: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2
+@onready var frontrow_markers_1: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
@@ -151,6 +158,7 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	for combatant in player_combatants:
 		print("CombatScene: Creating display for player: %s" % _safe_combatant_name(combatant))
 		_create_player_combatant_display(combatant)
+	_apply_party_marker_layout(player_combatants)
 	
 	# Generate enemy combatants (sprites in combat area only)
 	for combatant in enemy_combatants:
@@ -177,6 +185,11 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 		_log_message("=== DEFEAT ===", true)
 
 	await get_tree().create_timer(combat_end_delay).timeout
+
+	# Combat test lab: do not touch Main / map / game-over — CombatTestLabController listens to CombatController.
+	if rewards.get("_test_lab", false):
+		queue_free()
+		return
 
 	var root = get_tree().root
 	var main = null
@@ -455,6 +468,117 @@ func _on_combatant_died(combatant: CombatantData):
 		var button = combatant_clickable_areas[combatant]
 		button.disabled = true
 
+## Hide all party row marker groups (show only the active count per row when placing).
+func _hide_all_party_marker_groups() -> void:
+	for n in _all_party_marker_root_nodes():
+		assert(n != null, "combat positioning: a party marker root Node2D is null (check @onready paths vs PlayerPanel children)")
+		n.visible = false
+
+
+func _all_party_marker_root_nodes() -> Array[Node2D]:
+	return [
+		backrow_markers_3,
+		backrow_markers_2,
+		backrow_markers_1,
+		frontrow_markers_3,
+		frontrow_markers_2,
+		frontrow_markers_1,
+	]
+
+
+## Marker2D children under a row container, sorted by name for stable slot order.
+func _sorted_markers_under_row_container(container: Node2D) -> Array[Marker2D]:
+	assert(container != null, "combat positioning: marker row container is null")
+	var out: Array[Marker2D] = []
+	for c in container.get_children():
+		if c is Marker2D:
+			out.append(c as Marker2D)
+	out.sort_custom(func(a: Marker2D, b: Marker2D) -> bool: return String(a.name) < String(b.name))
+	return out
+
+
+## Which pre-authored Node2D holds the Marker2D slots for this row and party count (1–3).
+func _party_row_marker_parent(row: CombatRow.Kind, count: int) -> Node2D:
+	var c: int = clampi(count, 1, 3)
+	match row:
+		CombatRow.Kind.BACK:
+			match c:
+				1:
+					return backrow_markers_1
+				2:
+					return backrow_markers_2
+				3:
+					return backrow_markers_3
+		CombatRow.Kind.FRONT:
+			match c:
+				1:
+					return frontrow_markers_1
+				2:
+					return frontrow_markers_2
+				3:
+					return frontrow_markers_3
+	assert(false, "combat positioning: _party_row_marker_parent unreachable row=%s count=%d" % [row, count])
+	return null
+
+
+## Split party into front / back lists preserving encounter order (party array order).
+func _partition_party_by_row_ordered(player_combatants: Array) -> Dictionary:
+	var front: Array = []
+	var back: Array = []
+	var idx: int = 0
+	for c in player_combatants:
+		assert(c is CombatantData, "combat positioning: player_combatants[%d] is not CombatantData" % idx)
+		var cd: CombatantData = c as CombatantData
+		var row_label: String = "FRONT" if cd.formation_row == CombatRow.Kind.FRONT else "BACK"
+		print("combat positioning: partition idx=%d display_name='%s' formation_row=%s" % [idx, cd.display_name, row_label])
+		if cd.formation_row == CombatRow.Kind.FRONT:
+			front.append(cd)
+		else:
+			back.append(cd)
+		idx += 1
+	print("combat positioning: partition done front_count=%d back_count=%d" % [front.size(), back.size()])
+	return {"front": front, "back": back}
+
+
+## Position player sprites at Marker2D slots matching row + how many share that row.
+func _apply_party_marker_layout(player_combatants: Array) -> void:
+	print("combat positioning: _apply_party_marker_layout start party_size=%d" % player_combatants.size())
+	_hide_all_party_marker_groups()
+	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
+	_place_party_row_on_markers(parts["front"], CombatRow.Kind.FRONT)
+	_place_party_row_on_markers(parts["back"], CombatRow.Kind.BACK)
+	print("combat positioning: _apply_party_marker_layout done")
+
+
+func _place_party_row_on_markers(members: Array, row: CombatRow.Kind) -> void:
+	var row_name: String = "FRONT" if row == CombatRow.Kind.FRONT else "BACK"
+	if members.is_empty():
+		print("combat positioning: place row %s — no members, skip" % row_name)
+		return
+	var n: int = members.size()
+	assert(n <= 3, "combat positioning: row %s has %d members; max 3" % [row_name, n])
+	print("combat positioning: place row %s member_count=%d" % [row_name, n])
+	var marker_parent: Node2D = _party_row_marker_parent(row, n)
+	assert(marker_parent != null, "combat positioning: marker parent missing for row %s count %d" % [row_name, n])
+	print("combat positioning: using marker container node '%s' for %s x%d" % [marker_parent.name, row_name, n])
+	marker_parent.visible = true
+	var markers: Array[Marker2D] = _sorted_markers_under_row_container(marker_parent)
+	assert(markers.size() >= n, "combat positioning: row %s needs %d Marker2D slots under '%s', found %d" % [row_name, n, marker_parent.name, markers.size()])
+	for i in range(n):
+		var combatant: CombatantData = members[i]
+		assert(combatant_sprites.has(combatant), "combat positioning: no sprite for combatant '%s'" % combatant.display_name)
+		var m: Marker2D = markers[i]
+		print("combat positioning: assign '%s' -> %s slot %d marker '%s' at %s" % [combatant.display_name, row_name, i, m.name, str(m.global_position)])
+		_position_player_sprite_at_marker(combatant_sprites[combatant], m)
+
+
+## Snap sprite so its origin matches the marker (adjust markers in-editor for feet vs center).
+func _position_player_sprite_at_marker(sprite: Control, marker: Marker2D) -> void:
+	assert(sprite != null and marker != null, "combat positioning: sprite or marker is null")
+	sprite.global_position = marker.global_position
+	print("combat positioning: sprite '%s' global_position set to %s" % [sprite.name, str(sprite.global_position)])
+
+
 ## Create player combatant display (sprite + info panel)
 func _create_player_combatant_display(combatant: CombatantData):
 	# Create sprite in combat area
@@ -618,6 +742,13 @@ func _on_ability_button_pressed(ability: Ability):
 	var targets = CombatController.get_valid_targets(current_player_combatant, ability)
 	if targets.is_empty():
 		_log_message("  No valid targets!")
+		selected_ability = null
+		return
+	
+	if ability.targeting_type == Ability.TargetingType.RANDOM_ENEMY or ability.targeting_type == Ability.TargetingType.RANDOM_ALLY:
+		var pick: CombatantData = targets[randi() % targets.size()] as CombatantData
+		CombatController.player_cast_ability(ability, [pick])
+		_clear_ability_panel()
 		selected_ability = null
 		return
 	

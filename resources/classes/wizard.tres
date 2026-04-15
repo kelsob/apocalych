@@ -17,6 +17,7 @@ name = "Wizard"
 description = "A master of arcane magic, studying ancient tomes to unlock the secrets of reality."
 weapon_type = "Staff"
 armour_type = "Robes"
+default_combat_formation_row = 1
 stat_modifiers = {
 "agility": 0,
 "charisma": 0,

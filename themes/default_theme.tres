@@ -8,6 +8,7 @@ Button/colors/font_outline_color = Color(0, 0, 0, 1)
 Button/constants/outline_size = 2
 Button/font_sizes/font_size = 24
 Button/fonts/font = ExtResource("1_mlkpy")
+ItemList/fonts/font = ExtResource("1_mlkpy")
 Label/colors/font_color = Color(1, 1, 1, 1)
 Label/colors/font_outline_color = Color(0.286275, 0.227451, 0.121569, 1)
 Label/constants/outline_size = 2
