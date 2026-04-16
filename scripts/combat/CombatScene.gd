@@ -24,6 +24,10 @@ extends Control
 ## Wave effect frequency (cycles per second).
 @export var turn_announcer_wave_freq: float = 2.0
 
+@export_group("Formation")
+## Seconds for party sprites to tween to new front/back slots after a row change.
+@export var formation_tween_duration: float = 0.38
+
 # Node references
 @onready var current_turn_label: Label = $MarginContainer/VBoxContainer/MarginContainer/CurrentTurnLabel
 @onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
@@ -65,6 +69,9 @@ var ability_buttons: Array[Button] = []
 
 # Deaths that happened during an ability; we log them right after the ability log so order is correct
 var _pending_death_logs: Array = []  # [CombatantData, ...]
+
+# Last resolved slot index per party member (0..n-1 within their row layout) for joiner / split rules
+var _last_slot_by_combatant: Dictionary = {}
 
 func _ready():
 	print("CombatScene _ready() called")
@@ -153,6 +160,7 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	combatant_info_panels.clear()
 	combatant_clickable_areas.clear()
 	ability_buttons.clear()
+	_last_slot_by_combatant.clear()
 	
 	# Generate player combatants (sprites in combat area + info panels below)
 	for combatant in player_combatants:
@@ -293,11 +301,23 @@ func _on_channeled_tick(cast):
 		sprite.update_casting_display()
 
 ## Called when an ability resolves
-func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array):
+func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array, party_formation_before: Dictionary = {}) -> void:
 	# Null check
 	if not caster or not ability:
 		_flush_pending_death_logs()
 		return
+	
+	if _player_party_formation_changed(CombatController.player_combatants, party_formation_before):
+		for e in effects_applied:
+			if str(e.get("type", "")) == "move_zone" and e.has("target") and e["target"] is CombatantData:
+				var tcd: CombatantData = e["target"] as CombatantData
+				var rnm: String = "front" if tcd.formation_row == CombatRow.Kind.FRONT else "back"
+				_log_message("  → %s moves to the %s row" % [_safe_combatant_name(tcd), rnm])
+			elif str(e.get("type", "")) == "push_back" and e.has("target"):
+				_log_message("  → %s is forced to the back row" % _safe_combatant_name(e["target"]))
+			elif str(e.get("type", "")) == "pull_front" and e.has("target"):
+				_log_message("  → %s is pulled to the front row" % _safe_combatant_name(e["target"]))
+		await _animate_party_formation_to_slots(CombatController.player_combatants, party_formation_before)
 	
 	# Filter different effect types
 	var damage_effects = effects_applied.filter(func(e): return e.type == "damage")
@@ -540,43 +560,177 @@ func _partition_party_by_row_ordered(player_combatants: Array) -> Dictionary:
 	return {"front": front, "back": back}
 
 
-## Position player sprites at Marker2D slots matching row + how many share that row.
+## Position player sprites at Marker2D slots (initial layout: party order within each row).
 func _apply_party_marker_layout(player_combatants: Array) -> void:
 	print("combat positioning: _apply_party_marker_layout start party_size=%d" % player_combatants.size())
-	_hide_all_party_marker_groups()
-	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
-	_place_party_row_on_markers(parts["front"], CombatRow.Kind.FRONT)
-	_place_party_row_on_markers(parts["back"], CombatRow.Kind.BACK)
+	var slot_map: Dictionary = _compute_slot_assignment(player_combatants, {})
+	_snap_party_layout_using_slot_map(player_combatants, slot_map)
 	print("combat positioning: _apply_party_marker_layout done")
 
 
-func _place_party_row_on_markers(members: Array, row: CombatRow.Kind) -> void:
-	var row_name: String = "FRONT" if row == CombatRow.Kind.FRONT else "BACK"
-	if members.is_empty():
-		print("combat positioning: place row %s — no members, skip" % row_name)
+func _party_formation_index(cd: CombatantData, party_order: Array) -> int:
+	return party_order.find(cd)
+
+
+func _combatants_in_row_from_snapshot(party_order: Array, formation_snapshot: Dictionary, row_kind: CombatRow.Kind) -> Array:
+	var out: Array = []
+	for c in party_order:
+		if not c is CombatantData:
+			continue
+		var cd: CombatantData = c as CombatantData
+		if formation_snapshot.get(cd, null) == row_kind:
+			out.append(cd)
+	return out
+
+
+## Assign slot index 0..n-1 per combatant in this row. [param formation_before] maps each player to their row *before* the ability that just resolved (empty = party-order layout).
+func _assign_slots_for_row_list(row_members: Array, row_kind: CombatRow.Kind, party_order: Array, formation_before: Dictionary, out_slots: Dictionary) -> void:
+	var n: int = row_members.size()
+	if n == 0:
 		return
-	var n: int = members.size()
-	assert(n <= 3, "combat positioning: row %s has %d members; max 3" % [row_name, n])
-	print("combat positioning: place row %s member_count=%d" % [row_name, n])
-	var marker_parent: Node2D = _party_row_marker_parent(row, n)
-	assert(marker_parent != null, "combat positioning: marker parent missing for row %s count %d" % [row_name, n])
-	print("combat positioning: using marker container node '%s' for %s x%d" % [marker_parent.name, row_name, n])
-	marker_parent.visible = true
+	if n == 1:
+		out_slots[row_members[0]] = 0
+		return
+	var joiners: Array = []
+	var incumbents: Array = []
+	for cd_obj in row_members:
+		var cd: CombatantData = cd_obj as CombatantData
+		if formation_before.has(cd) and formation_before[cd] == row_kind:
+			incumbents.append(cd)
+		else:
+			joiners.append(cd)
+	var sort_by_party := func(a: CombatantData, b: CombatantData) -> bool:
+		return _party_formation_index(a, party_order) < _party_formation_index(b, party_order)
+	if n == 3 and joiners.size() == 1:
+		var J: CombatantData = joiners[0] as CombatantData
+		var others: Array = incumbents.duplicate()
+		others.sort_custom(sort_by_party)
+		if others.size() == 2:
+			out_slots[others[0]] = 0
+			out_slots[J] = 1
+			out_slots[others[1]] = 2
+		else:
+			var ordered3: Array = row_members.duplicate()
+			ordered3.sort_custom(sort_by_party)
+			for i in range(n):
+				out_slots[ordered3[i]] = i
+	elif n == 2 and joiners.size() == 1:
+		var J: CombatantData = joiners[0] as CombatantData
+		var I: CombatantData = incumbents[0] as CombatantData
+		var old_row: Variant = formation_before.get(J, null)
+		if old_row == null:
+			out_slots[J] = 0
+			out_slots[I] = 1
+			return
+		var old_subset: Array = _combatants_in_row_from_snapshot(party_order, formation_before, old_row)
+		var j_pos: int = old_subset.find(J)
+		if j_pos < 0:
+			j_pos = 0
+		if old_subset.size() >= 2:
+			var j_slot: int = clampi(j_pos, 0, 1)
+			out_slots[J] = j_slot
+			out_slots[I] = 1 - j_slot
+		else:
+			out_slots[J] = 0
+			out_slots[I] = 1
+	else:
+		var ordered: Array = row_members.duplicate()
+		ordered.sort_custom(sort_by_party)
+		for i in range(n):
+			out_slots[ordered[i]] = i
+
+
+func _compute_slot_assignment(player_combatants: Array, formation_before: Dictionary) -> Dictionary:
+	var slot_by_cd: Dictionary = {}
+	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
+	_assign_slots_for_row_list(parts["front"], CombatRow.Kind.FRONT, player_combatants, formation_before, slot_by_cd)
+	_assign_slots_for_row_list(parts["back"], CombatRow.Kind.BACK, player_combatants, formation_before, slot_by_cd)
+	return slot_by_cd
+
+
+func _marker_global_position_for_slot(row_kind: CombatRow.Kind, row_n: int, slot_index: int) -> Vector2:
+	var marker_parent: Node2D = _party_row_marker_parent(row_kind, row_n)
 	var markers: Array[Marker2D] = _sorted_markers_under_row_container(marker_parent)
-	assert(markers.size() >= n, "combat positioning: row %s needs %d Marker2D slots under '%s', found %d" % [row_name, n, marker_parent.name, markers.size()])
-	for i in range(n):
-		var combatant: CombatantData = members[i]
-		assert(combatant_sprites.has(combatant), "combat positioning: no sprite for combatant '%s'" % combatant.display_name)
-		var m: Marker2D = markers[i]
-		print("combat positioning: assign '%s' -> %s slot %d marker '%s' at %s" % [combatant.display_name, row_name, i, m.name, str(m.global_position)])
-		_position_player_sprite_at_marker(combatant_sprites[combatant], m)
+	assert(slot_index >= 0 and slot_index < markers.size(), "combat positioning: slot %d out of range for row_n=%d" % [slot_index, row_n])
+	return markers[slot_index].global_position
+
+
+func _snap_party_layout_using_slot_map(player_combatants: Array, slot_by_cd: Dictionary) -> void:
+	_hide_all_party_marker_groups()
+	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
+	for row_kind in [CombatRow.Kind.FRONT, CombatRow.Kind.BACK]:
+		var members: Array = parts["front"] if row_kind == CombatRow.Kind.FRONT else parts["back"]
+		if members.is_empty():
+			continue
+		var n: int = members.size()
+		var row_name: String = "FRONT" if row_kind == CombatRow.Kind.FRONT else "BACK"
+		assert(n <= 3, "combat positioning: row %s has %d members; max 3" % [row_name, n])
+		var marker_parent: Node2D = _party_row_marker_parent(row_kind, n)
+		assert(marker_parent != null, "combat positioning: marker parent missing for row %s count %d" % [row_name, n])
+		marker_parent.visible = true
+		var markers: Array[Marker2D] = _sorted_markers_under_row_container(marker_parent)
+		assert(markers.size() >= n, "combat positioning: row %s needs %d Marker2D slots under '%s', found %d" % [row_name, n, marker_parent.name, markers.size()])
+		for cd_obj in members:
+			var cd: CombatantData = cd_obj as CombatantData
+			assert(combatant_sprites.has(cd), "combat positioning: no sprite for combatant '%s'" % cd.display_name)
+			var slot_i: int = int(slot_by_cd[cd])
+			var m: Marker2D = markers[slot_i]
+			_position_player_sprite_at_marker(combatant_sprites[cd], m)
+	for cd_obj in player_combatants:
+		var cd: CombatantData = cd_obj as CombatantData
+		if slot_by_cd.has(cd):
+			_last_slot_by_combatant[cd] = slot_by_cd[cd]
+
+
+func _player_party_formation_changed(party: Array, formation_before: Dictionary) -> bool:
+	if formation_before.is_empty():
+		return false
+	for c in party:
+		if not c is CombatantData:
+			continue
+		var cd: CombatantData = c as CombatantData
+		if not formation_before.has(cd):
+			continue
+		if formation_before[cd] != cd.formation_row:
+			return true
+	return false
+
+
+func _animate_party_formation_to_slots(player_combatants: Array, formation_before: Dictionary) -> void:
+	var slot_map: Dictionary = _compute_slot_assignment(player_combatants, formation_before)
+	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
+	var n_front: int = parts["front"].size()
+	var n_back: int = parts["back"].size()
+	if formation_tween_duration <= 0.0:
+		_snap_party_layout_using_slot_map(player_combatants, slot_map)
+		return
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	var any_tween: bool = false
+	for cd_obj in player_combatants:
+		if not cd_obj is CombatantData:
+			continue
+		var cd: CombatantData = cd_obj as CombatantData
+		if not combatant_sprites.has(cd) or not slot_map.has(cd):
+			continue
+		var slot_i: int = int(slot_map[cd])
+		var row_kind: CombatRow.Kind = cd.formation_row
+		var row_n: int = n_front if row_kind == CombatRow.Kind.FRONT else n_back
+		var target_pos: Vector2 = _marker_global_position_for_slot(row_kind, row_n, slot_i)
+		var spr: Control = combatant_sprites[cd] as Control
+		tw.tween_property(spr, "global_position", target_pos, formation_tween_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		any_tween = true
+	if not any_tween:
+		_snap_party_layout_using_slot_map(player_combatants, slot_map)
+		return
+	await tw.finished
+	_snap_party_layout_using_slot_map(player_combatants, slot_map)
 
 
 ## Snap sprite so its origin matches the marker (adjust markers in-editor for feet vs center).
 func _position_player_sprite_at_marker(sprite: Control, marker: Marker2D) -> void:
 	assert(sprite != null and marker != null, "combat positioning: sprite or marker is null")
 	sprite.global_position = marker.global_position
-	print("combat positioning: sprite '%s' global_position set to %s" % [sprite.name, str(sprite.global_position)])
 
 
 ## Create player combatant display (sprite + info panel)
