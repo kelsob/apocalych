@@ -13,14 +13,17 @@ description = "A skilled tracker and ranged combatant, adept at survival and pre
 weapon_type = "Bow"
 armour_type = "Tunic"
 default_combat_formation_row = 1
-stat_modifiers = {
-"agility": 3,
-"charisma": 0,
-"constitution": 0,
-"intellect": 0,
-"luck": 2,
-"spirit": 1,
-"strength": 0
+stat_spread = {
+"agility": 10,
+"charisma": 5,
+"constitution": 7,
+"intellect": 6,
+"luck": 8,
+"spirit": 7,
+"strength": 7
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "agility"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_rtano")]([])
 rest_abilities = Array[ExtResource("2_bl5bk")]([ExtResource("2"), ExtResource("3")])

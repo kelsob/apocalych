@@ -13,14 +13,17 @@ description = "A stalwart protector, combining defensive prowess with tactical a
 weapon_type = "Sword"
 armour_type = "Mail"
 default_combat_formation_row = 0
-stat_modifiers = {
-"agility": 0,
-"charisma": 0,
-"constitution": 3,
-"intellect": 0,
-"luck": 1,
-"spirit": 2,
-"strength": 1
+stat_spread = {
+"agility": 6,
+"charisma": 6,
+"constitution": 9,
+"intellect": 5,
+"luck": 7,
+"spirit": 7,
+"strength": 10
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "strength"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_6bk8k")]([])
 rest_abilities = Array[ExtResource("2_r2moi")]([ExtResource("2"), ExtResource("3")])

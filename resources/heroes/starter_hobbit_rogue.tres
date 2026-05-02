@@ -1,8 +1,9 @@
-[gd_resource type="Resource" load_steps=4 format=3]
+[gd_resource type="Resource" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/party/HeroCharacter.gd" id="1_hc"]
 [ext_resource type="Resource" uid="uid://cy6s8tjfa6p6p" path="res://resources/races/hobbit.tres" id="2_race"]
 [ext_resource type="Resource" uid="uid://c23vm1gvntxbh" path="res://resources/classes/rogue.tres" id="3_class"]
+[ext_resource type="Resource" path="res://resources/weapons/starters/starter_rogue_twin_daggers.tres" id="4_dw"]
 
 [resource]
 script = ExtResource("1_hc")
@@ -10,3 +11,7 @@ hero_id = "starter_hobbit_rogue"
 member_name = "Merry"
 race = ExtResource("2_race")
 class_resource = ExtResource("3_class")
+weapon_slot_a = ExtResource("4_dw")
+allows_weapon_slot_b = false
+allowed_weapon_type_ids_slot_a = Array[String](["daggers"])
+allowed_weapon_type_ids_slot_b = Array[String]([])

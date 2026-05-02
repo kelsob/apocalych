@@ -1,15 +1,13 @@
 extends Control
 class_name CombatCharacterSprite
 
-## CombatCharacterSprite - Displays a combatant in combat with health, casting status, and targeting visuals
+## CombatCharacterSprite - Character sprite, status effect icons, combat text, and targeting overlays
 
 var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tscn")
 var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
 const PLACEHOLDER_TEXTURE: Texture2D = preload("res://assets/party-characters/placeholder.png")
 
 @onready var character_sprite: TextureRect = $VBoxContainer/CharacterSprite
-@onready var hp_progress_bar: HPBar = $VBoxContainer/HPBar
-@onready var casting_label: Label = $VBoxContainer/CastingLabel
 @onready var status_effects_container : HBoxContainer = $VBoxContainer/StatusEffectsContainer
 
 # Targeting visuals (created in _ready so we don't require scene edits)
@@ -25,11 +23,6 @@ var combatant: CombatantData = null
 var _combat_text_active_count: int = 0
 
 func _ready():
-	# Hide casting label by default
-	if casting_label:
-		casting_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	
-	
 	# Selection indicator: full rect overlay when this combatant is selected as target
 	_selection_highlight = ColorRect.new()
 	_selection_highlight.color = Color(1.0, 0.9, 0.2, 0.35)
@@ -87,35 +80,10 @@ func setup(combatant_data: CombatantData):
 		if combatant.combatant_stats.status_removed.is_connected(_refresh_status_effects_display):
 			combatant.combatant_stats.status_removed.disconnect(_refresh_status_effects_display)
 	combatant = combatant_data
-	update_health_display()
-	update_casting_display()
 	if combatant and combatant.combatant_stats:
 		combatant.combatant_stats.status_applied.connect(_refresh_status_effects_display)
 		combatant.combatant_stats.status_removed.connect(_refresh_status_effects_display)
 	_refresh_status_effects_display()
-
-## Update health bar display
-func update_health_display():
-	var stats = combatant.combatant_stats
-	hp_progress_bar.set_health(stats.current_health, stats.max_health)
-
-
-## Update casting display
-func update_casting_display():
-	if not combatant or not casting_label:
-		return
-	
-	# Check if combatant has an active cast
-	if CombatController.combat_timeline:
-		var active_cast = CombatController.combat_timeline.get_active_cast(combatant)
-		if active_cast:
-			var remaining = active_cast.remaining_cast_time
-			casting_label.text = "Casting: %s - %d turn%s" % [
-				active_cast.ability.ability_name,
-				remaining,
-				"s" if remaining != 1 else ""
-			]
-
 
 ## Set sprite modulation (for death, highlighting, etc.)
 func set_sprite_modulation(color: Color):

@@ -13,14 +13,17 @@ description = "A practitioner of dark magic, wielding forbidden power through pa
 weapon_type = "Staff"
 armour_type = "Robes"
 default_combat_formation_row = 1
-stat_modifiers = {
-"agility": 0,
-"charisma": 3,
-"constitution": 0,
-"intellect": 2,
-"luck": 1,
-"spirit": 0,
-"strength": 0
+stat_spread = {
+"agility": 6,
+"charisma": 8,
+"constitution": 6,
+"intellect": 10,
+"luck": 7,
+"spirit": 7,
+"strength": 5
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "intellect"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_64w31")]([])
 rest_abilities = Array[ExtResource("2_3n7xj")]([ExtResource("2"), ExtResource("3")])

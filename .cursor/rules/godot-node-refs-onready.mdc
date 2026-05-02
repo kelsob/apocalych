@@ -1,0 +1,34 @@
+---
+description: Scene node references — use @onready paths, not @export assignments; fail fast
+globs: "**/*.gd"
+alwaysApply: true
+---
+
+# Godot: wire nodes in script with `@onready` paths, not inspector `@export`
+
+## Do not
+
+- **`@export var my_node: SomeControl`** (or any **Node**) so the author has to **drag-assign in the Inspector**. That pattern is forbidden here.
+- **Fallback wiring** that hides mistakes: `if node == null`, `get_node_or_null` + skip, **`find_child`** to guess a node, or other “optional” branches that let the game run with a silently missing UI.
+
+## Do
+
+- Declare the reference at the top of the script and **leave the node path for the author to type** (one place, in code):
+
+```gdscript
+@onready var content_label: RichTextLabel = $MarginContainer/RichTextLabel
+```
+
+- If the path is not known yet, use a **typed member without a path** and let the author add **`@onready` … `= $…`** in one edit when the scene exists:
+
+```gdscript
+var content_label: RichTextLabel
+```
+
+  Until `content_label` is assigned, code that uses it should **fail** at runtime (null access) — that is preferable to masking a wrong scene.
+
+- Use **`$Path/To/Node`** or **`%UniqueName`** — hard-coded paths only (project convention).
+
+## Rationale
+
+Inspector-exported node refs plus null checks **obfuscate errors** and waste time. Wrong or missing nodes should **break loudly** during development so the scene tree is fixed immediately.

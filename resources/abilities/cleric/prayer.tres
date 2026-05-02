@@ -29,6 +29,7 @@ ability_type = 2
 targeting_type = 3
 requires_target = false
 attack_range = 1
+required_weapon_type_ids = Array[String](["staff"])
 effects = Array[ExtResource("2")]([SubResource("1")])
 can_be_interrupted = true
 channeled_tick_on_cast = false

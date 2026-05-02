@@ -1,8 +1,9 @@
 extends RefCounted
 class_name CombatantStats
 
-## CombatantStats - Runtime stats container for a combatant in combat.
-## Uses the simplified ATK / DEF / SPD / MAG / MAG_DEF stat system.
+## CombatantStats - Runtime stats container for turn-based combat.
+## [member base_speed] stores **initiative** (higher ⇒ more frequent turns via [CombatTimeline]).
+## Core stats keys: atk, def, spd (initiative for display/scaling), mag, mag_def.
 
 signal stats_changed()
 signal health_changed(old_value: int, new_value: int)
@@ -20,7 +21,7 @@ var max_ap: int = 10
 var current_ap: int = 10
 var base_ap_per_turn: int = 3
 
-# Speed (determines turn frequency in the combat timeline)
+# Speed / initiative (determines turn frequency in the combat timeline — higher is faster)
 var base_speed: float = 5.0
 var speed_modifier: float = 0.0
 
@@ -49,9 +50,8 @@ func initialize_from_hero_character(member: HeroCharacter):
 	current_health = member.current_health
 	core_stats = member.get_combat_core_stats().duplicate()
 
-	# Fold equipment bonuses directly into stats
-	if member.weapon:
-		core_stats["atk"] = core_stats.get("atk", 5) + member.weapon.get_damage_bonus()
+	# Fold equipment bonuses directly into stats (all weapon slots)
+	core_stats["atk"] = core_stats.get("atk", 5) + member.get_total_weapon_damage_bonus()
 	if member.armour:
 		core_stats["def"] = core_stats.get("def", 0) + member.armour.get_defense_bonus()
 
@@ -65,12 +65,14 @@ func initialize_from_enemy(enemy: Resource):
 	# Handled by Enemy.create_combat_stats() — this stub kept for interface completeness
 	pass
 
-## Get effective speed (base + speed modifiers from active statuses)
+## Get effective initiative value for the timeline (base_speed + modifiers). Status keys [code]spd[/code] and [code]init[/code] both add to this total.
 func get_effective_speed() -> float:
 	var total := base_speed + speed_modifier
 	for status in active_statuses:
 		if status.stat_modifiers.has("spd"):
 			total += float(status.stat_modifiers["spd"])
+		if status.stat_modifiers.has("init"):
+			total += float(status.stat_modifiers["init"])
 	return max(1.0, total)
 
 ## Regenerate AP at the start of a turn

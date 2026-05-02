@@ -11,7 +11,7 @@ const TIER_CRIT_SUCCESS: String = "crit_success"
 
 const TIER_ORDER: Array[String] = [TIER_CRIT_FAIL, TIER_FAIL, TIER_SUCCESS, TIER_CRIT_SUCCESS]
 
-## At primary stat == 10, tier odds match a neutral d20-style spread (5 / 45 / 45 / 5).
+## At primary stat == [member HeroCharacter.PRIMARY_STAT_NEUTRAL], tier odds match a neutral d20-style spread (5 / 45 / 45 / 5).
 const _BASE_P_CF: float = 0.05
 const _BASE_P_F: float = 0.45
 const _BASE_P_S: float = 0.45
@@ -57,7 +57,7 @@ static func default_actor_index_for_stat(stat_key: String, members: Array) -> in
 		var m: HeroCharacter = members[i]
 		if m == null:
 			continue
-		var v: int = int(m.get_final_stats().get(stat_key, 10))
+		var v: int = int(m.get_final_stats().get(stat_key, HeroCharacter.PRIMARY_STAT_NEUTRAL))
 		if v > best_v:
 			best_v = v
 			best_i = i
@@ -66,8 +66,8 @@ static func default_actor_index_for_stat(stat_key: String, members: Array) -> in
 
 static func stat_value_for_member(member: HeroCharacter, stat_key: String) -> int:
 	if member == null:
-		return 10
-	return int(member.get_final_stats().get(stat_key, 10))
+		return HeroCharacter.PRIMARY_STAT_NEUTRAL
+	return int(member.get_final_stats().get(stat_key, HeroCharacter.PRIMARY_STAT_NEUTRAL))
 
 
 ## Roll one of four tiers. Higher `stat_value` shifts mass toward success tiers (baseline 10).
@@ -173,11 +173,11 @@ static func _cumulative_shift_magnitude(delta: int) -> float:
 	return STAT_CHECK_FIRST_STEP_SHIFT * (1.0 - pow(r, delta)) / (1.0 - r)
 
 
-## Baseline at stat 10: 5% crit_fail, 45% fail, 45% success, 5% crit_success (d20-style neutral).
-## Above 10: each point shifts mass from bad→good with diminishing returns (first step +5%, then geometric decay). Below 10: symmetric toward bad. Stat is clamped to `STAT_CHECK_MAX_STAT` for the curve. Mass splits preserve the 5:45 / 45:5 ratio within bad and good groups.
+## Baseline at [member HeroCharacter.PRIMARY_STAT_NEUTRAL]: 5% crit_fail, 45% fail, 45% success, 5% crit_success (d20-style neutral).
+## Above neutral: each point shifts mass from bad→good with diminishing returns. Below: symmetric toward bad. Stat is clamped to `STAT_CHECK_MAX_STAT` for the curve.
 static func _tier_probabilities(stat_value: int) -> Dictionary:
 	var t: int = clampi(stat_value, 1, STAT_CHECK_MAX_STAT)
-	var delta: int = t - 10
+	var delta: int = t - HeroCharacter.PRIMARY_STAT_NEUTRAL
 	var shift: float = 0.0
 	if delta >= 0:
 		shift = _cumulative_shift_magnitude(delta)

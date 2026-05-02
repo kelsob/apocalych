@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Weapon" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/Weapon.gd" id="1_w"]
+[ext_resource type="Script" path="res://scripts/combat/resources/Ability.gd" id="2_ab"]
+[ext_resource type="Resource" path="res://resources/abilities/starters/basic_sword_strike.tres" id="3_basic"]
+
+[resource]
+script = ExtResource("1_w")
+tier = 0
+enchantments = []
+weapon_type_id = "sword"
+display_name = "Simple sword"
+occupies_both_slots = false
+contributes_attack_bonus = true
+tier_prefixes = Array[String](["Worn", "Soldier's", "Knight's", "Hero's", "Legend's"])
+granted_basic_attacks = Array[ExtResource("2_ab")]([ExtResource("3_basic")])

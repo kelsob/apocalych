@@ -1,4 +1,4 @@
-extends Control
+extends ScrollContainer
 class_name TurnOrderPanel
 
 ## TurnOrderPanel - Owns the turn order list and refreshes it from the combat timeline.
@@ -7,7 +7,7 @@ class_name TurnOrderPanel
 signal combatant_hover_highlighted(combatant: CombatantData)
 signal combatant_hover_unhighlighted()
 
-@onready var turn_order_display: HBoxContainer = $NinePatchRect/MarginContainer/ScrollContainer/TurnOrderDisplay
+@onready var turn_order_display: VBoxContainer = $TurnOrderDisplay
 var turn_order_entry_scene: PackedScene = preload("res://scenes/combat/TurnOrderEntry.tscn")
 
 func refresh_turn_order() -> void:

@@ -18,7 +18,7 @@ static func make(amount: float, category: CombatDamageKind.Kind, bypass_physical
 	return p
 
 
-## Legacy-style physical hit (abilities that only specify potency).
+## Simple physical hit from a raw amount (no packet metadata).
 static func physical_simple(amount: float) -> DamagePacket:
 	return make(amount, CombatDamageKind.Kind.PHYSICAL, false)
 

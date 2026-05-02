@@ -1,0 +1,50 @@
+[gd_scene load_steps=3 format=3 uid="uid://cjoj2n3njxgmh"]
+
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_5oklg"]
+[ext_resource type="Script" uid="uid://di01n5ca80u0" path="res://scripts/2d/EquipmentTooltip.gd" id="1_mjohh"]
+
+[node name="EquipmentTooltip" type="PanelContainer"]
+custom_minimum_size = Vector2(196, 0)
+offset_right = 40.0
+offset_bottom = 40.0
+theme = ExtResource("1_5oklg")
+script = ExtResource("1_mjohh")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ItemNameLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+text = "item name"
+
+[node name="TierLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "tier"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HandStyleLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "handedness"
+
+[node name="TypeLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 8
+text = "type"
+
+[node name="DamageBonusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "damage bonus"
+
+[node name="GrantedBasicsLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "basic attack"

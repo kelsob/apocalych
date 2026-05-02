@@ -1,8 +1,9 @@
-[gd_resource type="Resource" load_steps=4 format=3]
+[gd_resource type="Resource" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/party/HeroCharacter.gd" id="1_hc"]
 [ext_resource type="Resource" uid="uid://bmsm3t77u8s6p" path="res://resources/races/elf.tres" id="2_race"]
 [ext_resource type="Resource" uid="uid://cqaljqmw1hk2a" path="res://resources/classes/wizard.tres" id="3_class"]
+[ext_resource type="Resource" path="res://resources/weapons/starters/starter_wizard_staff.tres" id="4_staff"]
 
 [resource]
 script = ExtResource("1_hc")
@@ -10,3 +11,7 @@ hero_id = "starter_elf_wizard"
 member_name = "Elara"
 race = ExtResource("2_race")
 class_resource = ExtResource("3_class")
+weapon_slot_a = ExtResource("4_staff")
+allows_weapon_slot_b = false
+allowed_weapon_type_ids_slot_a = Array[String](["staff"])
+allowed_weapon_type_ids_slot_b = Array[String]([])

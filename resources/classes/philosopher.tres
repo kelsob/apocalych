@@ -13,14 +13,17 @@ description = "A deep thinker and scholar, using knowledge and reason to underst
 weapon_type = "Tome"
 armour_type = "Robes"
 default_combat_formation_row = 1
-stat_modifiers = {
-"agility": 0,
-"charisma": 1,
-"constitution": 0,
-"intellect": 3,
-"luck": 1,
-"spirit": 2,
-"strength": -1
+stat_spread = {
+"agility": 6,
+"charisma": 10,
+"constitution": 6,
+"intellect": 8,
+"luck": 7,
+"spirit": 7,
+"strength": 5
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "charisma"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_i4t23")]([])
 rest_abilities = Array[ExtResource("2_ekssl")]([ExtResource("2"), ExtResource("3")])

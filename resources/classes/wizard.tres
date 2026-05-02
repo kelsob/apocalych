@@ -18,14 +18,17 @@ description = "A master of arcane magic, studying ancient tomes to unlock the se
 weapon_type = "Staff"
 armour_type = "Robes"
 default_combat_formation_row = 1
-stat_modifiers = {
-"agility": 0,
-"charisma": 0,
-"constitution": 0,
-"intellect": 4,
-"luck": 1,
-"spirit": 1,
-"strength": -1
+stat_spread = {
+"agility": 6,
+"charisma": 8,
+"constitution": 6,
+"intellect": 10,
+"luck": 7,
+"spirit": 7,
+"strength": 5
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "intellect"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_oqwrl")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
 rest_abilities = Array[ExtResource("7_lau5f")]([ExtResource("7"), ExtResource("8")])

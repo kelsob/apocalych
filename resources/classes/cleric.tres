@@ -18,14 +18,17 @@ description = "A divine healer and support, channeling holy power to aid allies.
 weapon_type = "Mace"
 armour_type = "Robes"
 default_combat_formation_row = 1
-stat_modifiers = {
-"agility": 0,
-"charisma": 2,
-"constitution": 1,
-"intellect": 0,
-"luck": 0,
-"spirit": 3,
-"strength": 0
+stat_spread = {
+"agility": 6,
+"charisma": 8,
+"constitution": 8,
+"intellect": 7,
+"luck": 7,
+"spirit": 10,
+"strength": 5
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "spirit"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_rmvkm")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6")])
 rest_abilities = Array[ExtResource("7_k340w")]([ExtResource("7"), ExtResource("8")])

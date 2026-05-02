@@ -28,7 +28,8 @@ tag_fel = false
 max_health = 55
 atk = 9
 def = 7
-spd = 3
+initiative = 10
+
 mag = 3
 mag_def = 4
 abilities = Array[Resource("res://scripts/combat/resources/Ability.gd")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])

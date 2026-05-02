@@ -26,8 +26,8 @@ enum EffectType {
 }
 
 @export var effect_type: EffectType = EffectType.DAMAGE
-@export var potency: float = 0.0     ## Base damage/heal/shield amount
-@export var stat_scaling: Dictionary = {}  ## e.g. {"atk": 1.0} — adds stat × factor to potency
+@export var potency: float = 0.0     ## Base damage/heal/shield amount before [member stat_scaling].
+@export var stat_scaling: Dictionary = {}  ## Adds [code]core_stats[key] × value[/code] to [member potency] (non–player-basic DAMAGE / heals use [method get_resolved_amount]).
 @export var target_count: int = 1    ## Targets hit (use 999 for all)
 @export var status_to_apply: StatusEffect = null  ## APPLY_STATUS and APPLY_GROUNDING
 
@@ -47,13 +47,13 @@ enum EffectType {
 ## Legacy: when true, treated as MAGICAL regardless of `damage_kind` (keeps old .tres working).
 @export var is_magical: bool = false
 
-## Calculate final potency based on caster's core_stats dictionary
-func calculate_final_potency(caster_stats: Dictionary) -> float:
-	var final_potency := potency
+## [member potency] plus [member stat_scaling] applied to [param caster_stats] (combat core stats: atk, def, spd, mag, mag_def).
+func get_resolved_amount(caster_stats: Dictionary) -> float:
+	var out := potency
 	for stat_name in stat_scaling:
 		if caster_stats.has(stat_name):
-			final_potency += float(caster_stats[stat_name]) * stat_scaling[stat_name]
-	return final_potency
+			out += float(caster_stats[stat_name]) * stat_scaling[stat_name]
+	return out
 
 
 func get_effective_damage_kind() -> CombatDamageKind.Kind:

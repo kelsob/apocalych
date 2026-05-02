@@ -1,14 +1,16 @@
-extends MarginContainer
+extends Control
+class_name CharacterCombatInformationPanel
 
-@onready var name_label: Label = $VBoxContainer/HBoxContainer/NameLabel
-@onready var ap_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer/APLabel
-@onready var ap_max_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer/APMaxLabel
-@onready var health_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer2/HealthLabel
-@onready var health_max_label: Label = $VBoxContainer/HBoxContainer/HBoxContainer2/HealthMaxLabel
-@onready var health_progress_bar: HPBar = $VBoxContainer/MarginContainer/HPBar
+@onready var name_label: Label = $Control/NameLabel
+@onready var ap_label: Label = $Control/HBoxContainer/APLabel
+@onready var ap_max_label: Label = $Control/HBoxContainer/APMaxLabel
+@onready var health_label: Label = $Control/HBoxContainer2/HealthLabel
+@onready var health_max_label: Label = $Control/HBoxContainer2/HealthMaxLabel
+@onready var health_progress_bar: HPBar = $Control/HPBar
+@onready var portrait_texture: TextureRect = $CharacterPortraitFrame/CharacterPortrait
 
-## Update display with current combatant stats
-func update_display(combatant_name: String, current_hp: int, max_hp: int, current_ap: int, max_ap: int):
+## Update display with current combatant stats. [param combat_portrait] defaults to map/event portrait from [method HeroCharacter.get_portrait]; [code]null[/code] hides the portrait.
+func update_display(combatant_name: String, current_hp: int, max_hp: int, current_ap: int, max_ap: int, combat_portrait: Texture2D = null) -> void:
 	if name_label:
 		name_label.text = combatant_name
 	
@@ -24,4 +26,9 @@ func update_display(combatant_name: String, current_hp: int, max_hp: int, curren
 	if ap_max_label:
 		ap_max_label.text = str(max_ap)
 	
-	health_progress_bar.set_health(current_hp, max_hp)
+	if health_progress_bar:
+		health_progress_bar.set_health(current_hp, max_hp)
+	
+	if portrait_texture:
+		portrait_texture.texture = combat_portrait
+		portrait_texture.visible = combat_portrait != null

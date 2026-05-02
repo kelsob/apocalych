@@ -31,7 +31,7 @@ enum StackBehavior {
 @export var base_duration: int = 1  ## Turns
 @export var stack_behavior: StackBehavior = StackBehavior.REFRESH
 
-# Stat modifiers applied while status is active (keys match core_stats: "atk","def","spd","mag","mag_def")
+# Stat modifiers applied while status is active (keys match core_stats: "atk","def","spd","mag","mag_def"; also [code]init[/code] adds to timeline initiative like [code]spd[/code])
 @export var stat_modifiers: Dictionary = {}
 
 # Periodic effects (applied each turn)

@@ -1,0 +1,52 @@
+[gd_scene load_steps=3 format=3 uid="uid://wch1q73ihsx2"]
+
+[ext_resource type="PackedScene" uid="uid://bp6mcwiuxa2sa" path="res://scenes/combat/CharacterCombatInformationPanel.tscn" id="1_absaq"]
+[ext_resource type="Script" path="res://scripts/combat/PlayerPartyPanel.gd" id="2_party"]
+
+[node name="PlayerPartyPanel" type="Control"]
+custom_minimum_size = Vector2(512, 196)
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -768.0
+offset_bottom = -524.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_party")
+[node name="CharacterCombatInformationPanel" parent="." instance=ExtResource("1_absaq")]
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 1
+anchors_preset = 0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_top = 0.0
+offset_right = 130.0
+offset_bottom = 65.0
+grow_horizontal = 1
+grow_vertical = 1
+
+[node name="CharacterCombatInformationPanel2" parent="." instance=ExtResource("1_absaq")]
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -65.0
+offset_top = -32.5
+offset_right = 65.0
+offset_bottom = 32.5
+
+[node name="CharacterCombatInformationPanel3" parent="." instance=ExtResource("1_absaq")]
+custom_minimum_size = Vector2(260, 32)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -130.0
+offset_top = -65.0
+offset_bottom = 0.0
+grow_horizontal = 0
+grow_vertical = 0

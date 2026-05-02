@@ -87,6 +87,7 @@ static func instantiate_for_run(template_path: String) -> HeroCharacter:
 	if t == null:
 		return null
 	var h: HeroCharacter = t.duplicate(true)
+	h.duplicate_equipped_weapons_for_run()
 	h.initialize()
 	return h
 

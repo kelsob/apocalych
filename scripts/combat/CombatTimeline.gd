@@ -1,8 +1,8 @@
 extends RefCounted
 class_name CombatTimeline
 
-## CombatTimeline - Manages turn order based on speed stats
-## Handles the speed-based turn system where faster characters get more turns
+## CombatTimeline — Turn order from **initiative** ([member CombatantStats.base_speed], higher ⇒ faster cadence).
+## Timeline interval uses [method CombatantData.get_effective_speed]; heroes derive initiative from AGI + SPI + gear/race hooks ([member HeroCharacter.get_initiative]).
 
 signal turn_ready(turn_event: TurnEvent)
 signal timeline_advanced(new_time: float)
@@ -48,7 +48,7 @@ func unregister_combatant(combatant: CombatantData):
 		if turn_queue[i].combatant == combatant:
 			turn_queue.remove_at(i)
 
-## Calculate next turn time based on speed
+## Calculate next turn time from initiative (higher ⇒ shorter interval)
 ## Formula: current_time + (1.0 / speed)
 ## Speed 10 = turn every 0.1 time units
 ## Speed 15 = turn every 0.0667 time units (faster)
@@ -92,7 +92,7 @@ func _schedule_next_turn_for_combatant(combatant: CombatantData):
 	combatant.next_turn_time = next_turn_time
 
 ## Insert a turn into the queue in sorted order (by turn_time)
-## If tied, prioritize by speed (higher speed goes first)
+## If tied, prioritize by initiative (higher goes first)
 func _insert_turn_into_queue(turn_event: TurnEvent):
 	var inserted = false
 	
@@ -105,7 +105,7 @@ func _insert_turn_into_queue(turn_event: TurnEvent):
 			inserted = true
 			break
 		elif turn_event.turn_time == existing_turn.turn_time:
-			# Tied - compare speeds (higher speed goes first)
+			# Tied — higher initiative resolves first
 			if turn_event.combatant.get_effective_speed() > existing_turn.combatant.get_effective_speed():
 				turn_queue.insert(i, turn_event)
 				inserted = true

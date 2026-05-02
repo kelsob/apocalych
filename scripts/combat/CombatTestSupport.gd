@@ -87,6 +87,7 @@ static func create_hero_from_template(hero_path: String) -> HeroCharacter:
 	var r = load(hero_path)
 	if r is HeroCharacter:
 		var inst: HeroCharacter = (r as HeroCharacter).duplicate(true)
+		inst.duplicate_equipped_weapons_for_run()
 		inst.initialize()
 		return inst
 	push_warning("CombatTestSupport: not a HeroCharacter: %s" % hero_path)
@@ -103,10 +104,11 @@ static func set_hero_level(hero: HeroCharacter, target_level: int) -> void:
 
 
 static func set_weapon_tier(hero: HeroCharacter, tier: int) -> void:
-	if hero.weapon == null:
-		hero.weapon = Weapon.create_default()
+	hero.ensure_default_weapon_slot_a()
 	tier = clampi(tier, 0, Weapon.Tier.MITHRIL)
-	hero.weapon.tier = tier
+	var w: Weapon = hero.get_weapon_slot_a()
+	if w:
+		w.tier = tier
 
 
 static func set_armour_tier(hero: HeroCharacter, tier: int) -> void:

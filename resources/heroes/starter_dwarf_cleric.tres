@@ -1,8 +1,9 @@
-[gd_resource type="Resource" load_steps=4 format=3]
+[gd_resource type="Resource" load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/party/HeroCharacter.gd" id="1_hc"]
 [ext_resource type="Resource" uid="uid://csdst5qxc50u8" path="res://resources/races/dwarf.tres" id="2_race"]
 [ext_resource type="Resource" uid="uid://ch3xq313hycom" path="res://resources/classes/cleric.tres" id="3_class"]
+[ext_resource type="Resource" path="res://resources/weapons/starters/starter_cleric_staff.tres" id="4_staff"]
 
 [resource]
 script = ExtResource("1_hc")
@@ -10,3 +11,7 @@ hero_id = "starter_dwarf_cleric"
 member_name = "Durin"
 race = ExtResource("2_race")
 class_resource = ExtResource("3_class")
+weapon_slot_a = ExtResource("4_staff")
+allows_weapon_slot_b = false
+allowed_weapon_type_ids_slot_a = Array[String](["staff"])
+allowed_weapon_type_ids_slot_b = Array[String]([])

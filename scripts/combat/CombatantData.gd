@@ -19,6 +19,9 @@ var combatant_stats: CombatantStats = null
 # Available abilities
 var abilities: Array[Ability] = []
 
+## Set true after this combatant uses a basic ([member Ability.is_basic_attack]) this turn; cleared in [method start_turn].
+var basic_attack_used_this_turn: bool = false
+
 # Combat state
 var display_name: String = ""
 var is_dead: bool = false
@@ -30,6 +33,7 @@ var turn_count: int = 0
 
 const STATUS_ID_GROUNDED := "grounded"
 const ABILITY_ID_MOVE := "move"
+const ABILITY_ID_BASIC_ATTACK := "basic_attack"
 const MOVE_ABILITY_PATH := "res://resources/abilities/shared/move.tres"
 
 static var _move_ability_cache: Ability = null
@@ -62,9 +66,12 @@ func initialize_from_hero_character(member: HeroCharacter):
 	combatant_stats.died.connect(_on_died)
 	combatant_stats.status_removed.connect(_on_status_removed)
 	
-	# Load abilities from class
+	# Load abilities: class specials, strip class-defined basics (weapon grants those), weapon-granted basics first, gear filter, Move last
 	if member.class_resource:
 		_load_abilities_from_class(member.class_resource)
+	_strip_class_basics_for_weapon_grants()
+	_prepend_weapon_granted_abilities(member)
+	_filter_abilities_by_equipment(member)
 	_ensure_move_ability()
 	
 	var row_i: int = member.resolve_initial_formation_row()
@@ -113,6 +120,50 @@ func _load_abilities_from_class(class_resource: Class):
 	abilities = class_resource.abilities.duplicate()
 
 
+func _strip_class_basics_for_weapon_grants() -> void:
+	for i in range(abilities.size() - 1, -1, -1):
+		var a: Ability = abilities[i]
+		if a == null:
+			continue
+		if a.is_basic_attack or a.ability_id == ABILITY_ID_BASIC_ATTACK:
+			abilities.remove_at(i)
+
+
+func _prepend_weapon_granted_abilities(member: HeroCharacter) -> void:
+	var seen: Dictionary = {}
+	var weapon_first: Array[Ability] = []
+	for w in member.get_all_equipped_weapons():
+		if w == null:
+			continue
+		for g in w.granted_basic_attacks:
+			if g == null:
+				continue
+			var key: String = g.ability_id if not g.ability_id.is_empty() else str(g.resource_path)
+			if seen.has(key):
+				continue
+			seen[key] = true
+			weapon_first.append(g)
+	for a in abilities:
+		if a == null:
+			continue
+		var k: String = a.ability_id if not a.ability_id.is_empty() else str(a.resource_path)
+		if seen.has(k):
+			continue
+		seen[k] = true
+		weapon_first.append(a)
+	abilities = weapon_first
+
+
+func _filter_abilities_by_equipment(member: HeroCharacter) -> void:
+	var filtered: Array[Ability] = []
+	for a in abilities:
+		if a == null:
+			continue
+		if member.ability_allowed_by_equipment(a):
+			filtered.append(a)
+	abilities = filtered
+
+
 func _ensure_move_ability() -> void:
 	for a in abilities:
 		if a is Ability and (a as Ability).ability_id == ABILITY_ID_MOVE:
@@ -132,6 +183,7 @@ func _ensure_move_ability() -> void:
 ## Start a turn for this combatant
 ## Returns status effect processing results
 func start_turn() -> Dictionary:
+	basic_attack_used_this_turn = false
 	turn_count += 1
 	
 	# Process status effects FIRST (poison damages, regen heals, etc.)
@@ -144,6 +196,28 @@ func start_turn() -> Dictionary:
 	turn_started.emit()
 	
 	return status_results
+
+## Heroes: gear satisfies [member Ability.required_weapon_type_ids]. Enemies: always true.
+func is_ability_usable_with_current_gear(ability: Ability) -> bool:
+	if ability == null:
+		return false
+	if not is_player or source == null:
+		return true
+	if source is HeroCharacter:
+		return (source as HeroCharacter).ability_allowed_by_equipment(ability)
+	return true
+
+
+## False if gear forbids this ability or a basic was already used this turn.
+func can_cast_ability_this_turn(ability: Ability) -> bool:
+	if ability == null:
+		return false
+	if not is_ability_usable_with_current_gear(ability):
+		return false
+	if ability.is_basic_attack and basic_attack_used_this_turn:
+		return false
+	return true
+
 
 ## Cast an ability at target(s)
 func cast_ability(ability: Ability, targets: Array) -> bool:
@@ -190,7 +264,7 @@ func sync_back_to_source():
 		source.current_health = combatant_stats.current_health
 		# Could sync other persistent effects here (e.g., permanent stat changes)
 
-## Get effective speed for turn calculation
+## Get effective initiative value for the timeline (same as legacy name [code]get_effective_speed[/code] on stats).
 func get_effective_speed() -> float:
 	return combatant_stats.get_effective_speed()
 

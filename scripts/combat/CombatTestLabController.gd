@@ -54,6 +54,7 @@ func _ready() -> void:
 	launch_button.pressed.connect(_on_launch_pressed)
 	if not CombatController.combat_test_session_ended.is_connected(_on_combat_test_session_ended):
 		CombatController.combat_test_session_ended.connect(_on_combat_test_session_ended)
+	call_deferred("_apply_random_party_selection")
 
 
 func _exit_tree() -> void:
@@ -77,6 +78,30 @@ func _populate_character_options(btn: OptionButton) -> void:
 		var label: String = str(row.get("name", "")) + "  (" + str(row.get("id", "")) + ")"
 		btn.add_item(label)
 		btn.set_item_metadata(btn.item_count - 1, row["path"])
+
+
+func _shuffled_playable_option_indices(sample: OptionButton) -> Array[int]:
+	var pool: Array[int] = []
+	for idx in range(1, sample.item_count):
+		pool.append(idx)
+	pool.shuffle()
+	return pool
+
+
+## Fills the three character [OptionButton]s with random heroes (unique when enough templates exist).
+func _apply_random_party_selection() -> void:
+	var selectors: Array[OptionButton] = [character_select_1, character_select_2, character_select_3]
+	var sample: OptionButton = character_select_1
+	if sample.item_count <= 1:
+		return
+	var pool: Array[int] = _shuffled_playable_option_indices(sample)
+	var chosen: Array[int] = []
+	for _i in selectors.size():
+		if pool.is_empty():
+			pool = _shuffled_playable_option_indices(sample)
+		chosen.append(pool.pop_back())
+	for i in selectors.size():
+		selectors[i].select(chosen[i])
 
 
 func _populate_inventory_list(list: ItemList) -> void:

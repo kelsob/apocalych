@@ -18,6 +18,8 @@ var _member: HeroCharacter = null
 
 
 func _ready() -> void:
+	if hp_progress_bar:
+		hp_progress_bar.scale_width_from_max_hp = false
 	if button:
 		button.pressed.connect(_on_button_pressed)
 

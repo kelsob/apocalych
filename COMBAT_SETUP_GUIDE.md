@@ -6,7 +6,7 @@ This guide walks you through setting up the combat system resources and scenes.
 
 - **Party / character sheet** uses **seven primary attributes:** `strength`, `agility`, `constitution`, `intellect`, `spirit`, `charisma`, `luck` (race + class on `HeroCharacter`).
 - **Combat runtime** uses **`CombatantStats.core_stats`:** `atk`, `def`, `spd`, `mag`, `mag_def`. Party members get these from `HeroCharacter.get_combat_core_stats()` (e.g. `atk` tracks strength, `spd` from agility, `mag` from intellect, `mag_def` from spirit).
-- **Ability `stat_scaling`** must use **core_stats keys** (`atk`, `def`, `spd`, `mag`, `mag_def`) — that is what `AbilityEffect.calculate_final_potency()` reads.
+- **Ability `stat_scaling`** must use **core_stats keys** (`atk`, `def`, `spd`, `mag`, `mag_def`) — that is what `AbilityEffect.get_resolved_amount()` reads (combined with effect `potency`).
 - **Enemies** only use the combat stats (`atk`, `def`, `spd`, `mag`, `mag_def`) on the `Enemy` resource, not the seven primaries.
 
 ## 1. AUTOLOAD SETUP

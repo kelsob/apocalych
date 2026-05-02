@@ -52,6 +52,14 @@ enum AttackRangeProfile {
 # If false, first tick happens on the caster's next turn (e.g. items can set this to true)
 @export var channeled_tick_on_cast: bool = false
 
+## If non-empty, hero must have every [member Weapon.weapon_type_id] listed on equipped weapons (see [method HeroCharacter.ability_allowed_by_equipment]).
+@export var required_weapon_type_ids: Array[String] = []
+## When true, treated as a weapon-granted basic for one-basic-per-turn rules (enforced in [code]CombatController[/code] in a later step).
+@export var is_basic_attack: bool = false
+
+## Physical / magical / true — **summary** for UI, filters, and future traits. **Combat mitigation** still uses each [AbilityEffect]'s [method AbilityEffect.get_effective_damage_kind] when effects resolve. For a single DAMAGE effect, keep this **aligned** with that effect ([member AbilityEffect.damage_kind] + [member AbilityEffect.is_magical]).
+@export var primary_damage_kind: CombatDamageKind.Kind = CombatDamageKind.Kind.PHYSICAL
+
 # Modifiers (applied by items/passives at runtime)
 # These are dictionaries that modify ability properties
 # e.g., {"cast_time": -1, "ap_cost": -1, "potency_multiplier": 1.2}
@@ -82,6 +90,15 @@ func apply_modifier(modifier_dict: Dictionary):
 ## Clear all runtime modifiers (e.g., when equipment changes)
 func clear_modifiers():
 	runtime_modifiers.clear()
+
+
+## [enum AbilityEffect.EffectType.DAMAGE] kind of the **first** damage effect; falls back to [member primary_damage_kind] if there is none.
+func get_resolved_primary_damage_kind() -> CombatDamageKind.Kind:
+	for e in effects:
+		if e != null and e.effect_type == AbilityEffect.EffectType.DAMAGE:
+			return e.get_effective_damage_kind()
+	return primary_damage_kind
+
 
 ## Check if this ability can target the specified target
 func can_target(caster_is_player: bool, target_is_player: bool) -> bool:

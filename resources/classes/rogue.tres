@@ -14,14 +14,17 @@ description = "A stealthy infiltrator and opportunist, skilled in deception and 
 weapon_type = "Dagger"
 armour_type = "Leather"
 default_combat_formation_row = 0
-stat_modifiers = {
-"agility": 3,
-"charisma": 1,
-"constitution": 0,
-"intellect": 1,
-"luck": 1,
-"spirit": 0,
-"strength": 0
+stat_spread = {
+"agility": 10,
+"charisma": 7,
+"constitution": 5,
+"intellect": 8,
+"luck": 8,
+"spirit": 6,
+"strength": 6
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "agility"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_7qvnp")]([ExtResource("1_stealth")])
 rest_abilities = Array[ExtResource("2_t4rs2")]([ExtResource("2"), ExtResource("3")])

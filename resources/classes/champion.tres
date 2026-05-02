@@ -19,14 +19,17 @@ description = "A master of melee combat, excelling in strength and martial prowe
 weapon_type = "Sword"
 armour_type = "Plate"
 default_combat_formation_row = 0
-stat_modifiers = {
-"agility": 0,
-"charisma": 1,
-"constitution": 2,
-"intellect": 0,
-"luck": 0,
-"spirit": 0,
-"strength": 3
+stat_spread = {
+"agility": 7,
+"charisma": 7,
+"constitution": 9,
+"intellect": 5,
+"luck": 7,
+"spirit": 6,
+"strength": 10
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "strength"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_hrl4r")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")])
 rest_abilities = Array[ExtResource("8_i8qmv")]([ExtResource("8"), ExtResource("9")])

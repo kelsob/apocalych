@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://bpg05vrbvftgi" path="res://scripts/2d/CharacterDetailsScreen.gd" id="1_dktvo"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="1_tqkr6"]
 [ext_resource type="Texture2D" uid="uid://dovh23ohyjb7e" path="res://assets/icons/slash.png" id="2_dktvo"]
-[ext_resource type="Texture2D" uid="uid://diikp321rd5bv" path="res://assets/items/axe-1.png" id="3_ia0tq"]
-[ext_resource type="Texture2D" uid="uid://bjoi6tuod7bjq" path="res://assets/items/armor-1.png" id="4_4fnao"]
+[ext_resource type="PackedScene" uid="uid://dexfyy4qlf4aq" path="res://scenes/2d/CharacterEquipmentStrip.tscn" id="4_tqkr6"]
 [ext_resource type="PackedScene" uid="uid://dfemdm81srhxn" path="res://scenes/2d/CharacterInventoryContainer.tscn" id="6_dktvo"]
+[ext_resource type="PackedScene" uid="uid://cjoj2n3njxgmh" path="res://scenes/2d/EquipmentTooltip.tscn" id="6_ia0tq"]
 
 [node name="CharacterDetailsScreen" type="Control"]
 z_index = 51
@@ -228,85 +228,20 @@ layout_mode = 2
 text = "Equipment"
 horizontal_alignment = 1
 
-[node name="EquipmentContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
+[node name="EquipmentContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer"]
+[node name="CharacterEquipmentStrip" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer" instance=ExtResource("4_tqkr6")]
 layout_mode = 2
 
-[node name="PanelContainer" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer"]
+[node name="CharacterEquipmentStrip2" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer" instance=ExtResource("4_tqkr6")]
 layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer"]
+[node name="CharacterEquipmentStrip3" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer" instance=ExtResource("4_tqkr6")]
 layout_mode = 2
-
-[node name="WeaponTextureRect" type="TextureRect" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer/MarginContainer"]
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-size_flags_horizontal = 4
-texture = ExtResource("3_ia0tq")
-expand_mode = 2
-
-[node name="PanelContainer2" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer2"]
-layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer2/MarginContainer"]
-layout_mode = 2
-alignment = 1
-
-[node name="WeaponName" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer2/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 1
-text = "tier weapon name"
-
-[node name="ATKLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer/PanelContainer2/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 1
-text = "+1 ATK"
-
-[node name="HBoxContainer2" type="HBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer"]
-layout_mode = 2
-
-[node name="PanelContainer" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2"]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer"]
-layout_mode = 2
-
-[node name="ArmorTextureRect" type="TextureRect" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer/MarginContainer"]
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-size_flags_horizontal = 4
-texture = ExtResource("4_4fnao")
-expand_mode = 2
-
-[node name="PanelContainer2" type="PanelContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MarginContainer" type="MarginContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2"]
-layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2/MarginContainer"]
-layout_mode = 2
-alignment = 1
-
-[node name="ArmorName" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 1
-text = "tier armor name"
-
-[node name="DEFLabel" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel/EquipmentContainer/HBoxContainer2/PanelContainer2/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 1
-text = "+0 DEF"
 
 [node name="Label" type="Label" parent="PanelContainer/MarginContainer/HBoxContainer/LeftPanel"]
 layout_mode = 2
@@ -339,3 +274,8 @@ offset_bottom = 16.0
 grow_horizontal = 0
 theme = ExtResource("1_tqkr6")
 text = "X"
+
+[node name="EquipmentTooltip" parent="." instance=ExtResource("6_ia0tq")]
+visible = false
+layout_mode = 0
+offset_right = 196.0

@@ -126,15 +126,16 @@ func _refresh_equipment_panels() -> void:
 		_clear_equipment_panels()
 		return
 	var member: HeroCharacter = _party_members[_selected_character_index]
-	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
+	member.ensure_default_weapon_slot_a()
+	var weapon: Weapon = member.get_weapon_slot_a()
 	var armour: Armour = member.armour if member.armour else Armour.create_default()
 
-	# Weapon panel
-	var w_tier: int = weapon.tier
+	# Weapon panel (tier upgrades apply to slot A; ATK shows sum of all equipped weapons)
+	var w_tier: int = weapon.tier if weapon else Weapon.Tier.COPPER
 	var w_target: int = w_tier + 1
 	var w_max: bool = w_target > Weapon.Tier.MITHRIL
 	weapon_name_label.text = "%s's %s %s" % [member.member_name, weapon.get_tier_name(), member.get_weapon_type()]
-	weapon_atk_label.text = "+%d ATK" % weapon.get_atk()
+	weapon_atk_label.text = "+%d ATK" % member.get_total_weapon_damage_bonus()
 	weapon_upgrade_tier_label.text = "Max tier" if w_max else Weapon.TIER_NAMES[w_target]
 	var w_gold: int = 0
 	var w_stones: int = 0
@@ -205,8 +206,9 @@ func _on_weapon_upgrade_hover_started() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
 	var member: HeroCharacter = _party_members[_selected_character_index]
-	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
-	var w_target: int = weapon.tier + 1
+	member.ensure_default_weapon_slot_a()
+	var weapon: Weapon = member.get_weapon_slot_a()
+	var w_target: int = weapon.tier + 1 if weapon else Weapon.Tier.IRON
 	if w_target > Weapon.Tier.MITHRIL:
 		return
 	weapon_name_label.text = "%s's %s %s" % [member.member_name, Weapon.TIER_NAMES[w_target], member.get_weapon_type()]
@@ -235,7 +237,10 @@ func _on_weapon_gold_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
 	var member: HeroCharacter = _party_members[_selected_character_index]
-	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
+	member.ensure_default_weapon_slot_a()
+	var weapon: Weapon = member.get_weapon_slot_a()
+	if weapon == null:
+		return
 	var target_tier: int = weapon.tier + 1
 	if target_tier > Weapon.Tier.MITHRIL:
 		return
@@ -252,7 +257,10 @@ func _on_weapon_stone_upgrade() -> void:
 	if _selected_character_index < 0 or _selected_character_index >= _party_members.size():
 		return
 	var member: HeroCharacter = _party_members[_selected_character_index]
-	var weapon: Weapon = member.weapon if member.weapon else Weapon.create_default()
+	member.ensure_default_weapon_slot_a()
+	var weapon: Weapon = member.get_weapon_slot_a()
+	if weapon == null:
+		return
 	var target_tier: int = weapon.tier + 1
 	if target_tier > Weapon.Tier.MITHRIL:
 		return

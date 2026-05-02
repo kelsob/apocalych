@@ -78,9 +78,11 @@ static var _TAG_NAME_TO_BIT: Dictionary = {
 @export var max_health: int = 10
 @export var atk: int = 5       ## Physical attack power
 @export var def: int = 0       ## Physical defense (flat damage reduction)
-@export var spd: int = 5       ## Speed — determines turn frequency
 @export var mag: int = 0       ## Magical attack power
 @export var mag_def: int = 0   ## Magical defense
+@export_group("Initiative (turn order)")
+## Combat timeline turn order ([code]agi + spi[/code]-ish band; tune like party initiative, not derived from other stats).
+@export var initiative: int = 12
 
 # Abilities this enemy can use
 @export var abilities: Array[Ability] = []
@@ -95,20 +97,26 @@ static var _TAG_NAME_TO_BIT: Dictionary = {
 
 ## Build runtime CombatantStats from this enemy definition
 func create_combat_stats() -> CombatantStats:
+	var ini: int = compute_initiative_value()
 	var stats := CombatantStats.new()
 	stats.max_health = max_health
 	stats.current_health = max_health
 	stats.core_stats = {
 		"atk": atk,
 		"def": def,
-		"spd": spd,
+		"spd": ini,
 		"mag": mag,
 		"mag_def": mag_def
 	}
-	stats.base_speed = float(spd)
+	stats.base_speed = float(ini)
 	stats.base_ap_per_turn = 3
 	stats.current_ap = 3
 	return stats
+
+
+## Initiative for timeline ([member initiative]); stored on [member CombatantStats] under [code]spd[/code] for combat core stat compatibility.
+func compute_initiative_value() -> int:
+	return maxi(1, initiative)
 
 
 ## Combined bitmask for combat (flying check, [CreatureTagDamageRules], etc.).

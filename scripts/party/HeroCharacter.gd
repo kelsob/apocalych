@@ -3,8 +3,8 @@ class_name HeroCharacter
 
 ## Runtime hero for a run: display name, race, class, progression, gear, and traits.
 ## Party selection and recruitment build **instances** (often from shared templates later).
-## Primary attributes: strength, agility, constitution, intellect, spirit, charisma, luck.
-## Combat uses derived atk / def / spd / mag / mag_def (see get_combat_core_stats).
+## Primary attributes: strength, agility, constitution, intellect, spirit, charisma, luck — from class [member Class.stat_spread] plus optional race [member Race.stat_adjustments] (not clamped; race can push values above or below a typical band).
+## Combat uses derived atk / def / spd (initiative), mag / mag_def (see get_combat_core_stats). Initiative also comes from agility + spirit + gear/race bonuses ([method get_initiative]).
 
 # Character identity
 ## Stable id for meta unlocks, saves, recruitment, and tags (`hero:<id>` in TagManager when set).
@@ -31,8 +31,18 @@ var inventory: Dictionary = {}
 # Intrinsic traits this character carries (trait IDs). Cannot be traded or removed normally.
 var traits: Array[String] = []
 
-# Equipped weapon and armour
-var weapon: Weapon = null
+## Primary weapon slot (bow, sword, two-hander, etc.).
+@export var weapon_slot_a: Weapon = null
+## Secondary slot (shield, off-hand dagger pair, etc.). Cleared when slot A's weapon has [member Weapon.occupies_both_slots].
+@export var weapon_slot_b: Weapon = null
+
+## If non-empty, only weapons whose [member Weapon.weapon_type_id] appears here may occupy slot A. Empty = no type restriction.
+@export var allowed_weapon_type_ids_slot_a: Array[String] = []
+## Same for slot B (off-hand / second weapon).
+@export var allowed_weapon_type_ids_slot_b: Array[String] = []
+## If false, slot B is cleared and cannot hold a weapon (e.g. two-handed-only hero in data). Ignored when slot A [member Weapon.occupies_both_slots] already clears B.
+@export var allows_weapon_slot_b: bool = true
+
 var armour: Armour = null
 
 ## Combat formation: front line blocks melee reach to the back row on the same side (unless stealthed / ranged).
@@ -55,6 +65,114 @@ func resolve_initial_formation_row() -> int:
 	assert(hero_row == 0 or hero_row == 1, "combat positioning: hero '%s' combat_formation_row must be 0 or 1, got %d" % [who, hero_row])
 	print("combat positioning: resolve row hero='%s' mode=hero_override combat_formation_row=%d (%s)" % [who, hero_row, "Front" if hero_row == 0 else "Back"])
 	return hero_row
+
+
+## After [method Resource.duplicate] from a template, give this run instance its own [Weapon] copies so tier/enchant changes never mutate the shared `.tres` or another hero's gear.
+func duplicate_equipped_weapons_for_run() -> void:
+	var a0: Weapon = weapon_slot_a
+	var b0: Weapon = weapon_slot_b
+	if a0 != null:
+		weapon_slot_a = a0.duplicate(true)
+	if b0 != null:
+		weapon_slot_b = b0.duplicate(true) if b0 != a0 else weapon_slot_a
+
+
+## If slot A's weapon uses both hands, clear slot B (see [member Weapon.occupies_both_slots]). Also clears B when [member allows_weapon_slot_b] is false.
+func apply_loadout_constraints() -> void:
+	var a: Weapon = weapon_slot_a
+	if a != null and a.occupies_both_slots:
+		weapon_slot_b = null
+	if not allows_weapon_slot_b:
+		weapon_slot_b = null
+
+
+func get_weapon_slot_a() -> Weapon:
+	return weapon_slot_a
+
+
+func get_weapon_slot_b() -> Weapon:
+	if weapon_slot_a != null and weapon_slot_a.occupies_both_slots:
+		return null
+	return weapon_slot_b
+
+
+## All equipped weapons for damage, tags, and ability checks (slot B omitted when A occupies both slots).
+func get_all_equipped_weapons() -> Array[Weapon]:
+	var out: Array[Weapon] = []
+	var a: Weapon = get_weapon_slot_a()
+	if a:
+		out.append(a)
+	var b: Weapon = get_weapon_slot_b()
+	if b:
+		out.append(b)
+	return out
+
+
+## Sum of [method Weapon.get_damage_bonus] across equipped weapons.
+func get_total_weapon_damage_bonus() -> int:
+	var total: int = 0
+	for w in get_all_equipped_weapons():
+		if w:
+			total += w.get_damage_bonus()
+	return total
+
+
+## True if any equipped weapon's [member Weapon.weapon_type_id] matches (non-empty [param type_id] only).
+func hero_has_weapon_type(type_id: String) -> bool:
+	if type_id.is_empty():
+		return true
+	for w in get_all_equipped_weapons():
+		if w and w.weapon_type_id == type_id:
+			return true
+	return false
+
+
+## [param ability] is usable given current gear when every entry in [member Ability.required_weapon_type_ids] is satisfied by some equipped weapon.
+func ability_allowed_by_equipment(ability: Ability) -> bool:
+	if ability == null:
+		return true
+	if ability.required_weapon_type_ids.is_empty():
+		return true
+	for tid in ability.required_weapon_type_ids:
+		if str(tid).is_empty():
+			continue
+		if not hero_has_weapon_type(str(tid)):
+			return false
+	return true
+
+
+## [param slot_index] 0 = A, 1 = B. Empty allow-list = any [member Weapon.weapon_type_id] allowed.
+func is_weapon_allowed_for_slot(w: Weapon, slot_index: int) -> bool:
+	if w == null:
+		return true
+	if slot_index == 1 and not allows_weapon_slot_b:
+		return false
+	var allowed: Array = allowed_weapon_type_ids_slot_a if slot_index == 0 else allowed_weapon_type_ids_slot_b
+	if allowed.is_empty():
+		return true
+	if w.weapon_type_id.is_empty():
+		return false
+	return w.weapon_type_id in allowed
+
+
+## Clears slots whose weapon type is not allowed. Call after [method apply_loadout_constraints] or as part of loadout maintenance.
+func sanitize_weapon_slots_to_allow_lists() -> void:
+	var a: Weapon = weapon_slot_a
+	if a != null and not is_weapon_allowed_for_slot(a, 0):
+		weapon_slot_a = null
+	var b: Weapon = weapon_slot_b
+	if b != null and not is_weapon_allowed_for_slot(b, 1):
+		weapon_slot_b = null
+
+
+## Ensure slot A has a default copper weapon when empty.
+func ensure_default_weapon_slot_a() -> void:
+	apply_loadout_constraints()
+	sanitize_weapon_slots_to_allow_lists()
+	apply_loadout_constraints()
+	if weapon_slot_a == null:
+		weapon_slot_a = Weapon.create_default()
+	apply_loadout_constraints()
 
 ## Add items to this character's inventory. Returns true if added.
 func add_item(item_id: String, count: int = 1) -> bool:
@@ -121,15 +239,18 @@ func initialize():
 	level = 1
 	experience = 0
 	experience_to_next_level = 100
-	if weapon == null:
-		weapon = Weapon.create_default()
+	apply_loadout_constraints()
+	sanitize_weapon_slots_to_allow_lists()
+	if weapon_slot_a == null:
+		weapon_slot_a = Weapon.create_default()
+	apply_loadout_constraints()
 	if armour == null:
 		armour = Armour.create_default()
 
-	# Base HP scales with constitution (10 CON = +0 bonus HP from stat)
+	# Base HP scales with constitution (CON 5 = +0 from stat; each point above 5 adds +1 max HP at creation)
 	var stats := get_final_stats()
-	var con: int = int(stats.get("constitution", 10))
-	max_health = 10 + maxi(0, con - 10)
+	var con: int = int(stats.get("constitution", PRIMARY_STAT_NEUTRAL))
+	max_health = 10 + maxi(0, con - PRIMARY_STAT_MIN)
 	current_health = max_health
 
 	print("Initialized %s: Level %d, Max HP: %d" % [member_name, level, max_health])
@@ -154,36 +275,100 @@ const PRIMARY_STAT_KEYS: Array[String] = [
 	"luck",
 ]
 
-## Final primary attributes (race base + class modifiers). Keys: PRIMARY_STAT_KEYS.
+## Reference low end for derived combat formulas (e.g. defense from CON); primary stats themselves are not clamped.
+const PRIMARY_STAT_MIN: int = 5
+## Typical midpoint for fallbacks and event checks.
+const PRIMARY_STAT_NEUTRAL: int = 8
+
+func _has_full_class_stat_spread(cr: Class) -> bool:
+	if cr == null or cr.stat_spread.is_empty():
+		return false
+	for key in PRIMARY_STAT_KEYS:
+		if not cr.stat_spread.has(key):
+			return false
+	return true
+
+
+## Final primary attributes: prefer [member Class.stat_spread] + [member Race.stat_adjustments] (not clamped — race can push beyond a typical band); else legacy race base + class modifiers.
 func get_final_stats() -> Dictionary:
 	var stats: Dictionary = {}
 
+	if class_resource != null and _has_full_class_stat_spread(class_resource):
+		for key in PRIMARY_STAT_KEYS:
+			stats[key] = int(class_resource.stat_spread.get(key, PRIMARY_STAT_NEUTRAL))
+		if race and race.stat_adjustments:
+			for key in PRIMARY_STAT_KEYS:
+				if race.stat_adjustments.has(key):
+					var adj: int = int(race.stat_adjustments[key])
+					stats[key] = int(stats[key]) + adj
+		return stats
+
+	# Legacy: race base + additive class modifiers, default neutral 10
 	if race and race.base_stats:
 		stats = race.base_stats.duplicate()
 
 	if class_resource and class_resource.stat_modifiers:
 		for stat in class_resource.stat_modifiers:
-			stats[stat] = stats.get(stat, 10) + class_resource.stat_modifiers[stat]
+			stats[stat] = stats.get(stat, PRIMARY_STAT_NEUTRAL) + class_resource.stat_modifiers[stat]
 
 	for key in PRIMARY_STAT_KEYS:
 		if not stats.has(key):
-			stats[key] = 10
+			stats[key] = PRIMARY_STAT_NEUTRAL
 
 	return stats
 
 
-## Map primary stats to combat engine stats (atk, def, spd, mag, mag_def).
+## Damage for player basic attacks: [code]primary_stat × basic_attack_stat_scaling_rate[/code] from class data (resolved in combat; not read from the ability effect).
+func get_basic_attack_damage_from_primary_stat() -> float:
+	if class_resource == null:
+		return 0.0
+	var stat_key: String = str(class_resource.basic_attack_primary_stat).strip_edges()
+	if stat_key.is_empty() or not stat_key in PRIMARY_STAT_KEYS:
+		return 0.0
+	var rate: float = float(class_resource.basic_attack_stat_scaling_rate)
+	var stats := get_final_stats()
+	var raw: float = float(stats.get(stat_key, 0))
+	return raw * rate
+
+
+## Initiative drives turn order in combat: agility + spirit + weapon/armour bonuses + race [member Race.initiative_bonus] + trait hooks ([method get_initiative_bonus_from_traits]).
+func get_total_initiative_bonus_from_equipment() -> int:
+	var n: int = 0
+	for w in get_all_equipped_weapons():
+		if w:
+			n += w.initiative_bonus
+	if armour:
+		n += armour.initiative_bonus
+	return n
+
+
+func get_initiative_bonus_from_traits() -> int:
+	return 0
+
+
+## Derived initiative total (minimum 1). Feeds [member CombatantStats.base_speed] for [CombatTimeline].
+func get_initiative() -> int:
+	var s := get_final_stats()
+	var total: int = int(s.get("agility", 0)) + int(s.get("spirit", 0))
+	total += get_total_initiative_bonus_from_equipment()
+	total += get_initiative_bonus_from_traits()
+	if race:
+		total += race.initiative_bonus
+	return maxi(1, total)
+
+
+## Map primary stats to combat engine stats (atk, def, spd, mag, mag_def). [code]spd[/code] holds **initiative** for heroes (same value as [method get_initiative]) so ability [member AbilityEffect.stat_scaling] keys stay compatible.
 func get_combat_core_stats() -> Dictionary:
 	var s := get_final_stats()
-	var str_v: int = int(s.get("strength", 10))
-	var agi: int = int(s.get("agility", 10))
-	var con: int = int(s.get("constitution", 10))
-	var intel: int = int(s.get("intellect", 10))
-	var spr: int = int(s.get("spirit", 10))
+	var str_v: int = int(s.get("strength", PRIMARY_STAT_NEUTRAL))
+	var con: int = int(s.get("constitution", PRIMARY_STAT_NEUTRAL))
+	var intel: int = int(s.get("intellect", PRIMARY_STAT_NEUTRAL))
+	var spr: int = int(s.get("spirit", PRIMARY_STAT_NEUTRAL))
+	var init_v: int = get_initiative()
 	return {
 		"atk": str_v,
-		"def": maxi(0, con - 10),
-		"spd": maxi(1, agi / 2),
+		"def": maxi(0, con - PRIMARY_STAT_MIN),
+		"spd": init_v,
 		"mag": intel,
 		"mag_def": spr,
 	}
@@ -241,8 +426,8 @@ func level_up():
 	experience_to_next_level = int(100 * pow(1.5, level - 1))
 
 	var stats := get_final_stats()
-	var con: int = int(stats.get("constitution", 10))
-	var health_gain: int = 5 + maxi(0, con - 10) / 2
+	var con: int = int(stats.get("constitution", PRIMARY_STAT_NEUTRAL))
+	var health_gain: int = 5 + maxi(0, con - PRIMARY_STAT_MIN) / 2
 	max_health += health_gain
 	current_health = max_health
 

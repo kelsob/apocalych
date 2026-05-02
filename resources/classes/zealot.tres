@@ -13,14 +13,17 @@ description = "A fanatical warrior driven by fervor, combining raw power with un
 weapon_type = "Flail"
 armour_type = "Mail"
 default_combat_formation_row = 0
-stat_modifiers = {
-"agility": 0,
-"charisma": 3,
-"constitution": 1,
-"intellect": 0,
-"luck": 0,
-"spirit": 0,
-"strength": 2
+stat_spread = {
+"agility": 6,
+"charisma": 8,
+"constitution": 8,
+"intellect": 5,
+"luck": 6,
+"spirit": 10,
+"strength": 8
 }
+stat_modifiers = {}
+basic_attack_primary_stat = "spirit"
+basic_attack_stat_scaling_rate = 1.0
 abilities = Array[ExtResource("1_ts3uy")]([])
 rest_abilities = Array[ExtResource("2_54s1j")]([ExtResource("2"), ExtResource("3")])

@@ -29,27 +29,23 @@ extends Control
 @export var formation_tween_duration: float = 0.38
 
 # Node references
-@onready var current_turn_label: Label = $MarginContainer/VBoxContainer/MarginContainer/CurrentTurnLabel
-@onready var turn_order_panel: Node = $MarginContainer/VBoxContainer/TurnOrderPanel
-@onready var combat_area_player_panel: Control = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel
-@onready var combat_area_enemy_panel: Control = $MarginContainer/VBoxContainer/CombatAreaPanel/EnemyPanel
-@onready var party_info_panel: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/PartyPanel/MarginContainer/VBoxContainer
-@onready var ability_panel_container: VBoxContainer = $MarginContainer/VBoxContainer/CombatPanel/AbilityPanel/MarginContainer/VBoxContainer
-@onready var combat_log: RichTextLabel = $MarginContainer/VBoxContainer/CombatPanel/CombatLogPanel/MarginContainer/CombatLogContainer/CombatLogLabel
+@onready var turn_order_panel: Node = $TurnOrderPanel
+@onready var combat_area_player_panel: Control = $MarginContainer/CombatAreaPanel/PlayerPanel
+@onready var combat_area_enemy_panel: Control = $MarginContainer/CombatAreaPanel/EnemyPanel
+@onready var party_panel: PlayerPartyPanel = $PlayerPartyPanel
+@onready var combat_log_panel: CombatLogPanel = $CombatLogPanel
 @onready var turn_announcer_label: RichTextLabel = $TurnAnnouncerLabel
 
-@onready var backrow_markers_3: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3
-@onready var backrow_markers_2: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2
-@onready var backrow_markers_1: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1
+@onready var backrow_markers_3: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3
+@onready var backrow_markers_2: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2
+@onready var backrow_markers_1: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1
 
-@onready var frontrow_markers_3: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3
-@onready var frontrow_markers_2: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2
-@onready var frontrow_markers_1: Node2D = $MarginContainer/VBoxContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1
+@onready var frontrow_markers_3: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3
+@onready var frontrow_markers_2: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2
+@onready var frontrow_markers_1: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
-var character_info_panel_scene: PackedScene = preload("res://scenes/combat/CharacterCombatInformationPanel.tscn")
-var combat_ability_option_scene: PackedScene = preload("res://scenes/combat/CombatAbilityOption.tscn")
 var combat_rewards_scene: PackedScene = preload("res://scenes/combat/CombatRewards.tscn")
 
 # Current combatant data
@@ -65,7 +61,6 @@ var valid_targets: Array = []  # Array of CombatantData
 var combatant_sprites: Dictionary = {}  # CombatantData -> CombatCharacterSprite
 var combatant_info_panels: Dictionary = {}  # CombatantData -> CharacterCombatInformationPanel
 var combatant_clickable_areas: Dictionary = {}  # CombatantData -> Button (for targeting)
-var ability_buttons: Array[Button] = []
 
 # Deaths that happened during an ability; we log them right after the ability log so order is correct
 var _pending_death_logs: Array = []  # [CombatantData, ...]
@@ -77,13 +72,6 @@ func _ready():
 	print("CombatScene _ready() called")
 	add_to_group("combat_scene")
 	
-	# Verify all node references are valid
-	if not current_turn_label:
-		push_error("CombatScene: current_turn_label is null!")
-	if not turn_order_panel:
-		push_error("CombatScene: turn_order_panel is null!")
-	if not party_info_panel:
-		push_error("CombatScene: party_info_panel is null!")
 	
 	# Cancel targeting on ESC
 	set_process_unhandled_input(true)
@@ -109,9 +97,9 @@ func _ready():
 	if turn_announcer_label:
 		turn_announcer_label.visible = false
 	
-	if combat_log:
-		combat_log.bbcode_enabled = true
 	
+	if combat_log_panel:
+		combat_log_panel.clear_log()
 	print("CombatScene initialized and signals connected")
 
 ## Show turn announcer: "X's Turn" — fade in, wave while held, fade out.
@@ -144,6 +132,19 @@ func _safe_combatant_name(c) -> String:
 		return (c as CombatantData).display_name
 	return str(c)
 
+
+## Party info panel portrait: heroes use map/event portrait ([method HeroCharacter.get_portrait]); enemies use [member Enemy.combat_portrait] if reused later.
+func _combat_portrait_texture(combatant: CombatantData) -> Texture2D:
+	if combatant == null or not is_instance_valid(combatant):
+		return null
+	var src = combatant.source
+	if combatant.is_player and src is HeroCharacter:
+		return (src as HeroCharacter).get_portrait()
+	if not combatant.is_player and src is Enemy:
+		return (src as Enemy).combat_portrait
+	return null
+
+
 ## Log any queued "X has fallen!" messages (so deaths appear after damage, before next turn)
 func _flush_pending_death_logs():
 	for combatant in _pending_death_logs:
@@ -159,13 +160,14 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	combatant_sprites.clear()
 	combatant_info_panels.clear()
 	combatant_clickable_areas.clear()
-	ability_buttons.clear()
 	_last_slot_by_combatant.clear()
 	
-	# Generate player combatants (sprites in combat area + info panels below)
+	party_panel.apply_party_panel_count(player_combatants.size())
+	var party_i: int = 0
 	for combatant in player_combatants:
 		print("CombatScene: Creating display for player: %s" % _safe_combatant_name(combatant))
-		_create_player_combatant_display(combatant)
+		_create_player_combatant_display(combatant, party_i)
+		party_i += 1
 	_apply_party_marker_layout(player_combatants)
 	
 	# Generate enemy combatants (sprites in combat area only)
@@ -223,9 +225,7 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	await _show_turn_announcer(combatant)
 	
 	_log_message("--- %s's Turn ---" % _safe_combatant_name(combatant), true)
-	
-	current_turn_label.text = "%s's Turn" % _safe_combatant_name(combatant)
-	
+		
 	# Log any status effects that triggered (DoTs, HoTs, etc.)
 	for effect in status_results.get("effects_triggered", []):
 		match effect.type:
@@ -239,9 +239,6 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	
 	# Update info panel for current combatant (AP refreshed, health may have changed from DoTs)
 	_update_combatant_info_panel(combatant)
-	
-	# Update all combatant sprites (casting displays may have changed)
-	_update_all_casting_displays()
 	
 	# Check if combatant is stunned/incapacitated
 	if not status_results.get("can_act", true):
@@ -263,7 +260,6 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 	if combatant.is_player:
 		current_player_combatant = combatant
 		_show_abilities_for_combatant(combatant)
-		_update_ability_button_states()
 	else:
 		current_player_combatant = null
 		_clear_ability_panel()
@@ -288,17 +284,9 @@ func _on_cast_started(cast):
 			"s" if cast_time != 1 else ""
 		])
 	
-	# Update casting display on the caster's sprite
-	if combatant_sprites.has(cast.caster):
-		var sprite = combatant_sprites[cast.caster]
-		sprite.update_casting_display()
-
 ## Called when a channeled ability ticks (subsequent turns, not the first)
 func _on_channeled_tick(cast):
-	# Update casting display
-	if combatant_sprites.has(cast.caster):
-		var sprite = combatant_sprites[cast.caster]
-		sprite.update_casting_display()
+	pass
 
 ## Called when an ability resolves
 func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array, party_formation_before: Dictionary = {}) -> void:
@@ -414,9 +402,6 @@ func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Arra
 	# Update caster's AP display (spent AP on ability)
 	_update_combatant_info_panel(caster)
 	
-	# Update casting displays (casts may have completed)
-	_update_all_casting_displays()
-	
 	# Log any deaths from this ability now (after damage lines, before turn advances)
 	_flush_pending_death_logs()
 
@@ -480,8 +465,9 @@ func _on_combatant_died(combatant: CombatantData):
 	
 	# Update info panel
 	if combatant_info_panels.has(combatant):
-		var info_panel = combatant_info_panels[combatant]
-		info_panel.modulate = Color(0.5, 0.5, 0.5, 0.8)
+		var info_panel: CharacterCombatInformationPanel = combatant_info_panels[combatant]
+		if info_panel:
+			info_panel.modulate = Color(0.5, 0.5, 0.5, 0.8)
 	
 	# Disable clickability
 	if combatant_clickable_areas.has(combatant):
@@ -733,8 +719,8 @@ func _position_player_sprite_at_marker(sprite: Control, marker: Marker2D) -> voi
 	sprite.global_position = marker.global_position
 
 
-## Create player combatant display (sprite + info panel)
-func _create_player_combatant_display(combatant: CombatantData):
+## Create player combatant display (sprite + mapped info panel slot from [PlayerPartyPanel])
+func _create_player_combatant_display(combatant: CombatantData, party_slot_index: int) -> void:
 	# Create sprite in combat area
 	var sprite_instance = combat_character_sprite_scene.instantiate()
 	combat_area_player_panel.add_child(sprite_instance)
@@ -742,9 +728,6 @@ func _create_player_combatant_display(combatant: CombatantData):
 	
 	# Setup sprite with combatant data
 	sprite_instance.setup(combatant)
-	
-	# TODO: Set sprite texture based on class/character
-	# sprite_instance.character_sprite.texture = load("res://assets/characters/%s.png" % combatant.display_name)
 	
 	# Create clickable button overlay for targeting (invisible, just for clicks)
 	var click_button = Button.new()
@@ -756,15 +739,12 @@ func _create_player_combatant_display(combatant: CombatantData):
 	sprite_instance.add_child(click_button)
 	combatant_clickable_areas[combatant] = click_button
 	
-	# Create info panel below in party panel
-	var info_panel = character_info_panel_scene.instantiate()
-	party_info_panel.add_child(info_panel)
+	var info_panel: CharacterCombatInformationPanel = party_panel.get_panel(party_slot_index)
 	combatant_info_panels[combatant] = info_panel
-	info_panel.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
-	info_panel.mouse_exited.connect(_on_combat_sprite_hover_exited)
-	
-	# Initialize info panel
-	_update_combatant_info_panel(combatant)
+	if info_panel:
+		info_panel.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
+		info_panel.mouse_exited.connect(_on_combat_sprite_hover_exited)
+		_update_combatant_info_panel(combatant)
 
 ## Create enemy combatant display (sprite only, no info panel)
 func _create_enemy_combatant_display(combatant: CombatantData):
@@ -791,56 +771,16 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 	
 	# Enemies don't get info panels (their health is shown on the sprite)
 
-## Show abilities for a combatant
-func _show_abilities_for_combatant(combatant: CombatantData):
+## Ability bar UI removed temporarily; targeting / cast hooks remain for future UI.
+func _show_abilities_for_combatant(_combatant: CombatantData) -> void:
 	_clear_ability_panel()
-	
-	# Add regular abilities
-	for ability in combatant.abilities:
-		var ability_option = combat_ability_option_scene.instantiate()
-		ability_panel_container.add_child(ability_option)
-		ability_option.setup(ability)
-		ability_option.pressed.connect(_on_ability_button_pressed.bind(ability))
-		ability_buttons.append(ability_option)
-	
-	# Add separator or spacing
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 10)
-	ability_panel_container.add_child(spacer)
-	
-	# Add "Pass Turn" and "Flee" using same button scene as abilities
-	var pass_turn_button = combat_ability_option_scene.instantiate()
-	pass_turn_button.setup_simple("Pass Turn")
-	pass_turn_button.pressed.connect(_on_pass_turn_pressed)
-	ability_panel_container.add_child(pass_turn_button)
-	
-	var flee_button = combat_ability_option_scene.instantiate()
-	flee_button.setup_simple("Flee")
-	flee_button.pressed.connect(_on_flee_pressed)
-	ability_panel_container.add_child(flee_button)
 
-## Clear ability panel
-func _clear_ability_panel():
-	# Clear all children (abilities, spacers, action buttons)
-	for child in ability_panel_container.get_children():
-		child.queue_free()
-	ability_buttons.clear()
+
+## Reset targeting selections when clearing the ability flow.
+func _clear_ability_panel() -> void:
 	selected_ability = null
 	_exit_targeting()
 
-## Update ability button states (enable/disable based on AP)
-func _update_ability_button_states():
-	if not current_player_combatant:
-		return
-	
-	var current_ap = current_player_combatant.combatant_stats.current_ap
-	
-	for i in range(ability_buttons.size()):
-		if i < current_player_combatant.abilities.size():
-			var ability = current_player_combatant.abilities[i]
-			var ability_option = ability_buttons[i]
-			var can_afford = ability.get_modified_ap_cost() <= current_ap
-			ability_option.set_ability_enabled(can_afford)
 
 ## Update turn order display (delegates to TurnOrderPanel)
 func _update_turn_order_display():
@@ -851,7 +791,9 @@ func _update_turn_order_display():
 func _update_combatant_info_panel(combatant: CombatantData):
 	if not combatant or not is_instance_valid(combatant) or not combatant_info_panels.has(combatant):
 		return
-	var info_panel = combatant_info_panels[combatant]
+	var info_panel: CharacterCombatInformationPanel = combatant_info_panels[combatant]
+	if info_panel == null:
+		return
 	var stats = combatant.combatant_stats
 	if not stats:
 		return
@@ -860,26 +802,15 @@ func _update_combatant_info_panel(combatant: CombatantData):
 		stats.current_health,
 		stats.max_health,
 		stats.current_ap,
-		stats.max_ap
+		stats.max_ap,
+		_combat_portrait_texture(combatant)
 	)
 
-## Update combatant health display
+## Refresh party info panel HP/AP after damage/heal (combat sprites no longer show HP bars)
 func _update_combatant_health_display(combatant: CombatantData):
 	if not combatant or not is_instance_valid(combatant):
 		return
-	# Update info panel if they have one (players)
 	_update_combatant_info_panel(combatant)
-	
-	# Update sprite health bar (all combatants)
-	if combatant_sprites.has(combatant):
-		var sprite = combatant_sprites[combatant]
-		sprite.update_health_display()
-
-## Update all casting displays (after turns change or casts start/complete)
-func _update_all_casting_displays():
-	for combatant in combatant_sprites:
-		var sprite = combatant_sprites[combatant]
-		sprite.update_casting_display()
 
 ## Called when ability button pressed - enter targeting; never auto-fire
 func _on_ability_button_pressed(ability: Ability):
@@ -1004,7 +935,5 @@ func _unhandled_input(event: InputEvent):
 ## Log a message to combat log. Set centered=true for section headers (combat start, turns, victory/defeat).
 func _log_message(message: String, centered: bool = false):
 	print("[Combat] " + message)
-	if centered:
-		combat_log.text += "[center]" + message + "[/center]\n"
-	else:
-		combat_log.text += message + "\n"
+	if combat_log_panel:
+		combat_log_panel.append_bbcode(message, centered)

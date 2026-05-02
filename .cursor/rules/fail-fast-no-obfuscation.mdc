@@ -24,3 +24,5 @@ When structure, nodes, or data are wrong, **the game should error clearly** (nul
 ## Godot / scene-heavy work
 
 Scene and hierarchy mistakes should **surface immediately** when testing—not be papered over so the UI “kind of works.” If the user must add a node to the scene, **say so in a comment or doc** and reference it in code; do not instantiate hidden fallbacks unless they asked for that pattern.
+
+**Node references:** See **`godot-node-refs-onready.mdc`** — no `@export` drag-assign for nodes; use `@onready` + `$Path` (author fills path), not inspector exports plus null guards.

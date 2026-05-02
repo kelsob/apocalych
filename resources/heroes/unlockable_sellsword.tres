@@ -1,8 +1,10 @@
-[gd_resource type="Resource" load_steps=4 format=3]
+[gd_resource type="Resource" load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/party/HeroCharacter.gd" id="1_hc"]
 [ext_resource type="Resource" path="res://resources/races/human.tres" id="2_race"]
 [ext_resource type="Resource" path="res://resources/classes/hunter.tres" id="3_class"]
+[ext_resource type="Resource" path="res://resources/weapons/starters/starter_hunter_bow.tres" id="4_bow"]
+[ext_resource type="Resource" path="res://resources/weapons/starters/starter_hunter_dagger_pair.tres" id="5_dag"]
 
 [resource]
 script = ExtResource("1_hc")
@@ -10,3 +12,8 @@ hero_id = "unlockable_sellsword"
 member_name = "Kira Ash"
 race = ExtResource("2_race")
 class_resource = ExtResource("3_class")
+weapon_slot_a = ExtResource("4_bow")
+weapon_slot_b = ExtResource("5_dag")
+allows_weapon_slot_b = true
+allowed_weapon_type_ids_slot_a = Array[String](["bow"])
+allowed_weapon_type_ids_slot_b = Array[String](["daggers"])

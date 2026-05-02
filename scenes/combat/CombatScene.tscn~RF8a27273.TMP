@@ -1,0 +1,152 @@
+[gd_scene load_steps=7 format=3 uid="uid://cvjrahf76ssj5"]
+
+[ext_resource type="Script" uid="uid://6u6iw0lnjdwi" path="res://scripts/combat/CombatScene.gd" id="1_cetgp"]
+[ext_resource type="PackedScene" uid="uid://cm203yur3p1b0" path="res://scenes/2d/TurnOrderPanel.tscn" id="2_gvrxc"]
+[ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="3_2ussv"]
+[ext_resource type="Texture2D" uid="uid://bgba30ct70kfl" path="res://assets/combat-scenes/molqgrxz3a7zh2.jpeg" id="3_i18os"]
+[ext_resource type="PackedScene" uid="uid://babywa8d5kus1" path="res://scenes/2d/CombatLogPanel.tscn" id="6_dqp6h"]
+[ext_resource type="PackedScene" uid="uid://wch1q73ihsx2" path="res://scenes/2d/PlayerPanel.tscn" id="6_i18os"]
+
+[node name="CombatScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cetgp")
+combat_start_delay = 1.0
+turn_announcer_hold = 1.0
+turn_announcer_wave_amp = 12.0
+turn_announcer_wave_freq = 4.0
+
+[node name="ArenaBackground" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_i18os")
+
+[node name="TurnOrderPanel" parent="." instance=ExtResource("2_gvrxc")]
+custom_minimum_size = Vector2(48, 256)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 13.0
+offset_top = -136.0
+offset_right = 61.0
+offset_bottom = 120.0
+grow_vertical = 2
+size_flags_horizontal = 1
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_2ussv")
+
+[node name="CombatAreaPanel" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="PlayerPanel" type="Control" parent="MarginContainer/CombatAreaPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BackRowMarkers3" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(88, 256)
+
+[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(200, 228)
+
+[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
+position = Vector2(312, 200)
+
+[node name="BackRowMarkers2" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
+position = Vector2(192, 252)
+
+[node name="BackMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
+position = Vector2(320, 204)
+
+[node name="BackRowMarker1" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1"]
+position = Vector2(200, 228)
+
+[node name="FrontRowMarkers3" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(318, 256)
+
+[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(430, 228)
+
+[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
+position = Vector2(542, 200)
+
+[node name="FrontRowMarkers2" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
+position = Vector2(348, 252)
+
+[node name="FrontMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
+position = Vector2(462, 204)
+
+[node name="FrontRowMarker1" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+visible = false
+
+[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1"]
+position = Vector2(454, 228)
+
+[node name="EnemyPanel" type="Control" parent="MarginContainer/CombatAreaPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TurnAnnouncerLabel" type="RichTextLabel" parent="."]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(640, 33)
+theme_override_colors/font_outline_color = Color(0.303799, 0.198803, 0.0540074, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 8
+bbcode_enabled = true
+text = "X's Turn"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerPartyPanel" parent="." instance=ExtResource("6_i18os")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_right = 0.0
+offset_top = -196.0
+offset_right = 512.0
+offset_bottom = 0.0
+grow_horizontal = 1
+grow_vertical = 0
+
+[node name="CombatLogPanel" parent="." instance=ExtResource("6_dqp6h")]
+layout_mode = 1

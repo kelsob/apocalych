@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="Weapon" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/Weapon.gd" id="1_w"]
+
+[resource]
+script = ExtResource("1_w")
+tier = 0
+enchantments = []
+weapon_type_id = "shield"
+display_name = "Simple shield"
+occupies_both_slots = false
+contributes_attack_bonus = false
+tier_prefixes = Array[String](["Splintered", "Guard", "Bulwark", "Aegis", "Unbreakable"])
+granted_basic_attacks = []

@@ -221,6 +221,10 @@ func player_cast_ability(ability: Ability, targets: Array):
 		push_warning("CombatController: Current turn is not a player")
 		return
 	
+	if not current_turn_combatant.can_cast_ability_this_turn(ability):
+		push_warning("CombatController: %s cannot use %s (equipment gate or basic attack already used this turn)" % [_safe_display_name(current_turn_combatant), ability.ability_name if ability else "?"])
+		return
+	
 	# Validate targets
 	if not _validate_targets(current_turn_combatant, ability, targets):
 		push_warning("CombatController: Invalid targets for ability")
@@ -253,9 +257,15 @@ func attempt_flee() -> bool:
 
 ## Execute ability cast
 func _execute_ability_cast(caster: CombatantData, ability: Ability, targets: Array) -> bool:
+	if not caster.can_cast_ability_this_turn(ability):
+		return false
+	
 	# Try to cast ability
 	if not caster.cast_ability(ability, targets):
 		return false
+	
+	if ability.is_basic_attack:
+		caster.basic_attack_used_this_turn = true
 	
 	print("%s casts %s (AP: %d, Cast Time: %d)" % [_safe_display_name(caster), ability.ability_name, ability.get_modified_ap_cost(), ability.get_modified_cast_time()])
 	
@@ -325,11 +335,15 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 	for effect in ability.effects:
 		match effect.effect_type:
 			AbilityEffect.EffectType.DAMAGE:
-				var potency = effect.calculate_final_potency(caster_stats)
+				var damage_amount: float
+				if ability.is_basic_attack and caster.is_player and caster.source is HeroCharacter:
+					damage_amount = (caster.source as HeroCharacter).get_basic_attack_damage_from_primary_stat()
+				else:
+					damage_amount = effect.get_resolved_amount(caster_stats)
 				var dmg_kind: CombatDamageKind.Kind = effect.get_effective_damage_kind()
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
-						var packet := DamagePacket.make(potency, dmg_kind, false)
+						var packet := DamagePacket.make(damage_amount, dmg_kind, false)
 						var damage_result = target.apply_incoming_damage(packet, caster)
 						var actual_damage = damage_result.get("damage_dealt", 0)
 						effects_applied.append({"type": "damage", "target": target, "amount": actual_damage})
@@ -337,13 +351,13 @@ func _apply_ability_effects(caster: CombatantData, ability: Ability, targets: Ar
 						print("  -> %s takes %d damage" % [_safe_display_name(target), actual_damage])
 			
 			AbilityEffect.EffectType.HEAL:
-				var potency = effect.calculate_final_potency(caster_stats)
+				var heal_amount: float = effect.get_resolved_amount(caster_stats)
 				for target in targets:
 					if target is CombatantData and target.can_be_targeted():
-						target.combatant_stats.heal(potency)
-						effects_applied.append({"type": "heal", "target": target, "amount": potency})
-						combatant_healed.emit(target, potency, caster)
-						print("  -> %s heals %.1f" % [_safe_display_name(target), potency])
+						target.combatant_stats.heal(heal_amount)
+						effects_applied.append({"type": "heal", "target": target, "amount": heal_amount})
+						combatant_healed.emit(target, heal_amount, caster)
+						print("  -> %s heals %.1f" % [_safe_display_name(target), heal_amount])
 			
 			AbilityEffect.EffectType.APPLY_STATUS:
 				if effect.status_to_apply:
@@ -525,6 +539,8 @@ func _execute_ai_turn():
 			if ability.ability_id == CombatantData.ABILITY_ID_MOVE:
 				if not current_turn_combatant.wants_ai_to_reposition():
 					continue
+			if not current_turn_combatant.can_cast_ability_this_turn(ability):
+				continue
 			var ap_cost = ability.get_modified_ap_cost()
 			if current_turn_combatant.combatant_stats.current_ap >= ap_cost:
 				available_abilities.append(ability)

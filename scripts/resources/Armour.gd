@@ -23,7 +23,12 @@ const TIER_CONFIG: Dictionary = {
 
 const TIER_NAMES: Array[String] = ["Copper", "Iron", "Diamond", "Platinum", "Mithril"]
 
+## Character sheet / inventory icon. When null, UI uses a generic armour placeholder.
+@export var ui_icon: Texture2D
+
 @export var tier: int = Tier.COPPER
+## Flat bonus to [member HeroCharacter.get_initiative] while worn.
+@export var initiative_bonus: int = 0
 
 
 ## DEF value from tier (0 for copper, +1 per upgrade). Same as get_defense_bonus(); use for display or combat.
