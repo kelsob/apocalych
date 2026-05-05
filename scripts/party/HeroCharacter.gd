@@ -12,6 +12,8 @@ class_name HeroCharacter
 @export var member_name: String = ""
 @export var race: Race = null
 @export var class_resource: Class = null
+## Class specials currently usable in combat (subset of [member Class.abilities]). Filled from [member Class.starting_abilities] on [method initialize]; progression may append via [method unlock_combat_ability].
+@export var unlocked_combat_abilities: Array[Ability] = []
 
 ## Which portrait model this character uses (1 or 2). Set once on initialize(), never changes.
 var portrait_model: int = 1
@@ -236,6 +238,7 @@ func get_inventory_ids() -> Array[String]:
 ## Initialize after identity (race/class/name) is set — fresh run state for this instance.
 func initialize():
 	portrait_model = randi() % 2 + 1  # 1 or 2 — fixed for this character's lifetime
+	unlocked_combat_abilities.clear()
 	level = 1
 	experience = 0
 	experience_to_next_level = 100
@@ -253,7 +256,79 @@ func initialize():
 	max_health = 10 + maxi(0, con - PRIMARY_STAT_MIN)
 	current_health = max_health
 
+	_sync_unlocked_combat_abilities_from_class_defaults()
+
 	print("Initialized %s: Level %d, Max HP: %d" % [member_name, level, max_health])
+
+
+func _ability_resource_key(a: Ability) -> String:
+	if a == null:
+		return ""
+	return a.ability_id if not a.ability_id.is_empty() else str(a.resource_path)
+
+
+## If [member unlocked_combat_abilities] is still empty, seed from class starters (at most three specials). Safe for recruits / edge paths where [method initialize] did not run.
+func ensure_unlocked_combat_abilities_initialized() -> void:
+	if class_resource == null:
+		return
+	if not unlocked_combat_abilities.is_empty():
+		return
+	_sync_unlocked_combat_abilities_from_class_defaults()
+
+
+func _sync_unlocked_combat_abilities_from_class_defaults() -> void:
+	if class_resource == null:
+		return
+	var pool_keys: Dictionary = {}
+	for a in class_resource.abilities:
+		if a == null:
+			continue
+		pool_keys[_ability_resource_key(a)] = true
+	var class_label: String = class_resource.name if class_resource.name else str(class_resource.resource_path)
+
+	if not class_resource.starting_abilities.is_empty():
+		if class_resource.starting_abilities.size() > MAX_STARTING_CLASS_SPECIAL_ABILITIES:
+			push_warning("HeroCharacter: class '%s' lists %d starting_abilities; only the first %d apply" % [
+				class_label, class_resource.starting_abilities.size(), MAX_STARTING_CLASS_SPECIAL_ABILITIES
+			])
+		for a in class_resource.starting_abilities:
+			if unlocked_combat_abilities.size() >= MAX_STARTING_CLASS_SPECIAL_ABILITIES:
+				break
+			if a == null:
+				continue
+			var k: String = _ability_resource_key(a)
+			if not pool_keys.has(k):
+				push_error("HeroCharacter: class '%s' starting_abilities entry '%s' is not in abilities pool" % [class_label, k])
+				continue
+			unlocked_combat_abilities.append(a)
+		return
+
+	var cap: int = mini(MAX_STARTING_CLASS_SPECIAL_ABILITIES, class_resource.abilities.size())
+	for i in cap:
+		var a: Ability = class_resource.abilities[i]
+		if a != null:
+			unlocked_combat_abilities.append(a)
+
+
+## Add a special from [member Class.abilities] if not already unlocked.
+func unlock_combat_ability(ability: Ability) -> bool:
+	if ability == null or class_resource == null:
+		return false
+	var want: String = _ability_resource_key(ability)
+	var in_pool: bool = false
+	for p in class_resource.abilities:
+		if p != null and _ability_resource_key(p) == want:
+			in_pool = true
+			break
+	if not in_pool:
+		push_warning("HeroCharacter.unlock_combat_ability: '%s' is not in class ability pool" % want)
+		return false
+	for u in unlocked_combat_abilities:
+		if u != null and _ability_resource_key(u) == want:
+			return false
+	unlocked_combat_abilities.append(ability)
+	return true
+
 
 func get_weapon_type() -> String:
 	if class_resource and class_resource.weapon_type and not class_resource.weapon_type.is_empty():
@@ -271,6 +346,10 @@ func get_class_color() -> Color:
 	if class_resource != null:
 		return class_resource.class_color
 	return Color(0.82, 0.84, 0.88, 1.0)
+
+
+## Cap on class specials granted when a hero is created / synced from [member Class.starting_abilities] or the head of [member Class.abilities].
+const MAX_STARTING_CLASS_SPECIAL_ABILITIES: int = 3
 
 
 const PRIMARY_STAT_KEYS: Array[String] = [

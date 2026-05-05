@@ -68,6 +68,6 @@ theme_override_colors/font_color = Color(0.929412, 0.862745, 0.745098, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_colors/font_outline_color = Color(0.290196, 0.207843, 0.12549, 1)
 theme_override_constants/outline_size = 4
-theme_override_constants/shadow_outline_size = 8
+theme_override_constants/shadow_outline_size = 4
 text = "Ap Cost"
 horizontal_alignment = 2

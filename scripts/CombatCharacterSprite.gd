@@ -7,8 +7,10 @@ var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tsc
 var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
 const PLACEHOLDER_TEXTURE: Texture2D = preload("res://assets/party-characters/placeholder.png")
 
-@onready var character_sprite: TextureRect = $VBoxContainer/CharacterSprite
-@onready var status_effects_container : HBoxContainer = $VBoxContainer/StatusEffectsContainer
+@onready var character_sprite: TextureRect = $Control/VBoxContainer/CharacterSprite
+@onready var status_effects_container : HBoxContainer = $Control/VBoxContainer/StatusEffectsContainer
+@onready var button: Button = $Control/Button
+
 
 # Targeting visuals (created in _ready so we don't require scene edits)
 var _selection_highlight: ColorRect = null

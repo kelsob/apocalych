@@ -27,4 +27,5 @@ basic_attack_primary_stat = "agility"
 basic_attack_stat_scaling_rate = 1.0
 class_color = Color(0.45098, 0.74902, 0.368627, 1)
 abilities = Array[ExtResource("1_rtano")]([])
+starting_abilities = Array[ExtResource("1_rtano")]([])
 rest_abilities = Array[ExtResource("2_bl5bk")]([ExtResource("2"), ExtResource("3")])

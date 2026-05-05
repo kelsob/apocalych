@@ -67,24 +67,24 @@ mouse_filter = 2
 [node name="BackRowMarkers" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
 
 [node name="Marker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
-position = Vector2(336, 400)
+position = Vector2(336, 336)
 
 [node name="Marker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
-position = Vector2(304, 432)
+position = Vector2(304, 368)
 
 [node name="Marker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
-position = Vector2(280, 471)
+position = Vector2(280, 407)
 
 [node name="FrontRowMarkers" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
 
 [node name="Marker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
-position = Vector2(448, 400)
+position = Vector2(456, 328)
 
 [node name="Marker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
-position = Vector2(416, 432)
+position = Vector2(416, 368)
 
 [node name="Marker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
-position = Vector2(392, 471)
+position = Vector2(384, 415)
 
 [node name="EnemyPanel" type="Control" parent="MarginContainer/CombatAreaPanel"]
 layout_mode = 2
@@ -140,6 +140,7 @@ offset_right = 258.0
 offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 0
+mouse_filter = 2
 script = ExtResource("7_qkiah")
 
 [node name="PanelContainer" type="PanelContainer" parent="AbillityPanel"]
@@ -148,6 +149,7 @@ offset_right = 128.0
 offset_bottom = 32.0
 size_flags_horizontal = 3
 size_flags_vertical = 0
+mouse_filter = 2
 
 [node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/PanelContainer"]
 layout_mode = 2
@@ -159,6 +161,7 @@ patch_margin_bottom = 16
 
 [node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/PanelContainer"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
@@ -168,6 +171,7 @@ theme_override_constants/margin_bottom = 4
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="CombatAbilityOption" parent="AbillityPanel/PanelContainer/MarginContainer/AbilityListContainer" instance=ExtResource("7_6khhl")]

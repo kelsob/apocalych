@@ -14,6 +14,7 @@ var ability: Ability = null
 signal ability_selected(ability: Ability)
 
 func _ready():
+	pressed.connect(_on_pressed)
 	# Connect focus and hover signals
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)

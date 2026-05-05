@@ -70,9 +70,9 @@ func initialize_from_hero_character(member: HeroCharacter):
 	combatant_stats.died.connect(_on_died)
 	combatant_stats.status_removed.connect(_on_status_removed)
 	
-	# Load abilities: class specials, strip class-defined basics/move legacy ids, weapon-granted basics first, gear filter, movement defaults/overrides
-	if member.class_resource:
-		_load_abilities_from_class(member.class_resource)
+	# Load abilities: hero's unlocked class specials, strip class-defined basics/move legacy ids, weapon-granted basics first, gear filter, movement defaults/overrides
+	member.ensure_unlocked_combat_abilities_initialized()
+	_load_class_specials_from_hero(member)
 	_strip_class_basics_for_weapon_grants()
 	_prepend_weapon_granted_abilities(member)
 	_filter_abilities_by_equipment(member)
@@ -129,9 +129,12 @@ func get_display_class_color() -> Color:
 	return Color(0.78, 0.76, 0.74, 1.0)
 
 
-## Load abilities from a Class resource
-func _load_abilities_from_class(class_resource: Class):
-	abilities = class_resource.abilities.duplicate()
+## Class specials for this hero (see [member HeroCharacter.unlocked_combat_abilities]).
+func _load_class_specials_from_hero(member: HeroCharacter) -> void:
+	abilities.clear()
+	for a in member.unlocked_combat_abilities:
+		if a != null:
+			abilities.append(a)
 
 
 func _strip_class_basics_for_weapon_grants() -> void:
