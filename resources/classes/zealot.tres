@@ -25,5 +25,6 @@ stat_spread = {
 stat_modifiers = {}
 basic_attack_primary_stat = "spirit"
 basic_attack_stat_scaling_rate = 1.0
+class_color = Color(0.929412, 0.388235, 0.282353, 1)
 abilities = Array[ExtResource("1_ts3uy")]([])
 rest_abilities = Array[ExtResource("2_54s1j")]([ExtResource("2"), ExtResource("3")])

@@ -232,6 +232,9 @@ func player_cast_ability(ability: Ability, targets: Array):
 	
 	# Attempt to cast
 	if _execute_ability_cast(current_turn_combatant, ability, targets):
+		# Movement actions are intentionally non-turn-ending so they can be used multiple times per turn.
+		if current_turn_combatant.is_movement_ability(ability):
+			return
 		# End turn
 		_end_current_turn()
 
@@ -519,24 +522,24 @@ func _execute_ai_turn():
 	
 	# Note: can_act check is now done in _advance_to_next_turn after status processing
 	
-	# Prefer Move when not in preferred row (enemies with Front/Back bias only)
+	# Prefer contextual reposition when not in preferred row (enemies with Front/Back bias only).
 	if current_turn_combatant.wants_ai_to_reposition():
-		var move_ab := _find_ability_by_id(current_turn_combatant, CombatantData.ABILITY_ID_MOVE)
+		var move_id: String = current_turn_combatant.desired_reposition_ability_id()
+		var move_ab := _find_ability_by_id(current_turn_combatant, move_id)
 		if move_ab != null:
 			var move_cost := move_ab.get_modified_ap_cost()
-			if current_turn_combatant.combatant_stats.current_ap >= move_cost and current_turn_combatant.can_use_formation_move():
+			if current_turn_combatant.combatant_stats.current_ap >= move_cost and current_turn_combatant.can_cast_ability_this_turn(move_ab):
 				print("  -> AI repositions toward preferred zone")
 				if _execute_ability_cast(current_turn_combatant, move_ab, [current_turn_combatant]):
-					await get_tree().create_timer(1.0).timeout
-					_end_current_turn()
-					return
-				print("  -> Move failed, falling through to other actions")
+					await get_tree().create_timer(0.6).timeout
+				else:
+					print("  -> Reposition failed, falling through to other actions")
 	
-	# Get available abilities (Move is never random-picked when Indifferent / already in preferred row)
+	# Get available abilities (movement is never random-picked unless AI currently wants to reposition).
 	var available_abilities: Array = []
 	if current_turn_combatant.abilities:
 		for ability in current_turn_combatant.abilities:
-			if ability.ability_id == CombatantData.ABILITY_ID_MOVE:
+			if current_turn_combatant.is_movement_ability(ability):
 				if not current_turn_combatant.wants_ai_to_reposition():
 					continue
 			if not current_turn_combatant.can_cast_ability_this_turn(ability):

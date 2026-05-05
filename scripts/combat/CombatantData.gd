@@ -33,10 +33,14 @@ var turn_count: int = 0
 
 const STATUS_ID_GROUNDED := "grounded"
 const ABILITY_ID_MOVE := "move"
+const ABILITY_ID_ADVANCE := "advance"
+const ABILITY_ID_RETREAT := "retreat"
 const ABILITY_ID_BASIC_ATTACK := "basic_attack"
-const MOVE_ABILITY_PATH := "res://resources/abilities/shared/move.tres"
+const ADVANCE_ABILITY_PATH := "res://resources/abilities/shared/advance.tres"
+const RETREAT_ABILITY_PATH := "res://resources/abilities/shared/retreat.tres"
 
-static var _move_ability_cache: Ability = null
+static var _advance_ability_cache: Ability = null
+static var _retreat_ability_cache: Ability = null
 
 enum PreferredFormation {
 	FRONT,
@@ -66,13 +70,14 @@ func initialize_from_hero_character(member: HeroCharacter):
 	combatant_stats.died.connect(_on_died)
 	combatant_stats.status_removed.connect(_on_status_removed)
 	
-	# Load abilities: class specials, strip class-defined basics (weapon grants those), weapon-granted basics first, gear filter, Move last
+	# Load abilities: class specials, strip class-defined basics/move legacy ids, weapon-granted basics first, gear filter, movement defaults/overrides
 	if member.class_resource:
 		_load_abilities_from_class(member.class_resource)
 	_strip_class_basics_for_weapon_grants()
 	_prepend_weapon_granted_abilities(member)
 	_filter_abilities_by_equipment(member)
-	_ensure_move_ability()
+	_remove_legacy_move_ability()
+	_ensure_movement_abilities_for_hero(member)
 	
 	var row_i: int = member.resolve_initial_formation_row()
 	assert(row_i == 0 or row_i == 1, "combat positioning: '%s' resolved invalid row index %d (expected 0=Front, 1=Back)" % [display_name, row_i])
@@ -99,7 +104,8 @@ func initialize_from_enemy(enemy: Enemy):
 	
 	# Copy abilities
 	abilities = enemy.abilities.duplicate()
-	_ensure_move_ability()
+	_remove_legacy_move_ability()
+	_ensure_movement_abilities_for_enemy(enemy)
 	
 	match enemy.preferred_zone:
 		0:
@@ -114,6 +120,14 @@ func initialize_from_enemy(enemy: Enemy):
 	
 	# Calculate first turn time (will be set by CombatTimeline)
 	next_turn_time = 0.0
+
+
+## Heroes: colour from hero class. Enemies: neutral UI tint until enemy resources define accents.
+func get_display_class_color() -> Color:
+	if is_player and source is HeroCharacter:
+		return (source as HeroCharacter).get_class_color()
+	return Color(0.78, 0.76, 0.74, 1.0)
+
 
 ## Load abilities from a Class resource
 func _load_abilities_from_class(class_resource: Class):
@@ -164,22 +178,6 @@ func _filter_abilities_by_equipment(member: HeroCharacter) -> void:
 	abilities = filtered
 
 
-func _ensure_move_ability() -> void:
-	for a in abilities:
-		if a is Ability and (a as Ability).ability_id == ABILITY_ID_MOVE:
-			return
-	if _move_ability_cache == null:
-		if not ResourceLoader.exists(MOVE_ABILITY_PATH):
-			push_warning("CombatantData: Move ability missing at %s" % MOVE_ABILITY_PATH)
-			return
-		var loaded = load(MOVE_ABILITY_PATH)
-		if loaded is Ability:
-			_move_ability_cache = loaded
-		else:
-			push_warning("CombatantData: %s is not an Ability" % MOVE_ABILITY_PATH)
-			return
-	abilities.append(_move_ability_cache)
-
 ## Start a turn for this combatant
 ## Returns status effect processing results
 func start_turn() -> Dictionary:
@@ -214,6 +212,8 @@ func can_cast_ability_this_turn(ability: Ability) -> bool:
 		return false
 	if not is_ability_usable_with_current_gear(ability):
 		return false
+	if not is_ability_contextually_available(ability):
+		return false
 	if ability.is_basic_attack and basic_attack_used_this_turn:
 		return false
 	return true
@@ -229,8 +229,11 @@ func cast_ability(ability: Ability, targets: Array) -> bool:
 	if not combatant_stats.can_cast():
 		return false
 	
-	if ability.ability_id == ABILITY_ID_MOVE and not can_use_formation_move():
+	if is_movement_ability(ability) and not can_use_formation_move():
 		push_warning("%s cannot change row while grounded." % display_name)
+		return false
+	if not is_ability_contextually_available(ability):
+		push_warning("%s cannot use %s from current row." % [display_name, ability.ability_name])
 		return false
 	
 	# Check AP cost
@@ -305,6 +308,29 @@ func can_use_formation_move() -> bool:
 	return not combatant_stats.has_status_id(STATUS_ID_GROUNDED)
 
 
+func is_movement_ability(ability: Ability) -> bool:
+	if ability == null:
+		return false
+	return ability.ability_id == ABILITY_ID_ADVANCE or ability.ability_id == ABILITY_ID_RETREAT or ability.ability_id == ABILITY_ID_MOVE
+
+
+func is_ability_contextually_available(ability: Ability) -> bool:
+	if ability == null:
+		return false
+	if not is_movement_ability(ability):
+		return true
+	if not can_use_formation_move():
+		return false
+	match ability.ability_id:
+		ABILITY_ID_ADVANCE:
+			return formation_row == CombatRow.Kind.BACK
+		ABILITY_ID_RETREAT:
+			return formation_row == CombatRow.Kind.FRONT
+		ABILITY_ID_MOVE:
+			return true
+	return true
+
+
 func swap_formation_row() -> void:
 	if formation_row == CombatRow.Kind.FRONT:
 		formation_row = CombatRow.Kind.BACK
@@ -328,7 +354,7 @@ func force_to_front_row() -> void:
 	formation_row_base = formation_row
 
 
-## AI uses Move only when this is true (preferred row != current and not grounded).
+## AI uses contextual movement (Advance/Retreat) only when this is true.
 func wants_ai_to_reposition() -> bool:
 	if preferred_formation == PreferredFormation.INDIFFERENT:
 		return false
@@ -340,6 +366,125 @@ func wants_ai_to_reposition() -> bool:
 		PreferredFormation.BACK:
 			return formation_row != CombatRow.Kind.BACK
 	return false
+
+
+func desired_reposition_ability_id() -> String:
+	match preferred_formation:
+		PreferredFormation.FRONT:
+			return ABILITY_ID_ADVANCE
+		PreferredFormation.BACK:
+			return ABILITY_ID_RETREAT
+		_:
+			return ""
+
+
+func _remove_legacy_move_ability() -> void:
+	for i in range(abilities.size() - 1, -1, -1):
+		var a: Ability = abilities[i]
+		if a == null:
+			continue
+		if a.ability_id == ABILITY_ID_MOVE:
+			abilities.remove_at(i)
+
+
+func _ensure_movement_abilities_for_hero(member: HeroCharacter) -> void:
+	var existing: Dictionary = {}
+	for a in abilities:
+		if a != null:
+			existing[a.ability_id] = a
+	var advance: Ability = existing.get(ABILITY_ID_ADVANCE, null)
+	var retreat: Ability = existing.get(ABILITY_ID_RETREAT, null)
+	if member.race:
+		if member.race.default_advance_ability_override != null:
+			advance = member.race.default_advance_ability_override
+		if member.race.default_retreat_ability_override != null:
+			retreat = member.race.default_retreat_ability_override
+	if member.class_resource:
+		if member.class_resource.default_advance_ability_override != null:
+			advance = member.class_resource.default_advance_ability_override
+		if member.class_resource.default_retreat_ability_override != null:
+			retreat = member.class_resource.default_retreat_ability_override
+	if advance == null:
+		advance = _get_default_advance_ability()
+	if retreat == null:
+		retreat = _get_default_retreat_ability()
+	var movement_ap_modifier: int = 0
+	if member.race:
+		movement_ap_modifier += member.race.movement_ap_cost_modifier
+	if member.class_resource:
+		movement_ap_modifier += member.class_resource.movement_ap_cost_modifier
+	_replace_or_append_movement_ability(ABILITY_ID_ADVANCE, _clone_movement_ability(advance, movement_ap_modifier))
+	_replace_or_append_movement_ability(ABILITY_ID_RETREAT, _clone_movement_ability(retreat, movement_ap_modifier))
+
+
+func _ensure_movement_abilities_for_enemy(enemy: Enemy) -> void:
+	var existing: Dictionary = {}
+	for a in abilities:
+		if a != null:
+			existing[a.ability_id] = a
+	var advance: Ability = existing.get(ABILITY_ID_ADVANCE, null)
+	var retreat: Ability = existing.get(ABILITY_ID_RETREAT, null)
+	if enemy.default_advance_ability_override != null:
+		advance = enemy.default_advance_ability_override
+	if enemy.default_retreat_ability_override != null:
+		retreat = enemy.default_retreat_ability_override
+	if advance == null:
+		advance = _get_default_advance_ability()
+	if retreat == null:
+		retreat = _get_default_retreat_ability()
+	_replace_or_append_movement_ability(ABILITY_ID_ADVANCE, _clone_movement_ability(advance, enemy.movement_ap_cost_modifier))
+	_replace_or_append_movement_ability(ABILITY_ID_RETREAT, _clone_movement_ability(retreat, enemy.movement_ap_cost_modifier))
+
+
+func _replace_or_append_movement_ability(ability_id: String, ability_to_set: Ability) -> void:
+	if ability_to_set == null:
+		return
+	for i in range(abilities.size()):
+		var ab: Ability = abilities[i]
+		if ab == null:
+			continue
+		if ab.ability_id == ability_id:
+			abilities[i] = ability_to_set
+			return
+	abilities.append(ability_to_set)
+
+
+func _clone_movement_ability(base_ability: Ability, ap_cost_modifier: int) -> Ability:
+	if base_ability == null:
+		return null
+	var out: Ability = base_ability.duplicate(true)
+	out.clear_modifiers()
+	if ap_cost_modifier != 0:
+		out.apply_modifier({"ap_cost": ap_cost_modifier})
+	return out
+
+
+func _get_default_advance_ability() -> Ability:
+	if _advance_ability_cache == null:
+		if not ResourceLoader.exists(ADVANCE_ABILITY_PATH):
+			push_warning("CombatantData: Advance ability missing at %s" % ADVANCE_ABILITY_PATH)
+			return null
+		var loaded = load(ADVANCE_ABILITY_PATH)
+		if loaded is Ability:
+			_advance_ability_cache = loaded
+		else:
+			push_warning("CombatantData: %s is not an Ability" % ADVANCE_ABILITY_PATH)
+			return null
+	return _advance_ability_cache
+
+
+func _get_default_retreat_ability() -> Ability:
+	if _retreat_ability_cache == null:
+		if not ResourceLoader.exists(RETREAT_ABILITY_PATH):
+			push_warning("CombatantData: Retreat ability missing at %s" % RETREAT_ABILITY_PATH)
+			return null
+		var loaded = load(RETREAT_ABILITY_PATH)
+		if loaded is Ability:
+			_retreat_ability_cache = loaded
+		else:
+			push_warning("CombatantData: %s is not an Ability" % RETREAT_ABILITY_PATH)
+			return null
+	return _retreat_ability_cache
 
 
 func _on_status_removed(status: StatusEffect):

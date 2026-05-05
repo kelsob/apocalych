@@ -7,7 +7,8 @@ class_name CharacterCombatInformationPanel
 @onready var health_label: Label = $Control/HBoxContainer2/HealthLabel
 @onready var health_max_label: Label = $Control/HBoxContainer2/HealthMaxLabel
 @onready var health_progress_bar: HPBar = $Control/HPBar
-@onready var portrait_texture: TextureRect = $CharacterPortraitFrame/CharacterPortrait
+@onready var portrait_texture: TextureRect = $CharacterPortrait/CharacterPortrait
+@onready var portrait_frame: TextureRect = $CharacterPortrait/CharacterPortraitFrame
 
 ## Update display with current combatant stats. [param combat_portrait] defaults to map/event portrait from [method HeroCharacter.get_portrait]; [code]null[/code] hides the portrait.
 func update_display(combatant_name: String, current_hp: int, max_hp: int, current_ap: int, max_ap: int, combat_portrait: Texture2D = null) -> void:
@@ -32,3 +33,18 @@ func update_display(combatant_name: String, current_hp: int, max_hp: int, curren
 	if portrait_texture:
 		portrait_texture.texture = combat_portrait
 		portrait_texture.visible = combat_portrait != null
+
+
+## Sets [member portrait_frame] modulate from the hero's class color ([method CombatantData.get_display_class_color]).
+func apply_class_color_to_portrait_frame(combatant: CombatantData) -> void:
+	if not portrait_frame:
+		return
+	if combatant != null and is_instance_valid(combatant):
+		portrait_frame.modulate = combatant.get_display_class_color()
+	else:
+		portrait_frame.modulate = Color.WHITE
+
+
+func reset_portrait_frame_modulate() -> void:
+	if portrait_frame:
+		portrait_frame.modulate = Color.WHITE

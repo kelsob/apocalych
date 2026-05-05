@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://cvjrahf76ssj5"]
+[gd_scene load_steps=12 format=3 uid="uid://cvjrahf76ssj5"]
 
 [ext_resource type="Script" uid="uid://6u6iw0lnjdwi" path="res://scripts/combat/CombatScene.gd" id="1_cetgp"]
 [ext_resource type="PackedScene" uid="uid://cm203yur3p1b0" path="res://scenes/2d/TurnOrderPanel.tscn" id="2_gvrxc"]
@@ -6,6 +6,11 @@
 [ext_resource type="Texture2D" uid="uid://bgba30ct70kfl" path="res://assets/combat-scenes/molqgrxz3a7zh2.jpeg" id="3_i18os"]
 [ext_resource type="PackedScene" uid="uid://babywa8d5kus1" path="res://scenes/2d/CombatLogPanel.tscn" id="6_dqp6h"]
 [ext_resource type="PackedScene" uid="uid://wch1q73ihsx2" path="res://scenes/2d/PlayerPanel.tscn" id="6_i18os"]
+[ext_resource type="PackedScene" uid="uid://nrsdaorpl1uv" path="res://scenes/combat/CombatAbilityOption.tscn" id="7_6khhl"]
+[ext_resource type="Script" uid="uid://bi6jyguqxlhsl" path="res://scripts/AbilityPanel.gd" id="7_qkiah"]
+[ext_resource type="FontFile" uid="uid://cou8slr6me4am" path="res://assets/fonts/Final_Fantasy_VII.ttf" id="8_6khhl"]
+[ext_resource type="Texture2D" uid="uid://dv4ivs8inoqyk" path="res://assets/icons/frame-npr.png" id="8_57kx0"]
+[ext_resource type="Script" uid="uid://blwnyum2fay18" path="res://scripts/AbilityDescriptionPanel.gd" id="8_qkiah"]
 
 [node name="CombatScene" type="Control"]
 layout_mode = 3
@@ -30,17 +35,13 @@ grow_vertical = 2
 texture = ExtResource("3_i18os")
 
 [node name="TurnOrderPanel" parent="." instance=ExtResource("2_gvrxc")]
-custom_minimum_size = Vector2(48, 256)
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_left = 10.0
-offset_top = -136.0
-offset_right = 58.0
-offset_bottom = 120.0
-grow_vertical = 2
+offset_left = 11.0
+offset_top = 13.0
+offset_right = 59.0
+offset_bottom = 525.0
 size_flags_horizontal = 1
+mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -49,68 +50,46 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 theme = ExtResource("3_2ussv")
 
 [node name="CombatAreaPanel" type="HBoxContainer" parent="MarginContainer"]
 layout_mode = 2
 size_flags_vertical = 3
+mouse_filter = 2
 alignment = 1
 
 [node name="PlayerPanel" type="Control" parent="MarginContainer/CombatAreaPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
 
-[node name="BackRowMarkers3" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+[node name="BackRowMarkers" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
 
-[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
-position = Vector2(88, 440)
+[node name="Marker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
+position = Vector2(336, 400)
 
-[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
-position = Vector2(200, 412)
+[node name="Marker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
+position = Vector2(304, 432)
 
-[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3"]
-position = Vector2(312, 384)
+[node name="Marker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers"]
+position = Vector2(280, 471)
 
-[node name="BackRowMarkers2" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
+[node name="FrontRowMarkers" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
 
-[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
-position = Vector2(192, 436)
+[node name="Marker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
+position = Vector2(448, 400)
 
-[node name="BackMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2"]
-position = Vector2(320, 388)
+[node name="Marker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
+position = Vector2(416, 432)
 
-[node name="BackRowMarker1" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
-
-[node name="BackMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1"]
-position = Vector2(200, 412)
-
-[node name="FrontRowMarkers3" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
-
-[node name="CharacterMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
-position = Vector2(318, 440)
-
-[node name="CharacterMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
-position = Vector2(430, 412)
-
-[node name="CharacterMarker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3"]
-position = Vector2(542, 384)
-
-[node name="FrontRowMarkers2" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
-
-[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
-position = Vector2(348, 436)
-
-[node name="FrontMarker2D2" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2"]
-position = Vector2(462, 388)
-
-[node name="FrontRowMarker1" type="Node2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel"]
-
-[node name="FrontMarker2D1" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1"]
-position = Vector2(454, 420)
+[node name="Marker2D3" type="Marker2D" parent="MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers"]
+position = Vector2(392, 471)
 
 [node name="EnemyPanel" type="Control" parent="MarginContainer/CombatAreaPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="TurnAnnouncerLabel" type="RichTextLabel" parent="."]
 custom_minimum_size = Vector2(0, 64)
@@ -122,6 +101,7 @@ anchor_bottom = 0.5
 grow_horizontal = 2
 grow_vertical = 2
 pivot_offset = Vector2(640, 33)
+mouse_filter = 2
 theme_override_colors/font_outline_color = Color(0.303799, 0.198803, 0.0540074, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
@@ -146,3 +126,162 @@ grow_vertical = 0
 
 [node name="CombatLogPanel" parent="." instance=ExtResource("6_dqp6h")]
 layout_mode = 1
+
+[node name="AbillityPanel" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -184.0
+offset_top = -168.0
+offset_right = 258.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("7_qkiah")
+
+[node name="PanelContainer" type="PanelContainer" parent="AbillityPanel"]
+layout_mode = 1
+offset_right = 128.0
+offset_bottom = 32.0
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/PanelContainer"]
+layout_mode = 2
+texture = ExtResource("8_57kx0")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="AbilityListContainer" type="VBoxContainer" parent="AbillityPanel/PanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="CombatAbilityOption" parent="AbillityPanel/PanelContainer/MarginContainer/AbilityListContainer" instance=ExtResource("7_6khhl")]
+layout_mode = 2
+
+[node name="AbilityDescriptionPanel" type="PanelContainer" parent="AbillityPanel"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_bottom = 32.0
+grow_horizontal = 0
+size_flags_horizontal = 3
+script = ExtResource("8_qkiah")
+
+[node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/AbilityDescriptionPanel"]
+layout_mode = 2
+texture = ExtResource("8_57kx0")
+patch_margin_left = 16
+patch_margin_top = 16
+patch_margin_right = 16
+patch_margin_bottom = 16
+
+[node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/AbilityDescriptionPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="DescriptionLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "ability description of what this thing does. It's an ability!"
+fit_content = true
+horizontal_alignment = 1
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ApCostLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "0 ap"
+fit_content = true
+
+[node name="TargetingTypeLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "single-target "
+fit_content = true
+horizontal_alignment = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RangeLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "melee"
+fit_content = true
+
+[node name="TypeLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "physical "
+fit_content = true
+horizontal_alignment = 2
+
+[node name="MechanicsLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+fit_content = true
+
+[node name="OncePerTurnLabel" type="RichTextLabel" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_constants/shadow_outline_size = 4
+theme_override_fonts/normal_font = ExtResource("8_6khhl")
+bbcode_enabled = true
+text = "Usable once per turn."
+fit_content = true
+horizontal_alignment = 1

@@ -1,0 +1,12 @@
+---
+description: User owns scene/input maps; AI describes Inspector steps—no editing .tscn for static UI prefs.
+alwaysApply: true
+---
+
+# Editor-first UI (Godot)
+
+- **Do not edit** `.tscn`, `project.godot`, or Input Map definitions in this repo—the user configures those manually. When static UI tweaks are needed (e.g. `mouse_filter`), **tell the user exactly what to set in the Inspector** and let them save the scene.
+- **Do not** re-apply those same Inspector settings from `_ready()` / deferred calls **unless** the value truly must come from runtime (loaded data, accessibility toggles, etc.).
+- Scripts stay for behaviour: signals, gameplay, orchestration—not for redoing Inspector work the user can freeze in scenes.
+
+Turn-order rows (same pattern anywhere you need one Control to receive hover): root row **Mouse → Stop**; visible child Controls layered on top (**Ignore**) so hover hits the row. User sets those on the nodes in-editor.

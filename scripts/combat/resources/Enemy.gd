@@ -86,6 +86,12 @@ static var _TAG_NAME_TO_BIT: Dictionary = {
 
 # Abilities this enemy can use
 @export var abilities: Array[Ability] = []
+## Flat AP modifier applied to both Advance/Retreat for this enemy.
+@export var movement_ap_cost_modifier: int = 0
+## Optional replacement for the default Advance ability.
+@export var default_advance_ability_override: Ability = null
+## Optional replacement for the default Retreat ability.
+@export var default_retreat_ability_override: Ability = null
 
 # AI behavior
 @export_enum("Aggressive", "Defensive", "Balanced", "Support") var ai_behavior: String = "Balanced"

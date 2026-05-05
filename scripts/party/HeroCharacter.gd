@@ -265,6 +265,14 @@ func get_armour_type() -> String:
 		return class_resource.armour_type
 	return "Armour"
 
+
+## Theme colour from [member class_resource] for UI. Matches [member Class.class_color] fallback when missing class.
+func get_class_color() -> Color:
+	if class_resource != null:
+		return class_resource.class_color
+	return Color(0.82, 0.84, 0.88, 1.0)
+
+
 const PRIMARY_STAT_KEYS: Array[String] = [
 	"strength",
 	"agility",

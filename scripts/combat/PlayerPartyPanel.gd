@@ -29,3 +29,4 @@ func apply_party_panel_count(count: int) -> void:
 		if not used:
 			p.update_display("", 0, 1, 0, 1)
 			p.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			p.reset_portrait_frame_modulate()

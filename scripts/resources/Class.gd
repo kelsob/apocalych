@@ -17,5 +17,13 @@ class_name Class
 @export var basic_attack_primary_stat: String = "strength"
 ## Multiplier on the class primary stat: damage = [code]stat × rate[/code] (e.g. AGI 8 and [code]0.5[/code] → 4).
 @export var basic_attack_stat_scaling_rate: float = 1.0
+## UI tint for this class (HUD, banners, framing). Resolved on heroes via [method HeroCharacter.get_class_color].
+@export var class_color: Color = Color(0.82, 0.84, 0.88, 1)
+## Flat AP modifier applied to both Advance/Retreat while this class is active.
+@export var movement_ap_cost_modifier: int = 0
+## Optional replacement for the default Advance ability.
+@export var default_advance_ability_override: Ability = null
+## Optional replacement for the default Retreat ability.
+@export var default_retreat_ability_override: Ability = null
 @export var abilities: Array[Ability] = []  # Combat abilities for this class
 @export var rest_abilities: Array[RestAbility] = []  ## 2 rest abilities from class

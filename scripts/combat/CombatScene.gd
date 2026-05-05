@@ -35,14 +35,10 @@ extends Control
 @onready var party_panel: PlayerPartyPanel = $PlayerPartyPanel
 @onready var combat_log_panel: CombatLogPanel = $CombatLogPanel
 @onready var turn_announcer_label: RichTextLabel = $TurnAnnouncerLabel
+@onready var ability_panel: Control = $AbillityPanel
 
-@onready var backrow_markers_3: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers3
-@onready var backrow_markers_2: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers2
-@onready var backrow_markers_1: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarker1
-
-@onready var frontrow_markers_3: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers3
-@onready var frontrow_markers_2: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers2
-@onready var frontrow_markers_1: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarker1
+@onready var backrow_player_markers: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/BackRowMarkers
+@onready var frontrow_player_markers: Node2D = $MarginContainer/CombatAreaPanel/PlayerPanel/FrontRowMarkers
 
 # Scene references for instantiation
 var combat_character_sprite_scene: PackedScene = preload("res://scenes/combat/CombatCharacterSprite.tscn")
@@ -65,8 +61,10 @@ var combatant_clickable_areas: Dictionary = {}  # CombatantData -> Button (for t
 # Deaths that happened during an ability; we log them right after the ability log so order is correct
 var _pending_death_logs: Array = []  # [CombatantData, ...]
 
-# Last resolved slot index per party member (0..n-1 within their row layout) for joiner / split rules
+# Party slot index per combatant (0–2) matching party order; positions use the same Marker2D for front and back rows.
 var _last_slot_by_combatant: Dictionary = {}
+
+const _PARTY_SLOT_COUNT: int = 3
 
 func _ready():
 	print("CombatScene _ready() called")
@@ -80,6 +78,7 @@ func _ready():
 	CombatController.combat_started.connect(_on_combat_started)
 	CombatController.combat_ended.connect(_on_combat_ended)
 	CombatController.turn_started.connect(_on_turn_started)
+	CombatController.turn_ended.connect(_on_turn_ended_turn_order_refresh)
 	CombatController.cast_started.connect(_on_cast_started)
 	CombatController.channeled_tick.connect(_on_channeled_tick)
 	CombatController.ability_resolved.connect(_on_ability_resolved)
@@ -87,6 +86,8 @@ func _ready():
 	CombatController.combatant_healed.connect(_on_combatant_healed)
 	CombatController.combatant_died.connect(_on_combatant_died)
 	CombatController.status_applied.connect(_on_status_applied)
+	if ability_panel and ability_panel.has_signal("ability_selected"):
+		ability_panel.ability_selected.connect(_on_ability_button_pressed)
 	
 	if turn_order_panel:
 		if turn_order_panel.has_signal("combatant_hover_highlighted"):
@@ -161,6 +162,7 @@ func _on_combat_started(player_combatants: Array, enemy_combatants: Array):
 	combatant_info_panels.clear()
 	combatant_clickable_areas.clear()
 	_last_slot_by_combatant.clear()
+	_clear_ability_panel()
 	
 	party_panel.apply_party_panel_count(player_combatants.size())
 	var party_i: int = 0
@@ -214,18 +216,25 @@ func _deferred_combat_end(victory: bool, rewards: Dictionary):
 
 	queue_free()
 
+
+func _on_turn_ended_turn_order_refresh(_who: CombatantData) -> void:
+	_update_turn_order_display()
+	_clear_ability_panel()
+
+
 ## Called when a turn starts
 func _on_turn_started(combatant: CombatantData, turn_number: int, status_results: Dictionary):
 	if not combatant or not is_instance_valid(combatant):
 		return
 	# Flush any deaths from previous turn (e.g. DoT kill) before showing "X's Turn"
 	_flush_pending_death_logs()
-	
+	_update_turn_order_display()
+
 	# Show turn announcer (animate in/out)
 	await _show_turn_announcer(combatant)
-	
+
 	_log_message("--- %s's Turn ---" % _safe_combatant_name(combatant), true)
-		
+
 	# Log any status effects that triggered (DoTs, HoTs, etc.)
 	for effect in status_results.get("effects_triggered", []):
 		match effect.type:
@@ -233,29 +242,28 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 				_log_message("  %s takes %d damage from %s" % [_safe_combatant_name(combatant), effect.amount, effect.status])
 			"heal":
 				_log_message("  %s heals %d from %s" % [_safe_combatant_name(combatant), effect.amount, effect.status])
-	
-	# Update turn order display
-	_update_turn_order_display()
-	
+
+	# Turn strip was refreshed at turn start (before announcer); avoid rebuilding here—a second refresh recreated rows and retriggered slide nudge.
+
 	# Update info panel for current combatant (AP refreshed, health may have changed from DoTs)
 	_update_combatant_info_panel(combatant)
-	
+
 	# Check if combatant is stunned/incapacitated
 	if not status_results.get("can_act", true):
 		_log_message("  %s is stunned and cannot act!" % _safe_combatant_name(combatant))
-		
+
 		# Show which control effects wore off
 		for status_name in status_results.get("control_statuses_consumed", []):
 			_log_message("  %s's %s wore off!" % [_safe_combatant_name(combatant), status_name])
-		
+
 		current_player_combatant = null
 		_clear_ability_panel()
 		return
-	
+
 	# Log non-control statuses that wore off (buffs, debuffs, DoTs, HoTs)
 	for status_name in status_results.get("statuses_expired", []):
 		_log_message("  %s's %s wore off!" % [_safe_combatant_name(combatant), status_name])
-	
+
 	# If player turn, show abilities
 	if combatant.is_player:
 		current_player_combatant = combatant
@@ -266,6 +274,7 @@ func _on_turn_started(combatant: CombatantData, turn_number: int, status_results
 
 ## Called when a delayed/channeled cast starts
 func _on_cast_started(cast):
+	_update_turn_order_display()
 	var cast_time = cast.ability.get_modified_cast_time()
 	var caster_name = _safe_combatant_name(cast.caster)
 	# Show different messages for delayed vs channeled
@@ -285,8 +294,8 @@ func _on_cast_started(cast):
 		])
 	
 ## Called when a channeled ability ticks (subsequent turns, not the first)
-func _on_channeled_tick(cast):
-	pass
+func _on_channeled_tick(_cast):
+	_update_turn_order_display()
 
 ## Called when an ability resolves
 func _on_ability_resolved(caster: CombatantData, ability: Ability, targets: Array, effects_applied: Array, party_formation_before: Dictionary = {}) -> void:
@@ -474,25 +483,8 @@ func _on_combatant_died(combatant: CombatantData):
 		var button = combatant_clickable_areas[combatant]
 		button.disabled = true
 
-## Hide all party row marker groups (show only the active count per row when placing).
-func _hide_all_party_marker_groups() -> void:
-	for n in _all_party_marker_root_nodes():
-		assert(n != null, "combat positioning: a party marker root Node2D is null (check @onready paths vs PlayerPanel children)")
-		n.visible = false
 
-
-func _all_party_marker_root_nodes() -> Array[Node2D]:
-	return [
-		backrow_markers_3,
-		backrow_markers_2,
-		backrow_markers_1,
-		frontrow_markers_3,
-		frontrow_markers_2,
-		frontrow_markers_1,
-	]
-
-
-## Marker2D children under a row container, sorted by name for stable slot order.
+## Marker2D children under a row container (frontrow_player_markers / backrow_player_markers), sorted by name — three slots = party indices 0, 1, 2.
 func _sorted_markers_under_row_container(container: Node2D) -> Array[Marker2D]:
 	assert(container != null, "combat positioning: marker row container is null")
 	var out: Array[Marker2D] = []
@@ -503,28 +495,27 @@ func _sorted_markers_under_row_container(container: Node2D) -> Array[Marker2D]:
 	return out
 
 
-## Which pre-authored Node2D holds the Marker2D slots for this row and party count (1–3).
-func _party_row_marker_parent(row: CombatRow.Kind, count: int) -> Node2D:
-	var c: int = clampi(count, 1, 3)
-	match row:
-		CombatRow.Kind.BACK:
-			match c:
-				1:
-					return backrow_markers_1
-				2:
-					return backrow_markers_2
-				3:
-					return backrow_markers_3
+func _row_marker_container(row_kind: CombatRow.Kind) -> Node2D:
+	match row_kind:
 		CombatRow.Kind.FRONT:
-			match c:
-				1:
-					return frontrow_markers_1
-				2:
-					return frontrow_markers_2
-				3:
-					return frontrow_markers_3
-	assert(false, "combat positioning: _party_row_marker_parent unreachable row=%s count=%d" % [row, count])
-	return null
+			return frontrow_player_markers
+		_:
+			return backrow_player_markers
+
+
+func _markers_for_party_row(row_kind: CombatRow.Kind) -> Array[Marker2D]:
+	var container: Node2D = _row_marker_container(row_kind)
+	assert(container != null, "combat positioning: missing front/back row marker root")
+	var markers: Array[Marker2D] = _sorted_markers_under_row_container(container)
+	assert(markers.size() >= _PARTY_SLOT_COUNT, "combat positioning: '%s' needs %d Marker2D children (party slots), found %d" % [container.name, _PARTY_SLOT_COUNT, markers.size()])
+	return markers
+
+
+func _marker_global_position_for_party_slot(row_kind: CombatRow.Kind, slot_i: int) -> Vector2:
+	assert(slot_i >= 0 and slot_i < _PARTY_SLOT_COUNT, "combat positioning: party slot %d out of range 0..%d" % [slot_i, _PARTY_SLOT_COUNT - 1])
+	var markers: Array[Marker2D] = _markers_for_party_row(row_kind)
+	return markers[slot_i].global_position
+
 
 
 ## Split party into front / back lists preserving encounter order (party array order).
@@ -546,7 +537,7 @@ func _partition_party_by_row_ordered(player_combatants: Array) -> Dictionary:
 	return {"front": front, "back": back}
 
 
-## Position player sprites at Marker2D slots (initial layout: party order within each row).
+## Snap every hero to their fixed party-slot markers under [member frontrow_player_markers] / [member backrow_player_markers] (slots 0–2 = party order).
 func _apply_party_marker_layout(player_combatants: Array) -> void:
 	print("combat positioning: _apply_party_marker_layout start party_size=%d" % player_combatants.size())
 	var slot_map: Dictionary = _compute_slot_assignment(player_combatants, {})
@@ -554,112 +545,36 @@ func _apply_party_marker_layout(player_combatants: Array) -> void:
 	print("combat positioning: _apply_party_marker_layout done")
 
 
-func _party_formation_index(cd: CombatantData, party_order: Array) -> int:
-	return party_order.find(cd)
-
-
-func _combatants_in_row_from_snapshot(party_order: Array, formation_snapshot: Dictionary, row_kind: CombatRow.Kind) -> Array:
-	var out: Array = []
-	for c in party_order:
-		if not c is CombatantData:
-			continue
-		var cd: CombatantData = c as CombatantData
-		if formation_snapshot.get(cd, null) == row_kind:
-			out.append(cd)
-	return out
-
-
-## Assign slot index 0..n-1 per combatant in this row. [param formation_before] maps each player to their row *before* the ability that just resolved (empty = party-order layout).
-func _assign_slots_for_row_list(row_members: Array, row_kind: CombatRow.Kind, party_order: Array, formation_before: Dictionary, out_slots: Dictionary) -> void:
-	var n: int = row_members.size()
-	if n == 0:
-		return
-	if n == 1:
-		out_slots[row_members[0]] = 0
-		return
-	var joiners: Array = []
-	var incumbents: Array = []
-	for cd_obj in row_members:
-		var cd: CombatantData = cd_obj as CombatantData
-		if formation_before.has(cd) and formation_before[cd] == row_kind:
-			incumbents.append(cd)
-		else:
-			joiners.append(cd)
-	var sort_by_party := func(a: CombatantData, b: CombatantData) -> bool:
-		return _party_formation_index(a, party_order) < _party_formation_index(b, party_order)
-	if n == 3 and joiners.size() == 1:
-		var J: CombatantData = joiners[0] as CombatantData
-		var others: Array = incumbents.duplicate()
-		others.sort_custom(sort_by_party)
-		if others.size() == 2:
-			out_slots[others[0]] = 0
-			out_slots[J] = 1
-			out_slots[others[1]] = 2
-		else:
-			var ordered3: Array = row_members.duplicate()
-			ordered3.sort_custom(sort_by_party)
-			for i in range(n):
-				out_slots[ordered3[i]] = i
-	elif n == 2 and joiners.size() == 1:
-		var J: CombatantData = joiners[0] as CombatantData
-		var I: CombatantData = incumbents[0] as CombatantData
-		var old_row: Variant = formation_before.get(J, null)
-		if old_row == null:
-			out_slots[J] = 0
-			out_slots[I] = 1
-			return
-		var old_subset: Array = _combatants_in_row_from_snapshot(party_order, formation_before, old_row)
-		var j_pos: int = old_subset.find(J)
-		if j_pos < 0:
-			j_pos = 0
-		if old_subset.size() >= 2:
-			var j_slot: int = clampi(j_pos, 0, 1)
-			out_slots[J] = j_slot
-			out_slots[I] = 1 - j_slot
-		else:
-			out_slots[J] = 0
-			out_slots[I] = 1
-	else:
-		var ordered: Array = row_members.duplicate()
-		ordered.sort_custom(sort_by_party)
-		for i in range(n):
-			out_slots[ordered[i]] = i
-
-
-func _compute_slot_assignment(player_combatants: Array, formation_before: Dictionary) -> Dictionary:
+## Party array index is the lane (0–2) on both rows; swapping rows moves only that sprite between matching markers.
+func _compute_slot_assignment(player_combatants: Array, _formation_before: Dictionary = {}) -> Dictionary:
 	var slot_by_cd: Dictionary = {}
-	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
-	_assign_slots_for_row_list(parts["front"], CombatRow.Kind.FRONT, player_combatants, formation_before, slot_by_cd)
-	_assign_slots_for_row_list(parts["back"], CombatRow.Kind.BACK, player_combatants, formation_before, slot_by_cd)
+	assert(player_combatants.size() <= _PARTY_SLOT_COUNT, "combat positioning: party size %d exceeds %d marker slots" % [player_combatants.size(), _PARTY_SLOT_COUNT])
+	var idx: int = 0
+	for c in player_combatants:
+		assert(c is CombatantData, "combat positioning: player_combatants[%d] is not CombatantData" % idx)
+		slot_by_cd[c as CombatantData] = idx
+		idx += 1
 	return slot_by_cd
 
 
-func _marker_global_position_for_slot(row_kind: CombatRow.Kind, row_n: int, slot_index: int) -> Vector2:
-	var marker_parent: Node2D = _party_row_marker_parent(row_kind, row_n)
-	var markers: Array[Marker2D] = _sorted_markers_under_row_container(marker_parent)
-	assert(slot_index >= 0 and slot_index < markers.size(), "combat positioning: slot %d out of range for row_n=%d" % [slot_index, row_n])
-	return markers[slot_index].global_position
-
-
 func _snap_party_layout_using_slot_map(player_combatants: Array, slot_by_cd: Dictionary) -> void:
-	_hide_all_party_marker_groups()
+	if frontrow_player_markers:
+		frontrow_player_markers.visible = true
+	if backrow_player_markers:
+		backrow_player_markers.visible = true
 	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
 	for row_kind in [CombatRow.Kind.FRONT, CombatRow.Kind.BACK]:
 		var members: Array = parts["front"] if row_kind == CombatRow.Kind.FRONT else parts["back"]
 		if members.is_empty():
 			continue
-		var n: int = members.size()
 		var row_name: String = "FRONT" if row_kind == CombatRow.Kind.FRONT else "BACK"
-		assert(n <= 3, "combat positioning: row %s has %d members; max 3" % [row_name, n])
-		var marker_parent: Node2D = _party_row_marker_parent(row_kind, n)
-		assert(marker_parent != null, "combat positioning: marker parent missing for row %s count %d" % [row_name, n])
-		marker_parent.visible = true
-		var markers: Array[Marker2D] = _sorted_markers_under_row_container(marker_parent)
-		assert(markers.size() >= n, "combat positioning: row %s needs %d Marker2D slots under '%s', found %d" % [row_name, n, marker_parent.name, markers.size()])
+		assert(members.size() <= _PARTY_SLOT_COUNT, "combat positioning: row %s has %d members; max %d" % [row_name, members.size(), _PARTY_SLOT_COUNT])
+		var markers: Array[Marker2D] = _markers_for_party_row(row_kind)
 		for cd_obj in members:
 			var cd: CombatantData = cd_obj as CombatantData
 			assert(combatant_sprites.has(cd), "combat positioning: no sprite for combatant '%s'" % cd.display_name)
 			var slot_i: int = int(slot_by_cd[cd])
+			assert(slot_i >= 0 and slot_i < markers.size(), "combat positioning: slot %d for '%s' out of range" % [slot_i, cd.display_name])
 			var m: Marker2D = markers[slot_i]
 			_position_player_sprite_at_marker(combatant_sprites[cd], m)
 	for cd_obj in player_combatants:
@@ -684,9 +599,6 @@ func _player_party_formation_changed(party: Array, formation_before: Dictionary)
 
 func _animate_party_formation_to_slots(player_combatants: Array, formation_before: Dictionary) -> void:
 	var slot_map: Dictionary = _compute_slot_assignment(player_combatants, formation_before)
-	var parts: Dictionary = _partition_party_by_row_ordered(player_combatants)
-	var n_front: int = parts["front"].size()
-	var n_back: int = parts["back"].size()
 	if formation_tween_duration <= 0.0:
 		_snap_party_layout_using_slot_map(player_combatants, slot_map)
 		return
@@ -700,10 +612,10 @@ func _animate_party_formation_to_slots(player_combatants: Array, formation_befor
 		if not combatant_sprites.has(cd) or not slot_map.has(cd):
 			continue
 		var slot_i: int = int(slot_map[cd])
-		var row_kind: CombatRow.Kind = cd.formation_row
-		var row_n: int = n_front if row_kind == CombatRow.Kind.FRONT else n_back
-		var target_pos: Vector2 = _marker_global_position_for_slot(row_kind, row_n, slot_i)
+		var target_pos: Vector2 = _marker_global_position_for_party_slot(cd.formation_row, slot_i)
 		var spr: Control = combatant_sprites[cd] as Control
+		if spr.global_position.distance_squared_to(target_pos) < 4.0:
+			continue
 		tw.tween_property(spr, "global_position", target_pos, formation_tween_duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		any_tween = true
 	if not any_tween:
@@ -744,6 +656,7 @@ func _create_player_combatant_display(combatant: CombatantData, party_slot_index
 	if info_panel:
 		info_panel.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
 		info_panel.mouse_exited.connect(_on_combat_sprite_hover_exited)
+		info_panel.apply_class_color_to_portrait_frame(combatant)
 		_update_combatant_info_panel(combatant)
 
 ## Create enemy combatant display (sprite only, no info panel)
@@ -773,13 +686,22 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 
 ## Ability bar UI removed temporarily; targeting / cast hooks remain for future UI.
 func _show_abilities_for_combatant(_combatant: CombatantData) -> void:
-	_clear_ability_panel()
+	if ability_panel and ability_panel.has_method("show_for_combatant"):
+		ability_panel.show_for_combatant(_combatant)
 
 
 ## Reset targeting selections when clearing the ability flow.
 func _clear_ability_panel() -> void:
 	selected_ability = null
 	_exit_targeting()
+	if not ability_panel:
+		return
+	if current_player_combatant and CombatController.waiting_for_player_input:
+		if ability_panel.has_method("refresh_current_combatant"):
+			ability_panel.refresh_current_combatant()
+		return
+	if ability_panel.has_method("hide_panel"):
+		ability_panel.hide_panel()
 
 
 ## Update turn order display (delegates to TurnOrderPanel)
