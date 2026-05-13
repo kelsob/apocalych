@@ -1,0 +1,22 @@
+---
+description: Use prewired scene nodes; no runtime lookups for existing nodes
+alwaysApply: true
+---
+
+# Godot: Prewired Scene Nodes Only
+
+When a node already exists in the scene, wire it once in the scene script with `@onready` and use that member directly.
+
+## Do
+
+- Define scene-node members at the top of the owning script:
+  - `@onready var button: Button = $Control/Button`
+  - `@onready var selection_circle: TextureRect = $Control/VBoxContainer/CharacterSprite/SelectionCircle`
+- Keep node ownership local: the scene script that owns the node handles its own button signal wiring.
+- Expose typed signals from the owner script for outside systems (`target_pressed`, `target_hover_entered`, etc.).
+
+## Do Not
+
+- Do runtime path lookups in gameplay wiring for nodes that already exist in the scene tree.
+- Reconstruct or re-fetch child-node references in other scripts when an owning script already has `@onready` refs.
+- Add wrapper "safety" fallbacks for missing required scene nodes; missing nodes should fail loudly in dev.

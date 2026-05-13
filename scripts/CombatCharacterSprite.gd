@@ -3,15 +3,18 @@ class_name CombatCharacterSprite
 
 ## CombatCharacterSprite - Character sprite, status effect icons, combat text, and targeting indicators
 
+signal target_pressed()
+signal target_hover_entered()
+signal target_hover_exited()
+
 var combat_text_scene: PackedScene = preload("res://scenes/combat/CombatText.tscn")
 var status_effect_icon_scene: PackedScene = preload("res://scenes/combat/StatusEffectCombatIcon.tscn")
 const PLACEHOLDER_TEXTURE: Texture2D = preload("res://assets/party-characters/placeholder.png")
 
-@onready var character_sprite: TextureRect = $VBoxContainer/CharacterSprite
-@onready var status_effects_container : HBoxContainer = $VBoxContainer/StatusEffectsContainer
-@onready var selection_circle: TextureRect = $VBoxContainer/CharacterSprite/SelectionCircle
-
-
+@onready var character_sprite: TextureRect = $Control/VBoxContainer/CharacterSprite
+@onready var status_effects_container : HBoxContainer = $Control/VBoxContainer/StatusEffectsContainer
+@onready var selection_circle: TextureRect = $Control/VBoxContainer/CharacterSprite/SelectionCircle
+@onready var button: Button = $Control/Button
 
 # Hover highlight when turn order entry (or this sprite) is hovered - distinct from selection
 var _hover_highlight: ColorRect = null
@@ -25,6 +28,9 @@ var _combat_text_active_count: int = 0
 func _ready():
 	if selection_circle:
 		selection_circle.visible = false
+	button.pressed.connect(_on_target_button_pressed)
+	button.mouse_entered.connect(_on_target_button_mouse_entered)
+	button.mouse_exited.connect(_on_target_button_mouse_exited)
 	
 	# Hover highlight when this character is highlighted via turn order / sprite hover (not selection)
 	_hover_highlight = ColorRect.new()
@@ -86,6 +92,18 @@ func set_hover_highlight(visible: bool):
 ## Clear targeting visuals
 func clear_targeting_state():
 	set_selected(false)
+
+
+func _on_target_button_pressed() -> void:
+	target_pressed.emit()
+
+
+func _on_target_button_mouse_entered() -> void:
+	target_hover_entered.emit()
+
+
+func _on_target_button_mouse_exited() -> void:
+	target_hover_exited.emit()
 
 ## Spawn floating combat text (damage/heal/status) over this sprite. Stacks vertically if multiple at once.
 func spawn_combat_text(p_text: String, p_color: Color) -> void:

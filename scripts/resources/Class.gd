@@ -25,5 +25,8 @@ class_name Class
 @export var default_advance_ability_override: Ability = null
 ## Optional replacement for the default Retreat ability.
 @export var default_retreat_ability_override: Ability = null
-@export var abilities: Array[Ability] = []  # Combat abilities for this class
+## **Combat specials authoring:** Every class `.tres` should define both [member abilities] and [member starting_abilities] (use an empty array when there is no pool yet). Starters must be a subset of the pool and grant **at most three** skills ([member HeroCharacter.MAX_STARTING_CLASS_SPECIAL_ABILITIES]). If [member starting_abilities] is left empty but [member abilities] is not, the first three pool entries are used as a shorthand.
+@export var abilities: Array[Ability] = []
+## Subset of [member abilities] copied into [member HeroCharacter.unlocked_combat_abilities] on [method HeroCharacter.initialize]. Empty array + empty pool → no class specials; empty array + non-empty pool → first three pool entries ([member HeroCharacter._sync_unlocked_combat_abilities_from_class_defaults]).
+@export var starting_abilities: Array[Ability] = []
 @export var rest_abilities: Array[RestAbility] = []  ## 2 rest abilities from class

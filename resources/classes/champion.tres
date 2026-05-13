@@ -33,4 +33,5 @@ basic_attack_primary_stat = "strength"
 basic_attack_stat_scaling_rate = 1.0
 class_color = Color(0.498039, 0.631373, 0.956863, 1)
 abilities = Array[ExtResource("1_hrl4r")]([ExtResource("2"), ExtResource("3"), ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")])
+starting_abilities = Array[ExtResource("1_hrl4r")]([ExtResource("2"), ExtResource("3"), ExtResource("4")])
 rest_abilities = Array[ExtResource("8_i8qmv")]([ExtResource("8"), ExtResource("9")])

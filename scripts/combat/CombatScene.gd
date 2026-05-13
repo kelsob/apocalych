@@ -635,6 +635,16 @@ func _position_player_sprite_at_marker(sprite: Control, marker: Marker2D) -> voi
 	sprite.global_position = marker.global_position
 
 
+## Wires sprite-owned targeting signals; CombatCharacterSprite handles its own button node wiring.
+func _wire_combat_sprite_targeting(sprite_instance: Node, combatant: CombatantData) -> void:
+	assert(sprite_instance is CombatCharacterSprite, "CombatScene: combat sprite root must be CombatCharacterSprite")
+	var sprite: CombatCharacterSprite = sprite_instance as CombatCharacterSprite
+	sprite.target_pressed.connect(_on_combatant_clicked.bind(combatant))
+	sprite.target_hover_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
+	sprite.target_hover_exited.connect(_on_combat_sprite_hover_exited)
+	combatant_clickable_areas[combatant] = sprite.button
+
+
 ## Create player combatant display (sprite + mapped info panel slot from [PlayerPartyPanel])
 func _create_player_combatant_display(combatant: CombatantData, party_slot_index: int) -> void:
 	# Create sprite in combat area
@@ -644,16 +654,7 @@ func _create_player_combatant_display(combatant: CombatantData, party_slot_index
 	
 	# Setup sprite with combatant data
 	sprite_instance.setup(combatant)
-	
-	# Create clickable button overlay for targeting (invisible, just for clicks)
-	var click_button = Button.new()
-	click_button.flat = true
-	click_button.custom_minimum_size = sprite_instance.size
-	click_button.pressed.connect(_on_combatant_clicked.bind(combatant))
-	click_button.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
-	click_button.mouse_exited.connect(_on_combat_sprite_hover_exited)
-	sprite_instance.add_child(click_button)
-	combatant_clickable_areas[combatant] = click_button
+	_wire_combat_sprite_targeting(sprite_instance, combatant)
 	
 	var info_panel: CharacterCombatInformationPanel = party_panel.get_panel(party_slot_index)
 	combatant_info_panels[combatant] = info_panel
@@ -672,19 +673,10 @@ func _create_enemy_combatant_display(combatant: CombatantData):
 	
 	# Setup sprite with combatant data
 	sprite_instance.setup(combatant)
+	_wire_combat_sprite_targeting(sprite_instance, combatant)
 	
 	# TODO: Set sprite texture based on enemy type
 	# sprite_instance.character_sprite.texture = load("res://assets/enemies/%s.png" % combatant.display_name)
-	
-	# Create clickable button overlay for targeting
-	var click_button = Button.new()
-	click_button.flat = true
-	click_button.custom_minimum_size = sprite_instance.size
-	click_button.pressed.connect(_on_combatant_clicked.bind(combatant))
-	click_button.mouse_entered.connect(_on_combat_sprite_hover_entered.bind(combatant))
-	click_button.mouse_exited.connect(_on_combat_sprite_hover_exited)
-	sprite_instance.add_child(click_button)
-	combatant_clickable_areas[combatant] = click_button
 	
 	# Enemies don't get info panels (their health is shown on the sprite)
 
