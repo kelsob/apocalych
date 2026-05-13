@@ -1,4 +1,4 @@
-extends PanelContainer
+extends MarginContainer
 @onready var description_label: RichTextLabel = $MarginContainer/VBoxContainer/DescriptionLabel
 @onready var ap_cost_label: RichTextLabel = $MarginContainer/VBoxContainer/HBoxContainer2/ApCostLabel
 @onready var targeting_type_label: RichTextLabel = $MarginContainer/VBoxContainer/HBoxContainer2/TargetingTypeLabel

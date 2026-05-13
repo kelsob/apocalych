@@ -52,6 +52,10 @@ var selected_ability: Ability = null
 var is_targeting: bool = false
 var pending_ability: Ability = null
 var valid_targets: Array = []  # Array of CombatantData
+var _targeting_row_targets: Dictionary = {}
+var _targeting_row_indices: Dictionary = {}
+var _targeting_active_row: CombatRow.Kind = CombatRow.Kind.FRONT
+var _targeting_highlighted_target: CombatantData = null
 
 # Cached references
 var combatant_sprites: Dictionary = {}  # CombatantData -> CombatCharacterSprite
@@ -736,6 +740,8 @@ func _update_combatant_health_display(combatant: CombatantData):
 
 ## Called when ability button pressed - enter targeting; never auto-fire
 func _on_ability_button_pressed(ability: Ability):
+	if is_targeting:
+		return
 	selected_ability = ability
 	_log_message("Selected: %s — choose a target" % ability.ability_name)
 	
@@ -764,32 +770,12 @@ func _on_ability_button_pressed(ability: Ability):
 
 ## Called when combatant clicked (for targeting)
 func _on_combatant_clicked(combatant: CombatantData):
-	if not is_targeting or not pending_ability or not current_player_combatant:
+	if not is_targeting:
 		return
 	if combatant not in valid_targets:
 		return
-	
-	# Build selected targets: single = [combatant], AOE = full valid list (one click = confirm team)
-	var selected: Array = []
-	match pending_ability.targeting_type:
-		Ability.TargetingType.SINGLE_ALLY, Ability.TargetingType.SINGLE_ENEMY:
-			selected = [combatant]
-		Ability.TargetingType.ALL_ALLIES, Ability.TargetingType.ALL_ENEMIES, Ability.TargetingType.ALL_COMBATANTS:
-			selected = valid_targets.duplicate()
-		_:
-			selected = [combatant]
-	
-	# Show selected visual on clicked combatant (and for AOE, on all valid targets)
-	if combatant_sprites.has(combatant):
-		combatant_sprites[combatant].set_selected(true)
-	for t in selected:
-		if t != combatant and combatant_sprites.has(t):
-			combatant_sprites[t].set_selected(true)
-	
-	CombatController.player_cast_ability(pending_ability, selected)
-	_clear_ability_panel()
-	_exit_targeting()
-	selected_ability = null
+	_set_targeting_highlight(combatant)
+	_confirm_current_target_selection(combatant)
 
 ## Called when Pass Turn button pressed
 func _on_pass_turn_pressed():
@@ -816,15 +802,14 @@ func _attempt_flee():
 
 ## Enter targeting mode: show valid targets, enable only their buttons
 func _enter_targeting(ability: Ability, targets: Array):
+	assert(not targets.is_empty(), "targeting: cannot enter targeting with empty target list")
 	is_targeting = true
 	pending_ability = ability
 	valid_targets = targets
-	for c in combatant_sprites:
-		var sprite_node: CombatCharacterSprite = combatant_sprites[c]
-		var valid: bool = c in valid_targets
-		if sprite_node:
-			sprite_node.set_valid_target(valid)
-			sprite_node.set_selected(false)
+	_rebuild_targeting_cursor_state()
+	if ability_panel and ability_panel.has_method("set_ability_input_enabled"):
+		ability_panel.set_ability_input_enabled(false)
+	_apply_targeting_visuals()
 	for c in combatant_clickable_areas:
 		var btn: Button = combatant_clickable_areas[c]
 		if btn:
@@ -837,6 +822,11 @@ func _exit_targeting():
 	is_targeting = false
 	pending_ability = null
 	valid_targets.clear()
+	_reset_targeting_cursor_state()
+	if ability_panel and ability_panel.has_method("set_ability_input_enabled"):
+		ability_panel.set_ability_input_enabled(true)
+	if ability_panel and ability_panel.has_method("focus_current_or_first_ability"):
+		ability_panel.focus_current_or_first_ability()
 	for c in combatant_sprites:
 		var sprite_node: CombatCharacterSprite = combatant_sprites[c]
 		if sprite_node:
@@ -848,11 +838,134 @@ func _exit_targeting():
 			btn.disabled = false
 
 func _unhandled_input(event: InputEvent):
-	if is_targeting and event.is_action_pressed("ui_cancel"):
+	if not is_targeting:
+		return
+	if event.is_action_pressed("ui_cancel"):
 		_exit_targeting()
-		_log_message("Targeting cancelled.")
+		_log_message("Targeting cancelled. Back to ability selection.")
 		selected_ability = null
 		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_up"):
+		_move_target_cursor_in_row(-1)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_down"):
+		_move_target_cursor_in_row(1)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right"):
+		_swap_target_row()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_accept"):
+		_confirm_current_target_selection(_targeting_highlighted_target)
+		get_viewport().set_input_as_handled()
+
+
+func _reset_targeting_cursor_state() -> void:
+	_targeting_row_targets = {
+		CombatRow.Kind.FRONT: [],
+		CombatRow.Kind.BACK: []
+	}
+	_targeting_row_indices = {
+		CombatRow.Kind.FRONT: 0,
+		CombatRow.Kind.BACK: 0
+	}
+	_targeting_active_row = CombatRow.Kind.FRONT
+	_targeting_highlighted_target = null
+
+
+func _rebuild_targeting_cursor_state() -> void:
+	_reset_targeting_cursor_state()
+	for target_obj in valid_targets:
+		assert(target_obj is CombatantData, "targeting: valid target is not CombatantData")
+		var target: CombatantData = target_obj as CombatantData
+		_targeting_row_targets[target.formation_row].append(target)
+	if not _targeting_row_targets[CombatRow.Kind.FRONT].is_empty():
+		_targeting_active_row = CombatRow.Kind.FRONT
+	elif not _targeting_row_targets[CombatRow.Kind.BACK].is_empty():
+		_targeting_active_row = CombatRow.Kind.BACK
+	else:
+		assert(false, "targeting: no row buckets available from valid_targets")
+	var row_targets: Array = _targeting_row_targets[_targeting_active_row]
+	_targeting_highlighted_target = row_targets[0] as CombatantData
+
+
+func _set_targeting_highlight(target: CombatantData) -> void:
+	assert(target != null, "targeting: cannot highlight null target")
+	assert(target in valid_targets, "targeting: highlight target must be valid")
+	_targeting_active_row = target.formation_row
+	var row_targets: Array = _targeting_row_targets[_targeting_active_row]
+	var idx := row_targets.find(target)
+	assert(idx != -1, "targeting: highlighted target missing from row bucket")
+	_targeting_row_indices[_targeting_active_row] = idx
+	_targeting_highlighted_target = target
+	_apply_targeting_visuals()
+
+
+func _apply_targeting_visuals() -> void:
+	for c in combatant_sprites:
+		var sprite_node: CombatCharacterSprite = combatant_sprites[c]
+		if sprite_node:
+			sprite_node.set_valid_target(c in valid_targets)
+			sprite_node.set_selected(c == _targeting_highlighted_target)
+
+
+func _move_target_cursor_in_row(direction: int) -> void:
+	assert(is_targeting, "targeting: cannot move cursor while not targeting")
+	var row_targets: Array = _targeting_row_targets[_targeting_active_row]
+	if row_targets.is_empty():
+		return
+	var current_i: int = int(_targeting_row_indices[_targeting_active_row])
+	var next_i: int = (current_i + direction) % row_targets.size()
+	if next_i < 0:
+		next_i += row_targets.size()
+	_targeting_row_indices[_targeting_active_row] = next_i
+	_targeting_highlighted_target = row_targets[next_i] as CombatantData
+	_apply_targeting_visuals()
+
+
+func _swap_target_row() -> void:
+	assert(is_targeting, "targeting: cannot swap row while not targeting")
+	var other_row: CombatRow.Kind = CombatRow.Kind.BACK if _targeting_active_row == CombatRow.Kind.FRONT else CombatRow.Kind.FRONT
+	var other_targets: Array = _targeting_row_targets[other_row]
+	if other_targets.is_empty():
+		return
+	_targeting_active_row = other_row
+	var idx: int = int(_targeting_row_indices[_targeting_active_row])
+	if idx < 0 or idx >= other_targets.size():
+		idx = 0
+		_targeting_row_indices[_targeting_active_row] = 0
+	_targeting_highlighted_target = other_targets[idx] as CombatantData
+	_apply_targeting_visuals()
+
+
+func _resolve_selected_targets_for_anchor(anchor_target: CombatantData) -> Array:
+	assert(pending_ability != null, "targeting: pending ability missing during target resolve")
+	match pending_ability.targeting_type:
+		Ability.TargetingType.SINGLE_ALLY, Ability.TargetingType.SINGLE_ENEMY:
+			return [anchor_target]
+		Ability.TargetingType.ALL_ALLIES, Ability.TargetingType.ALL_ENEMIES, Ability.TargetingType.ALL_COMBATANTS:
+			return valid_targets.duplicate()
+		_:
+			return [anchor_target]
+
+
+func _confirm_current_target_selection(anchor_target: CombatantData) -> void:
+	assert(is_targeting, "targeting: confirm requested while not targeting")
+	assert(pending_ability != null, "targeting: pending ability missing on confirm")
+	assert(current_player_combatant != null, "targeting: current player combatant missing on confirm")
+	var final_anchor: CombatantData = anchor_target
+	if final_anchor == null:
+		final_anchor = _targeting_highlighted_target
+	assert(final_anchor != null, "targeting: confirm target is null")
+	assert(final_anchor in valid_targets, "targeting: confirm target is not valid")
+	var selected: Array = _resolve_selected_targets_for_anchor(final_anchor)
+	CombatController.player_cast_ability(pending_ability, selected)
+	_clear_ability_panel()
+	_exit_targeting()
+	selected_ability = null
 
 ## Log a message to combat log. Set centered=true for section headers (combat start, turns, victory/defeat).
 func _log_message(message: String, centered: bool = false):

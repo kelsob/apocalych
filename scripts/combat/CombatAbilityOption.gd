@@ -19,6 +19,8 @@ func _ready():
 	mouse_exited.connect(_on_mouse_exited)
 	focus_entered.connect(_on_focus_entered)
 	focus_exited.connect(_on_focus_exited)
+	if not pressed.is_connected(_on_pressed):
+		pressed.connect(_on_pressed)
 	
 	# Hide icon by default
 	if selection_icon:

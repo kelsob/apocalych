@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://cvjrahf76ssj5"]
+[gd_scene load_steps=11 format=3 uid="uid://cvjrahf76ssj5"]
 
 [ext_resource type="Script" uid="uid://6u6iw0lnjdwi" path="res://scripts/combat/CombatScene.gd" id="1_cetgp"]
 [ext_resource type="PackedScene" uid="uid://cm203yur3p1b0" path="res://scenes/2d/TurnOrderPanel.tscn" id="2_gvrxc"]
@@ -6,10 +6,9 @@
 [ext_resource type="Texture2D" uid="uid://bgba30ct70kfl" path="res://assets/combat-scenes/molqgrxz3a7zh2.jpeg" id="3_i18os"]
 [ext_resource type="PackedScene" uid="uid://babywa8d5kus1" path="res://scenes/2d/CombatLogPanel.tscn" id="6_dqp6h"]
 [ext_resource type="PackedScene" uid="uid://wch1q73ihsx2" path="res://scenes/2d/PlayerPanel.tscn" id="6_i18os"]
-[ext_resource type="PackedScene" uid="uid://nrsdaorpl1uv" path="res://scenes/combat/CombatAbilityOption.tscn" id="7_6khhl"]
 [ext_resource type="Script" uid="uid://bi6jyguqxlhsl" path="res://scripts/AbilityPanel.gd" id="7_qkiah"]
 [ext_resource type="FontFile" uid="uid://cou8slr6me4am" path="res://assets/fonts/Final_Fantasy_VII.ttf" id="8_6khhl"]
-[ext_resource type="Texture2D" uid="uid://dv4ivs8inoqyk" path="res://assets/icons/frame-npr.png" id="8_57kx0"]
+[ext_resource type="Texture2D" uid="uid://n7mfldktuvgf" path="res://assets/ui/frame-rectangle.png" id="8_k51eg"]
 [ext_resource type="Script" uid="uid://blwnyum2fay18" path="res://scripts/AbilityDescriptionPanel.gd" id="8_qkiah"]
 
 [node name="CombatScene" type="Control"]
@@ -134,60 +133,61 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -184.0
-offset_top = -168.0
-offset_right = 258.0
-offset_bottom = -48.0
+offset_left = -221.0
+offset_top = -200.0
+offset_right = 221.0
+offset_bottom = -80.0
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("7_qkiah")
 
-[node name="PanelContainer" type="PanelContainer" parent="AbillityPanel"]
+[node name="AbilityListPanel" type="MarginContainer" parent="AbillityPanel"]
 layout_mode = 1
-offset_right = 128.0
-offset_bottom = 32.0
+offset_right = 200.0
+offset_bottom = 64.0
 size_flags_horizontal = 3
 size_flags_vertical = 0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
-[node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/PanelContainer"]
+[node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/AbilityListPanel"]
 layout_mode = 2
-texture = ExtResource("8_57kx0")
+texture = ExtResource("8_k51eg")
 patch_margin_left = 16
 patch_margin_top = 16
 patch_margin_right = 16
 patch_margin_bottom = 16
 
-[node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/PanelContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/AbilityListPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 4
+theme_override_constants/margin_left = 6
 theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 4
+theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 4
 
-[node name="AbilityListContainer" type="VBoxContainer" parent="AbillityPanel/PanelContainer/MarginContainer"]
+[node name="AbilityListContainer" type="VBoxContainer" parent="AbillityPanel/AbilityListPanel/MarginContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 0
 
-[node name="CombatAbilityOption" parent="AbillityPanel/PanelContainer/MarginContainer/AbilityListContainer" instance=ExtResource("7_6khhl")]
-layout_mode = 2
-
-[node name="AbilityDescriptionPanel" type="PanelContainer" parent="AbillityPanel"]
+[node name="AbilityDescriptionPanel" type="MarginContainer" parent="AbillityPanel"]
 custom_minimum_size = Vector2(240, 0)
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -240.0
-offset_bottom = 32.0
+offset_bottom = 92.0
 grow_horizontal = 0
 size_flags_horizontal = 3
 script = ExtResource("8_qkiah")
 
 [node name="NinePatchRect" type="NinePatchRect" parent="AbillityPanel/AbilityDescriptionPanel"]
 layout_mode = 2
-texture = ExtResource("8_57kx0")
+texture = ExtResource("8_k51eg")
 patch_margin_left = 16
 patch_margin_top = 16
 patch_margin_right = 16
@@ -195,9 +195,9 @@ patch_margin_bottom = 16
 
 [node name="MarginContainer" type="MarginContainer" parent="AbillityPanel/AbilityDescriptionPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
+theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
+theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 8
 
 [node name="VBoxContainer" type="VBoxContainer" parent="AbillityPanel/AbilityDescriptionPanel/MarginContainer"]

@@ -38,6 +38,7 @@ const ABILITY_ID_RETREAT := "retreat"
 const ABILITY_ID_BASIC_ATTACK := "basic_attack"
 const ADVANCE_ABILITY_PATH := "res://resources/abilities/shared/advance.tres"
 const RETREAT_ABILITY_PATH := "res://resources/abilities/shared/retreat.tres"
+const PLAYER_STARTING_NON_BASIC_ABILITY_COUNT: int = 2
 
 static var _advance_ability_cache: Ability = null
 static var _retreat_ability_cache: Ability = null
@@ -78,6 +79,7 @@ func initialize_from_hero_character(member: HeroCharacter):
 	_filter_abilities_by_equipment(member)
 	_remove_legacy_move_ability()
 	_ensure_movement_abilities_for_hero(member)
+	_enforce_player_starting_ability_loadout()
 	
 	var row_i: int = member.resolve_initial_formation_row()
 	assert(row_i == 0 or row_i == 1, "combat positioning: '%s' resolved invalid row index %d (expected 0=Front, 1=Back)" % [display_name, row_i])
@@ -132,6 +134,24 @@ func get_display_class_color() -> Color:
 ## Load abilities from a Class resource
 func _load_abilities_from_class(class_resource: Class):
 	abilities = class_resource.abilities.duplicate()
+
+
+func _enforce_player_starting_ability_loadout() -> void:
+	var basic_abilities: Array[Ability] = []
+	var non_basic_abilities: Array[Ability] = []
+	for ability in abilities:
+		if ability == null:
+			continue
+		if ability.is_basic_attack:
+			basic_abilities.append(ability)
+		else:
+			non_basic_abilities.append(ability)
+	assert(not basic_abilities.is_empty(), "combat loadout: hero '%s' has no basic attack ability" % display_name)
+	assert(non_basic_abilities.size() >= PLAYER_STARTING_NON_BASIC_ABILITY_COUNT, "combat loadout: hero '%s' must have at least %d non-basic abilities, found %d" % [display_name, PLAYER_STARTING_NON_BASIC_ABILITY_COUNT, non_basic_abilities.size()])
+	var trimmed: Array[Ability] = [basic_abilities[0]]
+	for i in range(PLAYER_STARTING_NON_BASIC_ABILITY_COUNT):
+		trimmed.append(non_basic_abilities[i])
+	abilities = trimmed
 
 
 func _strip_class_basics_for_weapon_grants() -> void:

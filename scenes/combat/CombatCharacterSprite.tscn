@@ -1,7 +1,21 @@
-[gd_scene load_steps=3 format=3 uid="uid://y6uccakbo1wi"]
+[gd_scene load_steps=7 format=3 uid="uid://y6uccakbo1wi"]
 
 [ext_resource type="Script" uid="uid://woweburf2uf1" path="res://scripts/CombatCharacterSprite.gd" id="1_6jn31"]
 [ext_resource type="Theme" uid="uid://bv7il7gikunta" path="res://themes/default_theme.tres" id="2_qmbjl"]
+[ext_resource type="Shader" uid="uid://383067l8bkog" path="res://shaders/CombatCharacterSpriteShadow.gdshader" id="3_wxo40"]
+[ext_resource type="Texture2D" uid="uid://bdksn7evqkvyd" path="res://assets/ui/selection-circle.png" id="4_bklrl"]
+[ext_resource type="Texture2D" uid="uid://dgdyy0nhu7dsv" path="res://assets/party-characters/placeholder.png" id="4_qhxlg"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bklrl"]
+shader = ExtResource("3_wxo40")
+shader_parameter/shadow_offset_uv = Vector2(0.01, 0.05)
+shader_parameter/shadow_color = Color(0, 0, 0, 0.7)
+shader_parameter/shadow_strength = 0.65
+shader_parameter/squash_y = 0.3
+shader_parameter/skew_x = -0.045
+shader_parameter/blur_uv = 0.02
+shader_parameter/fade_start_y = 0.6
+shader_parameter/fade_end_y = 1.0
 
 [node name="CombatCharacterSprite" type="Control"]
 layout_mode = 3
@@ -33,10 +47,29 @@ grow_vertical = 2
 alignment = 1
 
 [node name="CharacterSprite" type="TextureRect" parent="VBoxContainer"]
+material = SubResource("ShaderMaterial_bklrl")
 custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
 size_flags_vertical = 3
+texture = ExtResource("4_qhxlg")
 expand_mode = 5
+
+[node name="SelectionCircle" type="TextureRect" parent="VBoxContainer/CharacterSprite"]
+visible = false
+custom_minimum_size = Vector2(128, 64)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -64.0
+offset_top = -43.0
+offset_right = 64.0
+offset_bottom = 21.0
+grow_horizontal = 2
+grow_vertical = 0
+texture = ExtResource("4_bklrl")
 
 [node name="StatusEffectsContainer" type="HBoxContainer" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 24)
